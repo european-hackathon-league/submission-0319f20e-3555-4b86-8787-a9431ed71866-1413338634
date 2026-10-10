@@ -32,6 +32,8 @@ IMPLEMENTED_TOOLS = {
     "get_requirement_versions", "trace_requirement", "create_requirement", "edit_requirement",
     "score_requirement", "decide_requirement", "list_reviews", "list_audit", "get_workspace",
     "search_market_evidence", "fetch_market_evidence", "import_web_candidate",
+    "list_actors", "create_pm_workflow", "list_pm_workflows", "get_pm_workflow",
+    "run_pm_workflow", "complete_pm_workflow", "get_pm_workflow_brief",
 }
 PUBLIC_QUERY = "BMW 5 Series cabin controls US public product information"
 PUBLIC_URL = "https://example.com/research/bmw-five-series"

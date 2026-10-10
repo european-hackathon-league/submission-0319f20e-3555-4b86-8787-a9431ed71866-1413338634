@@ -57,13 +57,11 @@ Configuration:
   existing container; use `127.0.0.1` for direct local runs. This hackathon server
   has no authentication; shared deployment needs an authenticated boundary.
 
-The existing Compose service installs `mcp_server/requirements.txt`. Its current
-configuration passes `API_BASE_URL` and `API_TIMEOUT_SECONDS`, but **does not pass `EXA_API_KEY` or mount the
-cache**. Source reads and cached/imported evidence still work without Exa. Troy owns
-Compose changes; agree environment passthrough and a cache volume before relying
-on live research or durable cache inside Compose. A host `.env` alone does not pass
-its key into the container. The MCP Dockerfile now builds two interactive MCP Apps
-resources; Compose and the API/database schemas remain unchanged. See
+Compose passes `EXA_API_KEY` from the private repository-root `.env` to both the
+API and MCP services. Their Exa candidate caches share the ignored
+`database/local/exa-cache/` directory; imported sources still live in the
+backend database. A missing key leaves source reads and cached research available.
+The MCP Dockerfile builds two interactive MCP Apps resources. See
 [widget setup](../notes/mcp-apps-widgets.md). Local Python/stdio runs need
 `npm ci && npm run build` in `mcp_server/ui` first. Missing builds return an
 actionable resource error while ordinary tools remain usable.

@@ -91,6 +91,7 @@ const softwarePages = [
   { key: "settings", label: "Settings", icon: Settings },
 ];
 const pages = [primaryPages[0], ...softwarePages, ...primaryPages.slice(1)];
+const marketNames: Record<string, string> = { US: "United States", CN: "China", EU: "Europe" };
 
 function SoftwareNavigation({
   base,
@@ -218,11 +219,10 @@ export function WorkspaceApp({
     return () => window.removeEventListener("scroll", update);
   }, [section]);
   const scopes = workspace.data?.available_scopes || [];
-  const options = scopes.some(
-    (s) => s.vehicle === scope.vehicle && s.market === scope.market,
-  )
-    ? scopes
-    : [scope, ...scopes];
+  const options = [...new Map(
+    [scope, ...["US", "CN", "EU"].map((market) => ({ vehicle: scope.vehicle, market })), ...scopes]
+      .map((item) => [`${item.vehicle}/${item.market}`, item] as const),
+  ).values()];
   const title =
     pages.find((n) => n.key === section)?.label || "Overview";
   const loadError =
@@ -296,6 +296,7 @@ export function WorkspaceApp({
                     value={`${s.vehicle}/${s.market}`}
                   >
                     {s.vehicle} · {s.market}
+                    {marketNames[s.market] ? ` (${marketNames[s.market]})` : ""}
                   </option>
                 ))}
               </select>

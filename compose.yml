@@ -8,6 +8,8 @@ services:
       SNAPSHOT_DIR: ${SNAPSHOT_DIR:-/app/database/snapshots}
       DATA_DIR: /app/data
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      EXA_API_KEY: ${EXA_API_KEY:-}
+      EXA_CACHE_DIR: /app/database/local/exa-cache
       OPENAI_MODEL: ${OPENAI_MODEL:-}
       ANALYSIS_BATCH_SIZE: ${ANALYSIS_BATCH_SIZE:-40}
       ANALYSIS_MAX_BATCHES: ${ANALYSIS_MAX_BATCHES:-20}
@@ -31,11 +33,15 @@ services:
     environment:
       API_BASE_URL: ${API_BASE_URL:-http://api:8000}
       API_TIMEOUT_SECONDS: ${API_TIMEOUT_SECONDS:-180}
+      EXA_API_KEY: ${EXA_API_KEY:-}
+      EXA_CACHE_DIR: /app/exa-cache
     ports:
       - "127.0.0.1:${MCP_PORT:-8001}:8001"
     depends_on:
       api:
         condition: service_healthy
+    volumes:
+      - ./database/local/exa-cache:/app/exa-cache
 
   web:
     profiles: ["web"]

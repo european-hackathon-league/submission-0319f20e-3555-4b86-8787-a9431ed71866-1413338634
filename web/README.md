@@ -33,14 +33,22 @@ EHL_API_URL=http://127.0.0.1:8000 bun dev
 | Needs review | Persisted reasons, before/after changes, priorities and keyboard navigation (`j`, `k`, `o`/Enter). |
 | Evidence | Search, source filter, analysed findings by kind/topic, preserved originals, metadata and reverse links into current requirement versions. |
 | Vehicle studio | G60/G70 3D model explorer with named topic anchors, camera presets, priority/evidence/review layers, live scoped requirement roll-ups and links into the existing source-to-decision drawer. A local response hypothesis, notes, illustrative paint preview and JSON export support planning without changing governed records. The supplied schematic appears when WebGL or model loading fails. |
-| Sources and imports | Original-file checksums/metadata, XLSX/CSV/PDF upload, server-local inputs and supplied web snapshots. |
+| Sources and imports | Original-file checksums/metadata, XLSX/CSV/PDF upload, server-local inputs, supplied web snapshots, and opt-in Exa public research with explicit search → fetch → select/import. |
 | Pipeline | Initial and cumulative update runs, explicit provider selection, persisted stages and failures, live readiness checks, human decision gate, frozen planning briefs and Markdown download. |
-| Market comparison | Actual topic/requirement records across US, CN and EU for the selected vehicle; absent evidence is labelled. |
+| Market comparison | Actual topic/requirement records across US, CN and EU for the selected vehicle; absent evidence is labelled. The scope selector exposes all three even before import. |
 | Audit and settings | Filtered event timeline, event/hash inspection, JSON export, declared actor roles, theme/density and API/MCP links. |
 
 Filters, selected requirement/tab, immutable version/score, selected evidence, and workflow selection use shareable URLs. Stable-key links such as `/g60/us/requirements/REQ-G60-US-003/trace` work. Global search uses ⌘K/Ctrl+K. The register uses a semantic paginated table; paged API reads are collected without silently truncating records. TanStack Query manages server state. Input contracts are generated in `lib/generated-api.ts`; `lib/types.ts` describes additional response shapes from the current API.
 
 The sidebar shows Overview, a collapsible Software group for requirements, evidence and the other PM tools, Multi-agentic system, and Vehicle Studio. Multi-agentic system currently opens an empty page. The reviewer selector sits at the bottom of the sidebar; a reviewer can also be selected within the requirement drawer before recording a decision. See [the three-minute demo guide](DEMO.md).
+
+For public Exa research, use **Software → Sources & imports → Import evidence → Exa research**.
+Set `EXA_API_KEY` in the ignored repository-root `.env` and rebuild the API and web
+services. Choose the vehicle/market scope first; US, CN and EU remain selectable
+before any source is imported. Search and fetch are separate, potentially charged
+requests. Cache-only replay requires the exact query, scope, domains and result
+limit. A fetched candidate is imported only after a reviewer supplies a rationale
+and confirms selection; it remains unreviewed evidence, not an approved market claim.
 
 ## Vehicle studio assets and data
 

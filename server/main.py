@@ -16,6 +16,7 @@ from server.decision_briefs import router as decision_briefs_router
 from server.evaluation import router as evaluation_router
 from server.evidence import ImportRoute, scope_filters
 from server.evidence import router as evidence_router
+from server.exa_research import router as exa_research_router
 from server.models import Scope, json_size
 from server.pipeline import router as pipeline_router
 from server.requirements import router as requirements_router
@@ -60,6 +61,7 @@ app.add_middleware(
     allow_credentials=False,
 )
 app.include_router(evidence_router)
+app.include_router(exa_research_router)
 app.include_router(pipeline_router)
 app.include_router(requirements_router)
 app.include_router(web_fetch_router)

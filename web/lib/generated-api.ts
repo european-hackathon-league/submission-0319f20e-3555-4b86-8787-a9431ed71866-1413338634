@@ -126,6 +126,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/research/exa/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Exa Status
+         * @description Configuration visibility only; this endpoint never contacts Exa.
+         */
+        get: operations["exa_status_research_exa_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/research/exa/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Search Exa
+         * @description Return unreviewed public leads; no evidence or decision is written.
+         */
+        post: operations["search_exa_research_exa_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/research/exa/fetch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fetch Exa
+         * @description Return a bounded public-text snapshot; importing remains a separate action.
+         */
+        post: operations["fetch_exa_research_exa_fetch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/research/exa/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Exa
+         * @description Persist one selected fetched candidate with its complete Exa provenance.
+         */
+        post: operations["import_exa_research_exa_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/analyses": {
         parameters: {
             query?: never;
@@ -665,6 +745,20 @@ export interface components {
              */
             actor: string;
         };
+        /** CandidateSelection */
+        CandidateSelection: {
+            /** Candidate Id */
+            candidate_id: string;
+            /** Actor */
+            actor: string;
+            /** Rationale */
+            rationale: string;
+            /**
+             * Selection Confirmed
+             * @constant
+             */
+            selection_confirmed: true;
+        };
         /** DecisionRequest */
         DecisionRequest: {
             /** Version Id */
@@ -718,6 +812,40 @@ export interface components {
             differentiation: number;
             /** Feasibility */
             feasibility: number;
+        };
+        /** FetchRequest */
+        FetchRequest: {
+            /**
+             * Query
+             * @description Public product/market topic only; no BMW records or PII.
+             */
+            query: string;
+            /**
+             * Public Data Confirmed
+             * @description Caller confirms all supplied text is public and nonpersonal.
+             * @constant
+             */
+            public_data_confirmed: true;
+            /**
+             * Vehicle
+             * @default G60
+             */
+            vehicle: string;
+            /**
+             * Market
+             * @default US
+             */
+            market: string;
+            /**
+             * Cache Only
+             * @default false
+             */
+            cache_only: boolean;
+            /**
+             * Identifier
+             * @description Public URL or Exa ID returned by a cached search.
+             */
+            identifier: string;
         };
         /** GenerateRequest */
         GenerateRequest: {
@@ -864,6 +992,46 @@ export interface components {
             actor: string;
             /** Rationale */
             rationale: string;
+        };
+        /** SearchRequest */
+        SearchRequest: {
+            /**
+             * Query
+             * @description Public product/market topic only; no BMW records or PII.
+             */
+            query: string;
+            /**
+             * Public Data Confirmed
+             * @description Caller confirms all supplied text is public and nonpersonal.
+             * @constant
+             */
+            public_data_confirmed: true;
+            /**
+             * Vehicle
+             * @default G60
+             */
+            vehicle: string;
+            /**
+             * Market
+             * @default US
+             */
+            market: string;
+            /**
+             * Cache Only
+             * @default false
+             */
+            cache_only: boolean;
+            /**
+             * Max Results
+             * @default 5
+             */
+            max_results: number;
+            /** Trusted Domains */
+            trusted_domains?: string[] | null;
+            /** Start Published Date */
+            start_published_date?: string | null;
+            /** End Published Date */
+            end_published_date?: string | null;
         };
         /** Source */
         Source: {
@@ -1294,6 +1462,133 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    exa_status_research_exa_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    search_exa_research_exa_search_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fetch_exa_research_exa_fetch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FetchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_exa_research_exa_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateSelection"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */

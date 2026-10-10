@@ -12,6 +12,17 @@ The scope is customer-facing requirements for a successor vehicle, starting with
 | Prioritization | Automatic on creation/edit; `POST /requirements/{id}/scores` | Recorded factors, rubric weights, contributions, priority, evidence grade and limitations |
 | Documentation and tracking | `POST /requirements/{id}/decisions`; `GET /requirements/{id}/trace`; `/versions`; `/audit`; `POST /updates` | Approved version and score snapshots, decisions, complete history, and targeted proposed revisions for review |
 
+Public Exa research is available directly through `GET /research/exa/status` and
+the explicit `POST /research/exa/search`, `/fetch`, and `/import` sequence. Search
+and fetch reuse the MCP Exa validation, bounded response and private cache. They
+return unreviewed candidates without writing evidence; only import persists an
+explicitly selected fetched snapshot through `/imports/records`, preserving its
+full provenance and audit trail. All requests carry vehicle and market (`US`,
+`CN`, or `EU` for the challenge's comparison); a research market is context, not
+proof that a source applies there. Search and fetch may each incur an Exa charge.
+`cache_only: true` never contacts Exa. Compose reads `EXA_API_KEY` from an ignored
+root `.env` and stores candidate cache files under ignored `database/local/`.
+
 `POST /pipeline/run` runs analysis, requirement generation and scoring in sequence. `POST /updates` reruns cumulative scoped evidence and assesses existing decisions. Both accept `vehicle`, `market`, `provider`, and `actor`. Initial analysis may optionally select `source_ids`; updates require the complete scope. Use `GET /workspace` for available scopes, priority list, and open review items. `GET /requirements?needs_review=true` supplies the review filter. `GET /metrics` reports traceability, status counts, and elapsed time to first decision with explicit limitations.
 
 The OpenAPI schema at `/docs` defines all request fields. Paginated evidence, findings, requirements, and trace evidence return `items`, `total`, `limit`, and `offset`. `/audit` uses increasing `sequence` and `next_after` cursors. Existing `GET /sources` remains a list for compatibility. Scope inputs normalize common aliases such as USA → US.
