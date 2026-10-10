@@ -68,6 +68,8 @@ The essential connection is:
 
 This connection supports explaining a recommendation, identifying affected decisions when evidence changes, and reconstructing previous decisions.
 
+The [database implementation plan](database/IMPLEMENTATION_PLAN.md) covers people and roles, database-enforced decision gates, tamper-evident audit, traceability views, and shareable snapshots.
+
 ## Workflows
 
 1. **Initial analysis:** import the BMW data → extract findings → build requirements → calculate priorities → PM reviews and approves.
