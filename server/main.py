@@ -1,4 +1,5 @@
 import os
+import sqlite3
 from contextlib import asynccontextmanager
 from typing import Literal
 
@@ -72,6 +73,17 @@ async def validation_error_handler(request, exc):
          "msg": str(error["msg"]).encode("utf-8", "replace").decode("utf-8")}
         for error in exc.errors()
     ]})
+
+
+@app.exception_handler(sqlite3.IntegrityError)
+async def governance_error_handler(request, exc):
+    # Transactions have already rolled back before a database denial reaches
+    # this handler. Only named actor gates are client permission failures;
+    # unrelated integrity errors must remain visible as server failures.
+    detail = str(exc)
+    if detail in {"inactive actor", "decisions require a human actor", "approve and reject require a PM role"}:
+        return JSONResponse(status_code=403, content={"detail": detail})
+    raise exc
 
 
 @app.get("/health")
