@@ -22,8 +22,9 @@ import {
   Command,
   CircleHelp,
   Info,
-  Ellipsis,
-  ChevronDown,
+  ChevronRight,
+  Layers3,
+  Bot,
   CarFront,
 } from "lucide-react";
 import {
@@ -36,9 +37,13 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarProvider,
   SidebarInset,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   Dialog,
@@ -47,6 +52,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { AppearanceToggle } from "@/components/appearance";
+import { MotionField } from "@/components/motion-field";
 import { Button } from "@/components/ui/button";
 import { api, allPages, query, readable } from "@/lib/api";
 import type {
@@ -70,13 +76,14 @@ const VehicleStudio = dynamic(() => import("./vehicle-studio").then((module) => 
   ssr: false,
   loading: () => <Loading label="Opening vehicle studio…" />,
 });
-const nav = [
+const primaryPages = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
+  { key: "agents", label: "Multi-agentic system", icon: Bot },
+  { key: "twin", label: "Vehicle Studio", icon: CarFront },
+];
+const softwarePages = [
   { key: "requirements", label: "Requirements", icon: ListChecks },
   { key: "evidence", label: "Evidence", icon: FileSearch },
-  { key: "twin", label: "Vehicle studio", icon: CarFront },
-];
-const more = [
   { key: "pipeline", label: "Pipeline", icon: GitBranch },
   { key: "sources", label: "Sources & imports", icon: Files },
   { key: "reviews", label: "Needs review", icon: ListChecks },
@@ -84,8 +91,67 @@ const more = [
   { key: "audit", label: "Audit trail", icon: History },
   { key: "settings", label: "Settings", icon: Settings },
 ];
-const pages = [...nav, ...more];
+const pages = [primaryPages[0], ...softwarePages, ...primaryPages.slice(1)];
 const marketNames: Record<string, string> = { US: "United States", CN: "China", EU: "Europe" };
+
+function SoftwareNavigation({
+  base,
+  section,
+  reviewCount,
+}: {
+  base: string;
+  section: string;
+  reviewCount?: number;
+}) {
+  const { state, setOpen } = useSidebar();
+  const [softwareState, setSoftwareState] = useStoredValue(
+    "bmw-software-navigation",
+    "open",
+  );
+  const expanded = softwareState !== "closed";
+  const active = softwarePages.some((page) => page.key === section);
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        type="button"
+        tooltip="Software"
+        isActive={active}
+        aria-expanded={expanded}
+        aria-controls="software-navigation"
+        className="software-nav-trigger"
+        onClick={() => {
+          if (state === "collapsed") {
+            setOpen(true);
+            setSoftwareState("open");
+          } else {
+            setSoftwareState(expanded ? "closed" : "open");
+          }
+        }}
+      >
+        <Layers3 />
+        <span>Software</span>
+        <ChevronRight className={`software-nav-chevron ${expanded ? "is-open" : ""}`} />
+      </SidebarMenuButton>
+      <SidebarMenuSub id="software-navigation" hidden={!expanded}>
+        {softwarePages.map((page) => (
+          <SidebarMenuSubItem key={page.key}>
+            <SidebarMenuSubButton
+              isActive={section === page.key}
+              aria-current={section === page.key ? "page" : undefined}
+              render={<Link href={`${base}/${page.key}`} />}
+            >
+              <span>{page.label}</span>
+              {page.key === "reviews" && !!reviewCount && (
+                <span className="nav-count">{reviewCount}</span>
+              )}
+            </SidebarMenuSubButton>
+          </SidebarMenuSubItem>
+        ))}
+      </SidebarMenuSub>
+    </SidebarMenuItem>
+  );
+}
 export function WorkspaceApp({
   scope,
   section,
@@ -173,34 +239,6 @@ export function WorkspaceApp({
     compact,
     setCompact,
   };
-  const renderNav = (items: typeof nav) => (
-    <SidebarGroup>
-      <SidebarMenu>
-        {items.map((item) => (
-          <SidebarMenuItem key={item.key}>
-            <SidebarMenuButton
-              isActive={section === item.key}
-              tooltip={item.label}
-              render={
-                <Link
-                  href={`${base}${item.key === "overview" ? "" : "/" + item.key}`}
-                />
-              }
-            >
-              <item.icon />
-              <span>{item.label}</span>
-              {item.key === "reviews" &&
-                !!metrics.data?.counts.open_reviews && (
-                  <span className="nav-count">
-                    {metrics.data.counts.open_reviews}
-                  </span>
-                )}
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        ))}
-      </SidebarMenu>
-    </SidebarGroup>
-  );
   return (
     <WorkspaceContext.Provider value={context}>
       <a href="#workspace-content" className="skip-link">
@@ -258,45 +296,71 @@ export function WorkspaceApp({
             </div>
           </SidebarHeader>
           <SidebarContent>
-            <SidebarGroupLabel>Workspace</SidebarGroupLabel>
-            {renderNav(nav)}
-            <details className="workspace-more" open={more.some((item) => item.key === section) || undefined}>
-              <summary>
-                <Ellipsis size={16} />
-                <span>More tools</span>
-                <ChevronDown className="workspace-more-chevron" size={14} />
-              </summary>
-              {renderNav(more)}
-            </details>
+            <SidebarGroup>
+              <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    isActive={section === "overview"}
+                    aria-current={section === "overview" ? "page" : undefined}
+                    tooltip="Overview"
+                    render={<Link href={base} />}
+                  >
+                    <LayoutDashboard />
+                    <span>Overview</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SoftwareNavigation
+                  base={base}
+                  section={section}
+                  reviewCount={metrics.data?.counts.open_reviews}
+                />
+                {primaryPages.slice(1).map((page) => (
+                  <SidebarMenuItem key={page.key}>
+                    <SidebarMenuButton
+                      isActive={section === page.key}
+                      aria-current={section === page.key ? "page" : undefined}
+                      tooltip={page.label}
+                      render={<Link href={`${base}/${page.key}`} />}
+                    >
+                      <page.icon />
+                      <span>{page.label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroup>
           </SidebarContent>
           <SidebarFooter>
-            <div className="sidebar-scope-note">
-              <span className="mono">EVIDENCE TO DECISION</span>
-              <span>Successor product planning</span>
-              <span className="system-state">
-                <i className={loadError || actors.error ? "failed" : ""} />
-                {loadError || actors.error
-                  ? "Connection needs attention"
-                  : "Connected to local API"}
-              </span>
-            </div>
-            <Link href={`${base}/settings`} className="workspace-profile">
+            <div className="reviewer-switcher">
               <span className="profile-monogram">
                 {actor?.display_name.charAt(0) || "B"}
               </span>
               <span className="profile-label">
-                <strong>{actor?.display_name || "Select a reviewer"}</strong>
-                <span>
-                  {actor
-                    ? readable(actor.role)
-                    : "Declared identity · local workspace"}
-                </span>
+                <strong>{actor?.display_name || "Select reviewer"}</strong>
+                <span>{actor ? readable(actor.role) : "Acting reviewer"}</span>
               </span>
-              <ArrowUpRight className="profile-arrow" size={15} />
-            </Link>
+              <ChevronsUpDown className="profile-arrow" size={15} />
+              <select
+                aria-label="Acting reviewer"
+                value={actor?.id || ""}
+                onChange={(event) => setActor(event.target.value)}
+                disabled={actors.isPending || !!actors.error}
+              >
+                <option value="">
+                  {actors.error ? "Reviewers unavailable" : "Select reviewer"}
+                </option>
+                {activeActors.map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {person.display_name} · {readable(person.role)}
+                  </option>
+                ))}
+              </select>
+            </div>
           </SidebarFooter>
         </Sidebar>
-        <SidebarInset>
+        <SidebarInset className={section === "overview" ? "overview-shell" : undefined}>
+          {section === "overview" && <MotionField />}
           <header className="workspace-header">
             <div className="flex items-center gap-4">
               <SidebarTrigger />
@@ -310,41 +374,26 @@ export function WorkspaceApp({
                 aria-label="Search workspace"
               >
                 <Search size={14} />
-                <span>Search workspace</span>
+                <span>Search</span>
                 <kbd>⌘ K</kbd>
               </button>
-              <span className="workspace-status">Local workspace</span>
-              <select
-                className="actor-select"
-                aria-label="Acting reviewer"
-                value={actor?.id || ""}
-                onChange={(e) => setActor(e.target.value)}
-                disabled={actors.isPending || !!actors.error}
-              >
-                <option value="">
-                  {actors.error ? "Reviewers unavailable" : "Select reviewer"}
-                </option>
-                {activeActors.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.display_name} · {readable(a.role)}
-                  </option>
-                ))}
-              </select>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Refresh workspace"
-                onClick={refresh}
-              >
-                <RefreshCw
-                  size={16}
-                  className={workspace.isFetching ? "animate-spin" : ""}
-                />
-              </Button>
+              {section !== "agents" && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Refresh workspace"
+                  onClick={refresh}
+                >
+                  <RefreshCw
+                    size={16}
+                    className={workspace.isFetching ? "animate-spin" : ""}
+                  />
+                </Button>
+              )}
               <AppearanceToggle />
             </div>
           </header>
-          {scope.vehicle === "G60" && scope.market === "US" && (
+          {section !== "agents" && scope.vehicle === "G60" && scope.market === "US" && (
             <div className="scope-limitation">
               <Info size={14} />
               <span>
@@ -362,7 +411,11 @@ export function WorkspaceApp({
             className={`workspace-content ${compact ? "density-compact" : ""}`}
           >
             <main>
-              {loadError ? (
+              {section === "agents" ? (
+                <div className="multi-agent-page">
+                  <h1>Multi-agentic system</h1>
+                </div>
+              ) : loadError ? (
                 <ErrorMessage error={loadError} retry={refresh} />
               ) : context.loading ? (
                 <Loading label="Loading your evidence and requirements…" />
@@ -380,13 +433,15 @@ export function WorkspaceApp({
                   {section === "settings" && <SettingsPage />}
                 </>
               )}
-              <footer className="workspace-footnote">
-                <span>BMW concept · Product planning workspace</span>
-                <span>
-                  <CircleHelp size={12} /> Sample evidence informs decisions. It
-                  does not establish market prevalence.
-                </span>
-              </footer>
+              {section !== "agents" && (
+                <footer className="workspace-footnote">
+                  <span>BMW concept · Product planning workspace</span>
+                  <span>
+                    <CircleHelp size={12} /> Sample evidence informs decisions.
+                    It does not establish market prevalence.
+                  </span>
+                </footer>
+              )}
             </main>
           </div>
         </SidebarInset>
@@ -415,7 +470,7 @@ export function WorkspaceApp({
               .map((n) => (
                 <Link
                   key={n.key}
-                  href={`${base}/${n.key}`}
+                  href={n.key === "overview" ? base : `${base}/${n.key}`}
                   onClick={() => setCommand(false)}
                 >
                   <n.icon size={17} />

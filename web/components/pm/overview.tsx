@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
 import { ArrowUpRight, Info } from "lucide-react";
-import { MotionField } from "@/components/motion-field";
 import { fmt } from "@/lib/api";
 import { useWorkspace } from "./context";
 import { Empty, ScoreLabel, Status } from "./shared";
@@ -35,7 +34,6 @@ export function Overview() {
   return (
     <>
       <section className="overview-intro demo-hero" aria-labelledby="overview-title">
-        <MotionField />
         <div className="overview-intro-copy">
           <p className="overview-eyebrow">Precision in every decision</p>
           <h1 id="overview-title">Evidence to decision</h1>
