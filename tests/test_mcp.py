@@ -49,6 +49,7 @@ async def test_every_pipeline_operation_is_discoverable():
         "generate_requirements", "run_pipeline", "assess_updates", "list_requirements", "get_requirement",
         "get_requirement_versions", "trace_requirement", "create_requirement", "edit_requirement",
         "score_requirement", "decide_requirement", "list_reviews", "list_audit", "get_workspace",
+        "search_market_evidence", "fetch_market_evidence", "import_web_candidate",
     }
     # Clients can discover required optimistic-lock tokens and nested target/factor schemas.
     assert set(tools["decide_requirement"].input_schema["required"]) == {
