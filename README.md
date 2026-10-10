@@ -2,6 +2,18 @@
 
 BMW — AI for Product Decision Making, EHL Munich, 10–11 October 2026.
 
+## Run the backend
+
+```sh
+docker compose up --build -d
+```
+
+The FastAPI server is at [http://localhost:8000/docs](http://localhost:8000/docs), with a health check at `/health`. The MCP server uses Streamable HTTP at `http://localhost:8001/mcp` and exposes `list_sources` and `get_source`. The `POST /sources` endpoint adds a source record; this is a small foundation for the import workflow, not a BMW data importer yet.
+
+SQLite lives in `database/local/app.db` and persists on the host. Run `docker compose exec api python -m database.snapshot` to save a consistent copy in `database/snapshots/`. See [database/README.md](database/README.md) for restore steps. The BMW input files in `data/` are separate and are never copied into the images.
+
+Stop the services with `docker compose down`.
+
 ## Implementation
 
 - [High-level implementation plan: components, connections, and workflows](IMPLEMENTATION_PLAN.md)

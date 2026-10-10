@@ -8,3 +8,7 @@
 !.env.example
 .venv/
 __pycache__/
+/database/local/*
+!/database/local/.gitkeep
+/database/snapshots/*
+!/database/snapshots/.gitkeep

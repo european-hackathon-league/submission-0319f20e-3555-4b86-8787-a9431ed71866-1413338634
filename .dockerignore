@@ -1,0 +1,10 @@
+.git
+.venv
+data
+materials
+notes
+research
+database/local/*
+database/snapshots/*
+**/__pycache__
+**/*.pyc

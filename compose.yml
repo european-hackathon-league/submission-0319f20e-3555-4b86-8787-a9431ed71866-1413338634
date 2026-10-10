@@ -1,0 +1,30 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    environment:
+      DB_PATH: /app/database/local/app.db
+      SNAPSHOT_DIR: /app/database/snapshots
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./database/local:/app/database/local
+      - ./database/snapshots:/app/database/snapshots
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mcp:
+    build:
+      context: .
+      dockerfile: mcp_server/Dockerfile
+    environment:
+      API_BASE_URL: http://api:8000
+    ports:
+      - "127.0.0.1:8001:8001"
+    depends_on:
+      api:
+        condition: service_healthy
