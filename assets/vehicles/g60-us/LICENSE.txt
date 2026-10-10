@@ -1,0 +1,20 @@
+2023 BMW I5 M60
+Creator: Nazh Design ✔
+Source: https://sketchfab.com/3d-models/2023-bmw-i5-m60-207fd872d28b4cafa7fefe061ae98e26
+Creator: https://sketchfab.com/NazhDesign
+
+Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0).
+Licence: https://creativecommons.org/licenses/by/4.0/
+Legal terms: https://creativecommons.org/licenses/by/4.0/legalcode.en
+
+You may share and adapt, including commercially, subject to the licence.
+Retain credit, link to the source and licence, and indicate modifications.
+Modifications: geometry cleanup/simplification, PBR finishes, normal repair,
+metre normalization, Draco compression, stable anchors and authored renders.
+No extra restrictions are imposed on the licensed model.
+
+Independent artist model; not supplied or endorsed by BMW. The licence
+does not grant rights to BMW trademarks or imply endorsement.
+
+Download page checked 2026-10-10: CC Attribution; author must be credited;
+commercial use is allowed. Downloaded through the authenticated Download UI.
