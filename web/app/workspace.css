@@ -222,7 +222,7 @@ textarea {
   margin-top: 10px;
 }
 .pm-panel {
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   background: var(--card);
   padding: 24px;
   min-width: 0;
@@ -263,7 +263,7 @@ textarea {
   flex-direction: column;
   gap: 6px;
   font-size: 12px;
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   padding: 13px;
   background: var(--popover);
   box-shadow: 0 6px 20px #0001;
@@ -607,7 +607,7 @@ textarea {
   padding: 6px 8px;
 }
 .pm-table-wrap {
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   background: var(--card);
   overflow: auto;
 }
@@ -1036,7 +1036,7 @@ textarea {
   padding: 12px 0;
 }
 .evidence-card {
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   background: var(--card);
   padding: 18px;
   font-size: 11px;
@@ -1216,7 +1216,7 @@ summary {
   font-weight: 500;
 }
 .simulation {
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   padding: 20px;
   background: var(--card);
 }
@@ -1267,7 +1267,7 @@ summary {
 .version-comparison > section {
   padding: 16px;
   background: var(--card);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
 }
 .version-comparison h3 {
   font-size: 14px;
@@ -1312,7 +1312,7 @@ summary {
   gap: 20px;
   padding: 24px;
   background: var(--card);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
 }
 .review-inbox article.focused {
   border-left: 2px solid var(--primary);
@@ -1381,7 +1381,7 @@ summary {
 }
 .evidence-explorer-list {
   background: var(--card);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
 }
 .evidence-explorer-list > article {
   padding: 23px;
@@ -1565,7 +1565,7 @@ summary {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0;
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   background: var(--card);
 }
 .pipeline-stage {
