@@ -1,5 +1,7 @@
 # ehl-final
 
+<p align="center"><img src="assets/ouuu-shii.webp" alt="Ouuu shii" width="360"></p>
+
 BMW — AI for Product Decision Making, EHL Munich, 10–11 October 2026.
 
 ## Run the backend
@@ -40,6 +42,15 @@ uv run ruff check server database mcp_server scripts tests
 uv run python scripts/evaluate_pipeline.py
 uv run python scripts/verify_backend.py --real-data
 ```
+
+With `OPENAI_API_KEY` and `OPENAI_MODEL` configured in `.env`, rebuild the API and verify the live model through both HTTP and MCP:
+
+```sh
+docker compose up --build -d api mcp
+uv run python scripts/verify_openai.py --expected-model gpt-6.1-sol
+```
+
+This paid-provider check makes a fresh initial analysis and a fresh evidence update in an isolated synthetic scope, plus cached replays. It verifies model identity, original source fidelity, complete evidence coverage, PM edits and approvals, targeted review, unchanged unrelated requirements, and historical traces. It fails if the provider cannot run or an invariant is violated; it never substitutes the reference provider. Use `--expected-model` to match the configured API model. This checks provider integration and workflow behavior, not general AI quality.
 
 The live verifier calls the running HTTP API and MCP protocol, using a unique synthetic vehicle scope for PM edits and decisions. It checks original downloads, deduplication, analysis, priorities, approval, stale requests, cumulative updates, unchanged evidence, traceability, and audit history. `--real-data` additionally imports the local G60/US feedback, studies, sales, and equipment PDF, runs their pipeline, and verifies source links while preserving existing approvals. Original inputs remain unchanged; verification records remain in the local database. Omit `--real-data` on a clone without BMW's ignored files. Use `--api-url` and `--mcp-url` for custom host ports.
 

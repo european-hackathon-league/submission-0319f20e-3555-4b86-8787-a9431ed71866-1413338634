@@ -11,21 +11,25 @@ Every `actor` column (`audit_events`, `requirement_versions`, `decisions`, and f
 | Format | Kind | Examples |
 | --- | --- | --- |
 | `human:<slug>` | human | `human:troy`, `human:jakob` |
-| `ai:<provider>:<model>` | ai | `ai:openai:<model>`, `ai:reference:v1` (deterministic reference workflow) |
+| `ai:<provider>:<model>` | ai | `ai:openai:<model>`, `ai:reference:v1` (seeded reference identity) |
 | `system:<component>` | system | `system:importer`, `system:migration`, `system:scoring` |
 
 Slugs are lowercase `[a-z0-9-]`. Human roles: `lead_pm`, `pm`, `analyst`, `engineering`, `viewer`.
 
-| Action | Allowed actors |
-| --- | --- |
-| `approve`, `reject` decision | human with role `pm` or `lead_pm` |
-| `postpone`, `challenge` decision | any human |
-| New requirement version | human (PM edit) or ai (proposal), with rationale |
-| Imports, scoring, migrations | system |
+| Action | Database-enforced gate | Current actor convention |
+| --- | --- | --- |
+| `approve`, `reject` decision | active human with role `pm` or `lead_pm` | Request's supplied PM identity |
+| `postpone`, `challenge` decision | active human | Request's supplied human identity |
+| New requirement version | active registered actor; no kind or role restriction | Supplied actor for manual creation/edits; `AI:openai` for OpenAI proposals; `System:reference` for deterministic proposals |
+| Imports | active registered actor when writing the audit event | Request's supplied actor, default `PM` |
+| Scoring | active registered actor when writing the audit event | Actor creating/editing the version, or the supplied actor for explicit rescoring |
+| Migrations | active registered actor when writing the audit event | `system:migration` |
 
-AI and system actors never write `decisions`. The database enforces both rules.
+The database enforces human-only decisions, the PM role gate for approval/rejection, and active actors on history writes. The actor conventions for versions, imports, scoring and migrations are not database-enforced permissions; human imports/scoring and `System:reference` versions are valid.
 
 Legacy: the existing value `PM` (today's default for the `actor` field in API request bodies) is seeded as a human with role `pm`, so current rows and calls stay valid. New code sends an `actors.id` in that same `actor` field; until there is SSO the client chooses it. An unknown actor is not rejected: the database registers it as `discovered` (migration 0007), with the kind taken from the prefix (`ai:` / `AI:` → ai, `system:` / `System:` → system, anything else → human with role `pm`), and `database.cli verify` lists it for a lead PM to review. The API's current `AI:<provider>` and `System:reference` values are therefore AI and system actors. A deactivated actor is refused (`inactive actor`).
+
+OpenAI-generated versions currently use the legacy `AI:openai` actor, without a model suffix. Model and prompt provenance are stored in `analysis_runs` and the `analysis.completed` audit metadata; the version rationale identifies its analysis run. The seeded model-specific actor IDs do not replace that current API convention.
 
 ## 2. Vehicle codes
 

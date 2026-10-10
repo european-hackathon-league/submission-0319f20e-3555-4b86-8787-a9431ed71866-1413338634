@@ -1,0 +1,188 @@
+{
+  "audit_head": {
+    "event_hash": "0ee5e5d44a06a4d68781f375753ba392eec3a00deeb91de57e740f335f25d3f6",
+    "sequence": 315
+  },
+  "created_at": "2026-10-10T19:54:39.027909Z",
+  "file": "app-20261010T195439027909Z-golden.db",
+  "git_commit": "c23de483eb49aac61c97b481647bfcf63bf048fe",
+  "inputs": [
+    {
+      "market": "US",
+      "reference": "E2E-7B1DBD79A1364FEF:initial",
+      "sha256": "c9208f0d3c3925d3dadf3689374461fd20180e3e93dfcda5e4b47c97d91e59a4",
+      "vehicle": "E2E-7B1DBD79A1364FEF"
+    },
+    {
+      "market": "US",
+      "reference": "E2E-7B1DBD79A1364FEF:new-evidence",
+      "sha256": "b89c986a5acef2ccc45c83ea0c33160feeaa2be377d8420c02f5157f26ce2bb9",
+      "vehicle": "E2E-7B1DBD79A1364FEF"
+    },
+    {
+      "market": "US",
+      "reference": "E2E-7B1DBD79A1364FEF:other-vehicle",
+      "sha256": "5607c245d336f949a54474e3b49180b636e82d2fdb53f0e970445cecc6e75277",
+      "vehicle": "E2E-7B1DBD79A1364FEF-OTHER"
+    },
+    {
+      "market": "US",
+      "reference": "E2E-7B1DBD79A1364FEF:unrelated",
+      "sha256": "2a924e7faa8a3a50670f7bb63014c4464ee264cd2336675569482e69dfe296c4",
+      "vehicle": "E2E-7B1DBD79A1364FEF"
+    },
+    {
+      "market": "US",
+      "reference": "E2E-83CC638F53964D33:initial",
+      "sha256": "0f9b6e582f0e64a76c20dfd9a5e7e4bb5460129595479aa0d05410989785ab22",
+      "vehicle": "E2E-83CC638F53964D33"
+    },
+    {
+      "market": "US",
+      "reference": "E2E-83CC638F53964D33:new-evidence",
+      "sha256": "11b13bdbb3655b89b9bf610e90efe104a9ae5249b44ac6a303223e9441a53b1f",
+      "vehicle": "E2E-83CC638F53964D33"
+    },
+    {
+      "market": "US",
+      "reference": "E2E-83CC638F53964D33:other-vehicle",
+      "sha256": "d4e63df215a163e80c1d451fc46564124b79d1bcf65cbdffb9b7a1c43f61a673",
+      "vehicle": "E2E-83CC638F53964D33-OTHER"
+    },
+    {
+      "market": "US",
+      "reference": "E2E-83CC638F53964D33:unrelated",
+      "sha256": "a79a3f383724d248a016660cde656ad9556e87a2c01bc8c8c5ba36f5dc4e2abe",
+      "vehicle": "E2E-83CC638F53964D33"
+    },
+    {
+      "market": "US",
+      "reference": "E2E-F92405FD1AFF42DA:initial",
+      "sha256": "6b2e3743e50a7143be840dd145ec28943fcdc6eca396c772720ab53d3cb0970a",
+      "vehicle": "E2E-F92405FD1AFF42DA"
+    },
+    {
+      "market": "US",
+      "reference": "E2E-F92405FD1AFF42DA:new-evidence",
+      "sha256": "8272b7cd8562248a86752f4c5e9a6107a16ec341a1fec4ca0ed71b74d73b6169",
+      "vehicle": "E2E-F92405FD1AFF42DA"
+    },
+    {
+      "market": "US",
+      "reference": "E2E-F92405FD1AFF42DA:other-vehicle",
+      "sha256": "6d71f61199dca6f0e6c9bee10302856220e25804e56aac4100926f577304f03e",
+      "vehicle": "E2E-F92405FD1AFF42DA-OTHER"
+    },
+    {
+      "market": "US",
+      "reference": "E2E-F92405FD1AFF42DA:unrelated",
+      "sha256": "3dd80024078f2f22dedcc1536d60a53fc375a285a8442a2148bbb27a783011da",
+      "vehicle": "E2E-F92405FD1AFF42DA"
+    },
+    {
+      "market": "US",
+      "reference": "F70_G60_G68_G70_customer_studies.xlsx",
+      "sha256": "652386b8ccea0bec0e9f9b4648e6a971f1dc19d32e26c50111614153701bff17",
+      "vehicle": "G60"
+    },
+    {
+      "market": "US",
+      "reference": "G60_OptionList.PDF",
+      "sha256": "97ee14fae6239473f125d72518b710d72e3a7c5481c2e6b635d3c1f289a2669d",
+      "vehicle": "G60"
+    },
+    {
+      "market": "US",
+      "reference": "G60_feedback_hackathon.xlsx",
+      "sha256": "ffaeb3ab943d299380542c228b3d944ed749bc80af54c75aa30a5e84b221d34f",
+      "vehicle": "G60"
+    },
+    {
+      "market": "US",
+      "reference": "LIVE-AI-8BF3E6443D-initial",
+      "sha256": "9ead827cbcbda8be540ccf011cb31bf46b0ca976fe81d95a4e60dcbfb8a6fd74",
+      "vehicle": "LIVE-AI-8BF3E6443D"
+    },
+    {
+      "market": "US",
+      "reference": "LIVE-AI-8BF3E6443D-update",
+      "sha256": "54b041c5b0274baa4ba84b0fe3c0d14dda61b2c9306e082411ade56a36054920",
+      "vehicle": "LIVE-AI-8BF3E6443D"
+    },
+    {
+      "market": "US",
+      "reference": "LIVE-AI-E5AEBA0FB47045E3:charging-problem",
+      "sha256": "14796bdd536e53852a404c1dd4f3fa9818bef28873c53cba45767251929dd743",
+      "vehicle": "LIVE-AI-E5AEBA0FB47045E3"
+    },
+    {
+      "market": "US",
+      "reference": "LIVE-AI-E5AEBA0FB47045E3:charging-strength",
+      "sha256": "2473f04a0961d9e1df576e634d53fa2689b3c7c96a84df9abefb384574a10171",
+      "vehicle": "LIVE-AI-E5AEBA0FB47045E3"
+    },
+    {
+      "market": "US",
+      "reference": "LIVE-AI-E5AEBA0FB47045E3:charging-update",
+      "sha256": "e83f6730d4f6d8f83d5a0009a619dd88f5909827150405dedfd4f868702115d1",
+      "vehicle": "LIVE-AI-E5AEBA0FB47045E3"
+    },
+    {
+      "market": "US",
+      "reference": "LIVE-AI-E5AEBA0FB47045E3:comfort-strength",
+      "sha256": "393882eaf3287243003025119107d832d64727ccb1801a8bd4df4a3bf3a90f35",
+      "vehicle": "LIVE-AI-E5AEBA0FB47045E3"
+    },
+    {
+      "market": "US",
+      "reference": "https://example.com",
+      "sha256": "425ae437fe0088051a77b2fb25e48525bcd9fb3096020f39f68b4a4c1a73dbfe",
+      "vehicle": "E2E-WEB"
+    },
+    {
+      "market": "US",
+      "reference": "sales_volumes.xlsx",
+      "sha256": "43db87dd0b52412a8912069a45c97b3b15900b5a00d3b79a5ec65ddcee1f49cf",
+      "vehicle": "G60"
+    },
+    {
+      "market": "US",
+      "reference": "verification.xlsx",
+      "sha256": "8cf5d891a8ccc4dc3763fead3d417ea0081688dc01e36c17b21917b97802c789",
+      "vehicle": "E2E-7B1DBD79A1364FEF"
+    },
+    {
+      "market": "US",
+      "reference": "verification.xlsx",
+      "sha256": "e5f18e5165b3e7313bbda8c357968886cd1eb87c798b872899280a1d56e7496a",
+      "vehicle": "E2E-83CC638F53964D33"
+    },
+    {
+      "market": "US",
+      "reference": "verification.xlsx",
+      "sha256": "8b9f3a56a070fd72dea1694f9de93e5e6c8e29a1365dd27e70231265910b5d54",
+      "vehicle": "E2E-F92405FD1AFF42DA"
+    }
+  ],
+  "label": "golden",
+  "row_counts": {
+    "actors": 12,
+    "analysis_runs": 18,
+    "audit_events": 315,
+    "decisions": 26,
+    "evidence": 5242,
+    "finding_evidence": 39822,
+    "findings": 173,
+    "imports": 26,
+    "markets": 6,
+    "requirement_findings": 72,
+    "requirement_versions": 39,
+    "requirements": 27,
+    "review_items": 10,
+    "scores": 43,
+    "sources": 26,
+    "vehicles": 13
+  },
+  "sha256": "74a9a36b4b0ff338339ed75caa56c1a7835d84798a2e50f4bf5a8a8d579abe3e",
+  "user_version": 7
+}
