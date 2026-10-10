@@ -32,6 +32,8 @@ IMPLEMENTED_TOOLS = {
     "get_requirement_versions", "trace_requirement", "create_requirement", "edit_requirement",
     "score_requirement", "decide_requirement", "list_reviews", "list_audit", "get_workspace",
     "search_market_evidence", "fetch_market_evidence", "import_web_candidate",
+    "list_actors", "create_pm_workflow", "list_pm_workflows", "get_pm_workflow",
+    "run_pm_workflow", "complete_pm_workflow", "get_pm_workflow_brief",
 }
 PRIVATE_VALUES = {
     "OPENAI_API_KEY": "synthetic-openai-secret-do-not-embed",
@@ -102,7 +104,7 @@ def payload(result):
 async def test_apps_attach_to_existing_read_tools_without_changing_tool_contracts(app_session):
     async with app_session() as session:
         tools = {tool.name: wire(tool) for tool in (await session.list_tools()).tools}
-        assert len(tools) == 30
+        assert len(tools) == len(IMPLEMENTED_TOOLS)
         assert set(tools) == IMPLEMENTED_TOOLS
         links = {
             name: tool["_meta"]["ui"]["resourceUri"]
@@ -118,7 +120,7 @@ async def test_apps_attach_to_existing_read_tools_without_changing_tool_contract
         assert all(tool["inputSchema"]["additionalProperties"] is False for tool in tools.values())
         assert set(tools["get_requirement"]["inputSchema"]["properties"]) == {"requirement_id"}
         assert set(tools["trace_requirement"]["inputSchema"]["properties"]) == {
-            "requirement_id", "version_id", "limit", "offset",
+            "requirement_id", "version_id", "score_id", "limit", "offset",
         }
         assert set(tools["trace_requirement"]["inputSchema"]["required"]) == {"requirement_id"}
         assert set(tools["decide_requirement"]["inputSchema"]["required"]) == {
@@ -157,7 +159,7 @@ async def test_missing_bundle_is_an_actionable_safe_protocol_error(app_session, 
         directory, _ = ui_files
         (directory / APP_RESOURCES[uri]).unlink()
         # Missing builds do not prevent tool/resource discovery or unrelated reads.
-        assert len((await session.list_tools()).tools) == 30
+        assert len((await session.list_tools()).tools) == len(IMPLEMENTED_TOOLS)
         assert {str(resource.uri) for resource in (await session.list_resources()).resources} == set(APP_RESOURCES)
         with pytest.raises(MCPError) as caught:
             await session.read_resource(uri)
