@@ -4,7 +4,10 @@ BMW — AI for Product Decision Making, EHL Munich, 10–11 October 2026.
 
 ## Run the backend
 
+Copy `.env.example` to `.env` before starting. Each teammate can set local host ports in `.env`; keep the container paths and MCP API URL on the Compose network.
+
 ```sh
+cp .env.example .env
 docker compose up --build -d
 ```
 

@@ -4,10 +4,10 @@ services:
       context: .
       dockerfile: server/Dockerfile
     environment:
-      DB_PATH: /app/database/local/app.db
-      SNAPSHOT_DIR: /app/database/snapshots
+      DB_PATH: ${DB_PATH:-/app/database/local/app.db}
+      SNAPSHOT_DIR: ${SNAPSHOT_DIR:-/app/database/snapshots}
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:${API_PORT:-8000}:8000"
     volumes:
       - ./database/local:/app/database/local
       - ./database/snapshots:/app/database/snapshots
@@ -22,9 +22,9 @@ services:
       context: .
       dockerfile: mcp_server/Dockerfile
     environment:
-      API_BASE_URL: http://api:8000
+      API_BASE_URL: ${API_BASE_URL:-http://api:8000}
     ports:
-      - "127.0.0.1:8001:8001"
+      - "127.0.0.1:${MCP_PORT:-8001}:8001"
     depends_on:
       api:
         condition: service_healthy
