@@ -2301,9 +2301,10 @@ summary {
 }
 .overview-shell .workspace-header {
   color: #eaf3ff;
-  background: rgb(11 20 34 / 72%);
-  backdrop-filter: blur(12px);
+  background: transparent;
+  transition: background-color 180ms ease;
 }
+.overview-shell .workspace-header.is-scrolled { background: #0b1422; }
 .overview-shell .global-search { color: #c9d9ed; background: rgb(16 36 62 / 60%); border-color: rgb(165 201 244 / 28%); }
 .overview-shell .global-search:hover { color: #fff; border-color: rgb(165 201 244 / 60%); }
 .overview-shell .global-search kbd { color: #c9d9ed; border-color: rgb(165 201 244 / 28%); }

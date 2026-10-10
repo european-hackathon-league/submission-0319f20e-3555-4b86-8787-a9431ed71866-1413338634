@@ -172,6 +172,7 @@ export function WorkspaceApp({
     setDensity(value ? "compact" : "comfortable");
   const [command, setCommand] = useState(false);
   const [search, setSearch] = useState("");
+  const [headerScrolled, setHeaderScrolled] = useState(false);
   const workspace = useQuery({
     queryKey: ["workspace", qs],
     queryFn: ({ signal }) => api<Workspace>(`/workspace?${qs}`, { signal }),
@@ -209,6 +210,13 @@ export function WorkspaceApp({
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
+  useEffect(() => {
+    if (section !== "overview") return;
+    const update = () => setHeaderScrolled(window.scrollY > 8);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, [section]);
   const scopes = workspace.data?.available_scopes || [];
   const options = scopes.some(
     (s) => s.vehicle === scope.vehicle && s.market === scope.market,
@@ -359,7 +367,7 @@ export function WorkspaceApp({
         </Sidebar>
         <SidebarInset className={section === "overview" ? "overview-shell" : undefined}>
           {section === "overview" && <MotionField />}
-          <header className="workspace-header">
+          <header className={`workspace-header ${section === "overview" && headerScrolled ? "is-scrolled" : ""}`}>
             <div className="flex items-center gap-4">
               <SidebarTrigger />
               <span className="header-page">{title}</span>
