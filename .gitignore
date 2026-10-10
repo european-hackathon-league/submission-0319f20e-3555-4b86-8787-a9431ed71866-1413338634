@@ -1,0 +1,8 @@
+# Original source data stays local, including every Google Drive input.
+/archive/
+.DS_Store
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
