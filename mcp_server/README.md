@@ -44,6 +44,8 @@ Connect a Streamable HTTP MCP client to `http://127.0.0.1:8001/mcp`.
 For stdio, launch the same command with `MCP_TRANSPORT=stdio` and pass the environment
 through the client's configuration. See [`.env.example`](.env.example) for names;
 the process reads environment variables, not `.env` files automatically.
+If you have saved the key in a Git-ignored repository-root `.env`, load it explicitly
+by replacing `uv run` with `uv run --env-file .env` in the server or smoke commands.
 
 Configuration:
 
@@ -206,9 +208,13 @@ uv run python -m mcp_server.smoke_exa
 
 It saves candidate metadata under the public cache directory. It requires a key and
 uses a fresh request cache; do not make a live search necessary for the whole demo.
-The implementation session had no configured key, so live-provider validation was
-not performed. Docker configuration was checked; runtime stack validation requires
-a running Docker daemon, which was unavailable in this environment.
+One live search passed on 10 October 2026, returning an unreviewed BMW USA 5 Series
+lead with an excerpt and no publication date. Exa reported a $0.007 request cost.
+Live `/contents` extraction and importing that live source have not been exercised;
+the automated import tests use synthetic cached responses. See the
+[verification record](VERIFICATION.md) for scope and provenance. Docker configuration
+was checked; runtime stack validation requires a running Docker daemon, which was
+unavailable in this environment.
 
 Official provider contracts: [Exa Search](https://exa.ai/docs/reference/search) and
 [Exa Contents](https://exa.ai/docs/reference/get-contents). Search nests highlights

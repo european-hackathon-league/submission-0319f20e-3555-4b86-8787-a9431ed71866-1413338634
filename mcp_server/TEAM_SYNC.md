@@ -59,8 +59,9 @@ health/log checks when its daemon is available without disturbing another stack.
 
 Never commit private BMW inputs, live databases, cache contents or credentials.
 Monitoring must not consume Exa credits or change billing. Latest implementation
-verification: [452 passing tests](VERIFICATION.md). Live Exa validation still needs
-an environment key, and Docker runtime validation needs a running daemon.
+verification: [452 passing tests and one live Exa search](VERIFICATION.md).
+Live `/contents` and live-source import remain untested; Docker runtime validation
+needs a running daemon. Git monitoring never invokes these provider checks.
 
 Frequent fetches and small pushes reduce stale integration work; they cannot
 eliminate conflicts or guarantee another teammate's agent is also fetching.

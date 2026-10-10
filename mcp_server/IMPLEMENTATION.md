@@ -73,7 +73,9 @@ Remaining owner dependencies / limitations:
   for Compose; current MCP service passes API_BASE_URL and API_TIMEOUT_SECONDS.
 - [ ] Troy: run Compose with health/log/persistence checks once its Docker daemon
   is available. `docker compose config --quiet` passes; the daemon is absent here.
-- [ ] Alex: run one live Exa smoke when EXA_API_KEY is configured; no key was present.
+- [x] Alex: one bounded live Exa search passed on 10 October 2026; provider-reported
+  cost $0.007. See [verification record](VERIFICATION.md). Live `/contents` and
+  live-source import remain untested; the search lead is unreviewed and unpersisted.
 - [ ] Team: validate actual BMW evidence, conflicts, uncertainty, future assumptions,
   market applicability and explained priorities through real PM review. Existing
   deterministic workflow tests are not proof of substantive research quality or
