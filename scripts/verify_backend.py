@@ -333,8 +333,10 @@ class Verification:
         # to older adapters whose tool schemas reject unknown fields.
         score_guard = "expected_score_id" in tool_definitions["score_requirement"].input_schema["properties"]
         score_arguments = {"expected_score_id": prior_score["id"]} if score_guard else {}
-        await self.mcp("score_requirement", requirement_id=charging["id"], expected_version_id=charging["current_version_id"],
-                       actor=ACTOR, rationale="Confirm recorded rubric", weights=prior_score["weights"], **score_arguments)
+        revised_weights = {key: float(key == "customer_impact") for key in prior_score["weights"]}
+        revised_score = await self.mcp("score_requirement", requirement_id=charging["id"], expected_version_id=charging["current_version_id"],
+                       actor=ACTOR, rationale="Emphasize customer impact", weights=revised_weights, **score_arguments)
+        require(revised_score["id"] != prior_score["id"], "Changed rubric did not record a new score")
         if score_guard:
             await self.mcp("score_requirement", requirement_id=charging["id"], expected_version_id=charging["current_version_id"],
                            actor=ACTOR, rationale="Stale scoring rubric check", weights=prior_score["weights"],

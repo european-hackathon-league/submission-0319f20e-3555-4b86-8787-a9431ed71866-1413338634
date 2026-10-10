@@ -14,3 +14,17 @@ Implementation milestones:
 Each milestone is independently reviewed by GPT-6.1 Sol before integration into main. Parallel agents use separate worktrees. Real-data inputs, database contents, and generated snapshots remain ignored.
 
 The deterministic provider is a reproducible reference workflow and is labeled as such. Real AI execution requires `OPENAI_API_KEY` and `OPENAI_MODEL`; it must never silently fall back to reference output.
+
+Implemented backend components map to the planned PM process:
+
+| Component | Implementation | Verification |
+| --- | --- | --- |
+| Persistence and history | `database/store.py`, `database/workflow.sql` | Migration, rollback, concurrent startup and append-only regression tests |
+| Source import | `server/importers.py`, `server/evidence.py`, `server/web_fetch.py` | Generated fixtures, all eight original BMW input formats, scoped live imports and original download integrity |
+| Evidence analysis | `server/analysis_engine.py` | Reference replay, positive preservation, structured provider mocks, citation/target/coverage validation |
+| Requirements and prioritization | `server/requirements.py` | Exact version/score decisions, recalculated edits, weighting, source trace and approvals |
+| Change assessment | `server/pipeline.py` | Labeled relevant/unrelated updates, stale and partial analysis, concurrency, PM edit and approved-state preservation |
+| PM workspace/API/MCP | `server/main.py`, `mcp_server/main.py` | Live `scripts/verify_backend.py`; API and actual Streamable HTTP MCP protocol |
+| Evaluation | `server/evaluation.py`, `scripts/evaluate_pipeline.py` | Labeled synthetic change precision/recall, traceability and elapsed decision metrics |
+
+Run all checks using the root README. No original BMW data, local database, audit content, or secret is committed. The graphical frontend and 3D presentation remain outside this backend implementation request.
