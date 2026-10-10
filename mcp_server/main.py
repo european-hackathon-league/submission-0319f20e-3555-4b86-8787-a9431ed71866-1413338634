@@ -16,6 +16,7 @@ from mcp.server import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import BaseModel, ConfigDict, Field
 
+from mcp_server.apps import SCORING_UI, TRACE_UI, register_app_resources
 from mcp_server.research_tools import register_research_tools
 
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000").rstrip("/")
@@ -284,7 +285,7 @@ async def list_requirements(
         vehicle=vehicle, market=market, status=status, needs_review=needs_review, limit=limit, offset=offset))
 
 
-@mcp.tool()
+@mcp.tool(meta={"ui": {"resourceUri": SCORING_UI}})
 async def get_requirement(requirement_id: str) -> dict:
     """Compare the current proposal and approved version, with scores and review items."""
     return await api_request("GET", f"/requirements/{_id(requirement_id)}")
@@ -296,7 +297,7 @@ async def get_requirement_versions(requirement_id: str) -> list[dict]:
     return await api_request("GET", f"/requirements/{_id(requirement_id)}/versions")
 
 
-@mcp.tool()
+@mcp.tool(meta={"ui": {"resourceUri": TRACE_UI}})
 async def trace_requirement(
     requirement_id: str, version_id: str | None = None, limit: int = 100, offset: int = 0,
 ) -> dict:
@@ -376,6 +377,7 @@ async def get_workspace(vehicle: str = "G60", market: str = "US") -> dict:
 
 
 register_research_tools(mcp)
+register_app_resources(mcp)
 
 
 if __name__ == "__main__":
