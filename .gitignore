@@ -8,6 +8,9 @@
 !.env.example
 .venv/
 __pycache__/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
 /database/local/*
 !/database/local/.gitkeep
 /database/snapshots/*
