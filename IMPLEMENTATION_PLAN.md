@@ -24,7 +24,7 @@ flowchart LR
 
 The database folder is **not a third running service**: SQLite runs inside the API process. Compose starts the `api` and `mcp` services, waits for the API health check before starting MCP, and persists the database through bind mounts. The BMW input files remain outside the images in `data/`.
 
-The backend workflow is implemented. BMW file import, reference/AI analysis, requirements, prioritization, change assessment, and PM workspace operations share this runtime. The graphical PM workspace remains a separate frontend; its data and actions are exposed by the backend. See [backend API and decisions](server/README.md) and the executable [live verifier](scripts/verify_backend.py).
+The backend workflow is implemented. BMW file import, reference/AI analysis, requirements, prioritization, change assessment, and PM workspace operations share this runtime. The graphical PM workspace remains a separate frontend; its data and actions are exposed by the backend. Two interactive MCP Apps now provide scoring/decision review and trace exploration inside a compatible MCP host; see [widget setup](notes/mcp-apps-widgets.md). See [backend API and decisions](server/README.md) and the executable [live verifier](scripts/verify_backend.py).
 
 ## Components and connections
 

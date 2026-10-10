@@ -84,10 +84,12 @@ Remaining owner dependencies / limitations:
 - [x] Preserve upstream `expected_score_id` in the scoring tool and test version/score locks.
 - [ ] Troy: agree Exa environment passthrough and a persistent public-cache mount
   for Compose; current MCP service passes API_BASE_URL and API_TIMEOUT_SECONDS.
-- [ ] Troy: run Compose with health/log/persistence checks once its Docker daemon
-  is available. `docker compose config --quiet` passes; the daemon is absent here.
+- [x] Alex: Docker is available. Built and started an isolated Compose API/MCP
+  stack on ports 18000/18001 with synthetic inputs; real MCP resource/tool reads
+  and database integrity verification pass. See the latest verification record.
 - [ ] Troy: exclude local credential files such as `.env` from Docker build context;
-  the current `.dockerignore` does not exclude them. No image build ran here.
+  the root `.dockerignore` does not exclude them. MCP now uses an allowlisted
+  Dockerfile-specific context; API validation used a separate committed-files-only context.
 - [ ] Troy: prevent direct SQL from clearing both approval pointers while leaving
   an approved status; current integrity verification accepts that state. Existing
   backend routes do not clear these pointers, and MCP lifecycle tests pass.
@@ -96,10 +98,12 @@ Remaining owner dependencies / limitations:
 - [x] Alex: one bounded live Exa search passed on 10 October 2026; provider-reported
   cost $0.007. See [verification record](VERIFICATION.md). Live `/contents` and
   live-source import remain untested; the search lead is unreviewed and unpersisted.
-- [ ] Alex: implement and validate the scoring/decision and trace widgets from
-  the MCP Apps guide in a separately scoped implementation stream. These provide
-  a PM interface in an MCP host; autonomous scouting and a Claude analysis provider
-  remain separate work.
+- [x] Alex: implement scoring/decision and trace widgets on `codex/mcp-apps`,
+  including static resources, exact score/version locks, paging and Docker builds.
+  These provide a PM interface; autonomous scouting and another analysis provider
+  remain separate work. See the MCP Apps verification record for browser checks.
+- [ ] Alex/user: final acceptance inside the user’s Claude host. Local protocol and
+  browser validation do not establish that a particular Claude account is connected.
 - [ ] Team: validate actual BMW evidence, conflicts, uncertainty, future assumptions,
   market applicability and explained priorities through real PM review. Existing
   deterministic workflow tests are not proof of substantive research quality or
