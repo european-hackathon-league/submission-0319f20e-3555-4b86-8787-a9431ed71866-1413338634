@@ -8,3 +8,4 @@ database/local/*
 database/snapshots/*
 **/__pycache__
 **/*.pyc
+!notes/source-inventory.json

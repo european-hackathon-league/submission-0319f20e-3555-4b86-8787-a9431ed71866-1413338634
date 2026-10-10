@@ -32,3 +32,21 @@ services:
     depends_on:
       api:
         condition: service_healthy
+
+  # Read-only browser over a snapshot (never the live database): docker compose --profile inspect up -d inspect
+  inspect:
+    profiles: ["inspect"]
+    image: datasetteproject/datasette:0.65.1
+    entrypoint: ["/inspect/serve.sh"]
+    environment:
+      INSPECT_DB: ${INSPECT_DB:-}
+    ports:
+      - "127.0.0.1:${INSPECT_PORT:-8002}:8001"
+    volumes:
+      - ./database/snapshots:/snapshots:ro
+      - ./database/inspect:/inspect:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/-/versions.json', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10

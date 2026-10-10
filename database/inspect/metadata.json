@@ -1,0 +1,30 @@
+{
+  "title": "BMW product evidence (read-only snapshot)",
+  "description": "Immutable copy of a database snapshot. Requirement → version → finding → evidence → source, with the audit trail.",
+  "databases": {
+    "bmw": {
+      "queries": {
+        "requirements": {
+          "title": "Requirement list",
+          "sql": "SELECT key, vehicle, market, status, title, score_total, rank, evidence_grade, finding_count, evidence_count, source_count, last_decision_action, last_decision_actor, open_review_count FROM v_requirement_list WHERE (:vehicle = '' OR vehicle = :vehicle) AND (:market = '' OR market = :market) ORDER BY vehicle, market, rank IS NULL, rank, key"
+        },
+        "trace": {
+          "title": "Trace a requirement to its sources",
+          "sql": "SELECT key, version, relation, finding_summary, evidence_content, evidence_location, source_title, source_original_path FROM v_requirement_trace WHERE key = :key ORDER BY version, finding_id, relation DESC"
+        },
+        "timeline": {
+          "title": "Audit timeline for a requirement",
+          "sql": "SELECT t.sequence, t.created_at, t.actor_name, t.actor_role, t.action, t.entity_type, t.rationale, t.event_hash FROM v_audit_timeline t JOIN requirements r ON r.id = t.requirement_id WHERE r.key = :key ORDER BY t.sequence"
+        },
+        "topic_markets": {
+          "title": "Same topic across markets",
+          "sql": "SELECT vehicle, topic, market, key, status, score_total, evidence_grade FROM v_topic_markets WHERE (:vehicle = '' OR vehicle = :vehicle) ORDER BY vehicle, topic, market"
+        },
+        "open_reviews": {
+          "title": "Needs review",
+          "sql": "SELECT key, vehicle, market, reason, suggested_action, created_at FROM v_open_reviews ORDER BY created_at"
+        }
+      }
+    }
+  }
+}

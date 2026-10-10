@@ -151,16 +151,18 @@ Interface contract to agree **before** parallel work: [notes/database-contract.m
 
 ## Sequence and checks
 
+Status 10 Oct: milestones 1–6 done on `codex/database`. A real-data `rebuild` of G60/US imports 5,218 evidence records from the 4 matching inputs (all 8 SHA-256s match) and verifies clean. Access events: the API still writes `evidence.viewed` / `source.downloaded` with actor `PM`; renaming to `access.*` and passing the real actor is a backend change.
+
 | # | Milestone (one commit each) | Done when | Effort |
 | --- | --- | --- | --- |
 | 0 | ~~Restore `data/` from Drive; verify SHA-256 against inventory~~ | Done 10 Oct: all 8 inputs match | — |
-| 1 | Migration runner + 0003 reference/people + seed | v2 DB upgrades cleanly; existing tests green; unknown actor rejected; unknown market registered as `discovered` | 1–1.5 h |
-| 2 | 0004 decision gates + requirement keys | Tests: AI approve fails; approval without decision fails; PM approve succeeds and is audited | 1 h |
-| 3 | 0005 audit hash chain + access events + `verify` | Tampering with a copied DB is detected at the exact sequence | 45 min |
-| 4 | 0006 views | A single query traces one G60/US requirement to sheet + row | 45 min |
-| 5 | CLI: snapshot/manifest/restore/verify/export/rebuild | Round-trip snapshot → restore → verify gives identical counts and chain head | 1 h |
-| 6 | Compose: `inspect` profile, `.env.example`, README | `docker compose up --build`, `ps` healthy, logs clean; Datasette shows the trace | 30 min |
-| 7 | Golden snapshot + committed manifest | After the first end-to-end requirement exists | 10 min |
+| 1 | ✅ Migration runner + 0003 reference/people + seed | v2 DB upgrades cleanly; existing tests green; unknown actor rejected; unknown market registered as `discovered` | 1–1.5 h |
+| 2 | ✅ 0004 decision gates + requirement keys (assigned by trigger) | Tests: AI approve fails; approval without decision fails; PM approve succeeds and is audited | 1 h |
+| 3 | ✅ 0005 audit hash chain + access-event index + `verify` | Tampering with a copied DB is detected at the exact sequence | 45 min |
+| 4 | ✅ 0006 views | A single query traces one G60/US requirement to sheet + row | 45 min |
+| 5 | ✅ CLI: snapshot/manifest/restore/verify/export/rebuild (analysis replay pending persisted runs) | Round-trip snapshot → restore → verify gives identical counts and chain head | 1 h |
+| 6 | ✅ Compose: `inspect` profile, `.env.example`, README | `docker compose up --build`, `ps` healthy, logs clean; Datasette shows the trace | 30 min |
+| 7 | ⏳ Golden snapshot + committed manifest (blocked on backend milestone 4) | After the first end-to-end requirement exists | 10 min |
 | — | Stretch: `postgres` profile loading a snapshot | Only if 0–7 are done | cut first |
 
 Checks before every commit: `uv run pytest`, `uv run ruff check`, and for milestones 5–6 `docker compose up --build -d` + `docker compose ps` + `docker compose logs api`. Do not stop a stack another worker is using.
