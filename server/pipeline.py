@@ -109,6 +109,22 @@ def evidence_signature(connection, finding_ids):
     return finding_interpretations(connection, finding_ids)
 
 
+def evidence_roles(connection, finding_ids):
+    """Stable decision evidence: model wording and grouping are not new facts."""
+    return sorted({(finding["topic"], finding["kind"], relation, evidence_id)
+                   for finding in finding_interpretations(connection, finding_ids)
+                   for relation in ("supports", "conflicts") for evidence_id in finding[relation]})
+
+
+def same_analysis_contract(connection, version_id, run):
+    previous = connection.execute(
+        "SELECT a.provider,a.model,a.prompt_version FROM analysis_runs a "
+        "JOIN findings f ON f.run_id=a.id JOIN requirement_findings rf ON rf.finding_id=f.id "
+        "WHERE rf.version_id=? ORDER BY a.created_at DESC,a.id DESC LIMIT 1", (version_id,),
+    ).fetchone()
+    return previous is not None and tuple(previous) == (run["provider"], run["model"], run["prompt_version"])
+
+
 def pm_ownership(connection, requirement_id):
     """Remember explicit PM edits even if a later generated proposal matches them."""
     fields, pinned_findings = set(), set()
@@ -148,6 +164,7 @@ def generate_requirements(command: GenerateRequest, require_cumulative=False):
                 raise HTTPException(409, "Evidence changed during analysis; rerun cumulative analysis before generating")
         findings = run["findings"]
         created, updated, unchanged, requirements = [], [], [], []
+        unchanged_reasons = {}
         for proposal in run["result"]["proposals"]:
             finding_ids = [findings[index]["id"] for index in proposal["finding_indexes"]]
             try:
@@ -183,8 +200,20 @@ def generate_requirements(command: GenerateRequest, require_cumulative=False):
                             supplied_sources.update(sources)
                 proposed_signature = evidence_signature(connection, finding_ids)
                 same_content = content == {key: previous[key] for key in CONTENT_FIELDS}
-                if previous_signature == proposed_signature and same_content:
+                prior_evidence = {e["id"] for e in evidence_for_findings(connection, previous["finding_ids"])}
+                stable_evidence = (
+                    run["provider"] == "openai"
+                    and same_analysis_contract(connection, previous["id"], run)
+                    and prior_evidence.issubset(set(run["result"].get("analyzed_evidence_ids", [])))
+                    and evidence_roles(connection, previous["finding_ids"]) == evidence_roles(connection, finding_ids)
+                )
+                if (previous_signature == proposed_signature and same_content) or stable_evidence:
                     unchanged.append(requirement["id"])
+                    if stable_evidence and not (previous_signature == proposed_signature and same_content):
+                        unchanged_reasons[requirement["id"]] = (
+                            "Supporting/conflicting evidence, classifications, model and prompt are unchanged; "
+                            "retained the reviewed wording, targets and score instead of model variation."
+                        )
                     result = requirement_detail(connection, requirement["id"])
                 else:
                     # A scoped historical analysis must not remove newer evidence from an existing decision.
@@ -217,8 +246,10 @@ def generate_requirements(command: GenerateRequest, require_cumulative=False):
                     result = requirement_detail(connection, requirement["id"])
             requirements.append(result)
         audit(connection, "analysis", run["id"], "requirements.generated", command.actor,
-              "Defined requirements and assessed affected decisions", after={"created": created, "updated": updated, "unchanged": unchanged})
-        return {"run_id": run["id"], "created": created, "updated": updated, "unchanged": unchanged, "requirements": requirements}
+              "Defined requirements and assessed affected decisions", after={"created": created, "updated": updated,
+              "unchanged": unchanged, "unchanged_reasons": unchanged_reasons})
+        return {"run_id": run["id"], "created": created, "updated": updated, "unchanged": unchanged,
+                "unchanged_reasons": unchanged_reasons, "requirements": requirements}
 
 
 @router.post("/analyses", status_code=201)
