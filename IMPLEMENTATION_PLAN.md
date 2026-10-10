@@ -6,12 +6,13 @@ Start with **G60 / US**, while carrying vehicle and market through every compone
 
 ## Current setup
 
-Docker Compose (`compose.yml`) runs two Python services and keeps the SQLite database in a third folder on the host:
+Docker Compose (`compose.yml`) runs two Python services, an optional Next.js frontend, and keeps SQLite on the host:
 
 | Folder | Role | Current implementation |
 | --- | --- | --- |
 | `mcp_server/` | MCP interface for AI clients. It calls the Python API over the Compose network rather than opening the database directly. | Streamable HTTP on port 8001, exposing import, analysis, requirements, scoring, decisions, updates, trace, review and audit tools. |
 | `server/` | Ordinary Python/FastAPI server and the application's business logic. It owns validation, workflows, and database access. | HTTP API on port 8000 implementing both the initial and cumulative update workflows, plus PM workspace data and evaluation metrics. |
+| `web/` | BMW product-planning client, calling the same API as MCP. | Next.js on port 3003 with the `web` Compose profile: overview, requirements, trace, human decisions, evidence, imports, workflows, markets and audit. |
 | `database/` | Shared persistence code, SQLite schema, local database file, and snapshots. | Sources, exact evidence locations, findings, immutable requirement versions and scores, review items, decisions and audit events. Local storage persists across rebuilds. |
 
 ```mermaid
@@ -24,7 +25,7 @@ flowchart LR
 
 The database folder is **not a third running service**: SQLite runs inside the API process. Compose starts the `api` and `mcp` services, waits for the API health check before starting MCP, and persists the database through bind mounts. The BMW input files remain outside the images in `data/`.
 
-The backend workflow is implemented. BMW file import, reference/AI analysis, requirements, prioritization, change assessment, and PM workspace operations share this runtime. A same-origin PM workflow cockpit at `/pm/` now covers import, agent stages, trace, edit, decisions and frozen planning briefs. The broader enterprise frontend and 3D twin remain separate roadmap items. Two interactive MCP Apps now provide scoring/decision review and trace exploration inside a compatible MCP host; see [widget setup](notes/mcp-apps-widgets.md). See [backend API and decisions](server/README.md) and the executable [live verifier](scripts/verify_backend.py).
+The backend workflow is implemented. BMW file import, reference/AI analysis, requirements, prioritization, change assessment, and PM workspace operations share this runtime. A same-origin PM workflow cockpit at `/pm/` now covers import, agent stages, trace, edit, decisions and frozen planning briefs. The [BMW frontend](web/README.md) now implements the client workflow and traceability screens with an exact reference checkpoint (`33bc645`). Production SSO/enterprise extensions remain roadmap items; the 3D car and configurator are explicitly excluded from this delivery. Two interactive MCP Apps now provide scoring/decision review and trace exploration inside a compatible MCP host; see [widget setup](notes/mcp-apps-widgets.md). See [backend API and decisions](server/README.md) and the executable [live verifier](scripts/verify_backend.py).
 
 ## Components and connections
 

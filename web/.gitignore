@@ -1,0 +1,31 @@
+# Dependencies and generated output
+node_modules/
+.next/
+out/
+dist/
+build/
+next-env.d.ts
+*.tsbuildinfo
+
+# Local credentials and deployment settings
+.env
+.env.*
+*.pem
+.vercel/
+
+# Private financial exports and local data
+*.csv
+*.CSV
+*.xlsx
+*.pdf
+/data/
+/imports/
+supabase/.temp/
+
+# Local machine files
+.DS_Store
+*.log
+
+# Isolated BMW preview database
+.bmw-demo/
+artifacts/
