@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
 import { ArrowUpRight, Info } from "lucide-react";
-import { MotionField } from "@/components/motion-field";
 import { fmt } from "@/lib/api";
 import { useWorkspace } from "./context";
 import { Empty, ScoreLabel, Status } from "./shared";
@@ -35,7 +34,6 @@ export function Overview() {
   return (
     <>
       <section className="overview-intro demo-hero" aria-labelledby="overview-title">
-        <MotionField />
         <div className="overview-intro-copy">
           <p className="overview-eyebrow">Precision in every decision</p>
           <h1 id="overview-title">Evidence to decision</h1>
@@ -106,6 +104,12 @@ export function Overview() {
           </strong>{" "}
           current requirements link to source records. Links show provenance;
           priority and evidence quality still need separate PM review.
+          {scope.vehicle === "G60" && scope.market === "US" && (
+            <span className="source-concentration-note">
+              In the supplied G60 / US inventory, 72.7% of unique feedback IDs
+              come from Source B. Sample counts are not market prevalence.
+            </span>
+          )}
         </p>
         <Link href={`${base}/evidence`}>Explore evidence <ArrowUpRight size={13} /></Link>
       </div>

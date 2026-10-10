@@ -132,16 +132,17 @@
 /* Z layers: canvas 0, content 1, header 10, library overlays 50, skip link 100. */
 .workspace-header {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  min-height: 65px; padding: 12px 32px; border-bottom: 1px solid var(--border);
+  min-height: 64px; padding: 10px 32px;
   background: var(--background); position: sticky; top: 0; z-index: 10;
 }
-.workspace-status { font: 10px var(--font-plex-mono), monospace; color: var(--muted-foreground); border: 1px solid var(--border); padding: 5px 7px; white-space: nowrap; }
 .workspace-content { width: 100%; max-width: 1660px; margin: 0 auto; padding: 28px 32px 56px; min-width: 0; }
 .workspace-content > main { display: flex; flex-direction: column; gap: 24px; }
 .workspace-content > main > * { margin-block: 0; }
 .skip-link { position: fixed; left: 12px; top: -100px; z-index: 100; padding: 12px 20px; background: var(--primary); color: var(--primary-foreground); }
 .skip-link:focus { top: 12px; }
 [data-slot="sidebar-inset"] { min-width: 0; background: var(--background); }
+.workspace-sidebar,
+[data-slot="sidebar"][data-mobile="true"] { border-right: 0; }
 [data-slot="breadcrumb-page"] { font-size: 12px; font-weight: 500; }
 [data-slot="sidebar-header"] { gap: 0; padding: 0; }
 .brand-lockup { display: flex; align-items: center; gap: 11px; height: 94px; padding: 0 24px; white-space: nowrap; overflow: hidden; }
@@ -155,21 +156,24 @@
 .account-switcher-wrap [data-slot="sidebar-menu-button"] { padding: 10px; min-height: 60px; }
 .account-icon { color: #d4deec; background: #273243; }
 [data-slot="sidebar-content"] { gap: 0; }
-[data-slot="sidebar-group-label"] { margin: 0 20px; height: 28px; padding: 0 8px; font: 9px var(--font-plex-mono), monospace; text-transform: uppercase; letter-spacing: .12em; color: #8f9bad; }
-[data-slot="sidebar-group"] { padding: 4px 16px; }
-[data-slot="sidebar-menu"] { gap: 5px; }
-[data-slot="sidebar-menu-button"] { min-height: 40px; padding-inline: 12px; font-size: 13px; color: var(--sidebar-foreground); }
-[data-slot="sidebar-menu-button"][data-active] { color: #a5cbff; background: #192b46; box-shadow: inset 2px 0 #3984ed; font-weight: 500; }
+[data-slot="sidebar-group-label"] { margin: 0 4px 7px; height: 26px; padding: 0 8px; font: 9px var(--font-plex-mono), monospace; text-transform: uppercase; letter-spacing: .12em; color: #8f9bad; }
+[data-slot="sidebar-group"] { padding: 8px 14px; }
+[data-slot="sidebar-menu"] { gap: 3px; }
+[data-slot="sidebar-menu-button"] { min-height: 38px; padding-inline: 12px; font-size: 12px; color: var(--sidebar-foreground); }
+[data-slot="sidebar-menu-button"][data-active] { color: #d7e8ff; background: #192b46; font-weight: 500; }
 [data-slot="sidebar-menu-button"] > svg { width: 16px; height: 16px; }
-[data-slot="sidebar-footer"] { gap: 20px; padding: 24px 12px 14px; }
+[data-slot="sidebar-footer"] { gap: 0; padding: 12px; }
 [data-slot="sidebar-footer"] time { font: 9px var(--font-plex-mono), monospace; color: #97a5b9; }
 #last-synced-title { font: 9px var(--font-plex-mono), monospace; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
-.workspace-profile { display: flex; align-items: center; gap: 10px; border-top: 1px solid var(--sidebar-border); padding: 18px 8px 4px; }
+.reviewer-switcher { position: relative; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 7px 8px; color: var(--sidebar-foreground); }
+.reviewer-switcher:hover { background: var(--sidebar-accent); }
+.reviewer-switcher:focus-within { outline: 2px solid var(--sidebar-ring); outline-offset: 2px; }
+.reviewer-switcher select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; }
 .profile-monogram { display: grid; place-items: center; width: 30px; height: 32px; flex-shrink: 0; background: #1c3150; color: #91beff; font: 22px var(--font-barlow), sans-serif; }
 .profile-label { display: flex; flex-direction: column; min-width: 0; gap: 3px; font-size: 10px; }
-.profile-label strong { font-size: 11px; font-weight: 500; color: #e0e8f5; }
+.profile-label strong { font-size: 12px; font-weight: 500; color: #e0e8f5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .profile-label > span { color: #94a2b7; }
-.profile-arrow { margin-left: auto; }
+.profile-arrow { margin-left: auto; flex-shrink: 0; color: #94a2b7; }
 .group[data-collapsible="icon"] .brand-lockup { height: 78px; padding: 0; justify-content: center; }
 .group[data-collapsible="icon"] .brand-name,
 .group[data-collapsible="icon"] .profile-label,
@@ -177,7 +181,7 @@
 .group[data-collapsible="icon"] .account-switcher-wrap { margin: 0 8px 18px; border: 0; }
 .group[data-collapsible="icon"] [data-slot="sidebar-group"] { padding: 4px 8px; }
 .group[data-collapsible="icon"] [data-slot="sidebar-footer"] { padding-inline: 8px; }
-.group[data-collapsible="icon"] .workspace-profile { padding-inline: 0; justify-content: center; }
+.group[data-collapsible="icon"] .reviewer-switcher { padding-inline: 0; justify-content: center; }
 
 .overview-intro { position: relative; min-height: 225px; overflow: hidden; background: #0b1422; color: #f5f9ff; isolation: isolate; }
 .overview-intro-copy { position: relative; z-index: 1; width: 57%; padding: 30px 34px 32px; }
@@ -193,7 +197,7 @@
 .motion-control:focus-visible { outline: 2px solid #edf6ff; outline-offset: 3px; }
 .overview-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: -8px !important; }
 .overview-toolbar h2 { font-size: 14px; font-weight: 500; letter-spacing: -.01em; }
-.page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; border-bottom: 1px solid var(--border); padding: 10px 0 27px; }
+.page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding: 10px 0 27px; }
 .page-heading h1, .workspace-content > main > div h1 { font: 300 43px/1.15 var(--font-barlow), sans-serif; letter-spacing: -.02em; }
 .heading-period { color: var(--brand); }
 .page-heading p { max-width: 680px; margin-top: 10px; font-size: 13px; line-height: 1.65; color: var(--muted-foreground); }
@@ -252,9 +256,7 @@
   .workspace-header { padding: 10px 16px; min-height: 60px; }
   .workspace-header > div:last-child { gap: 7px; }
   .workspace-header [data-slot="separator"] { display: none; }
-  .workspace-status { font-size: 9px; padding: 4px; }
   .demo-label-full { display: none; }
-  .workspace-status .demo-label-short { display: inline; }
   .workspace-content { padding: 20px 16px 40px; }
   .workspace-content > main { gap: 20px; }
   .overview-intro { min-height: 235px; }
