@@ -25,7 +25,7 @@ Slugs are lowercase `[a-z0-9-]`. Human roles: `lead_pm`, `pm`, `analyst`, `engin
 
 AI and system actors never write `decisions`. The database enforces both rules.
 
-Legacy: the existing value `PM` is seeded as a human with role `pm` so current rows stay valid. New code must not write it. Until there is SSO, the API takes the acting person from an `X-Actor` request header (default `human:demo-pm`) and records it unchanged.
+Legacy: the existing value `PM` (today's default for the `actor` field in API request bodies) is seeded as a human with role `pm`, so current rows and calls stay valid. New code sends an `actors.id` in that same `actor` field; until there is SSO the client chooses it. Whichever code creates a requirement assigns its key (section 4) in that transaction.
 
 ## 2. Vehicle codes
 

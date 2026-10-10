@@ -2,14 +2,16 @@
 
 Scope: make the shared database ready for enterprise use by BMW product managers: enforced human decision gates, named people and roles, tamper-evident history, one-query traceability, and reproducible data snapshots that the team can share and restore. Follows the root [implementation plan](../IMPLEMENTATION_PLAN.md); G60 / US first, vehicle and market on every record.
 
-## Starting point (on `main`, 6c963af)
+## Starting point (on `main`, f5cd4e3)
 
 Milestone 1 of the backend stream ([backend progress](../notes/backend-progress.md)) is already merged:
 
 - `database/schema.sql` + `database/workflow.sql`: `sources → imports → evidence → analysis_runs → findings → finding_evidence → requirements → requirement_versions → requirement_findings → scores → decisions → review_items`, plus `audit_events`.
 - `database/store.py`: atomic `init_database()` (`BEGIN IMMEDIATE`, rollback on failure, `PRAGMA user_version = 2`), `transaction()`, `audit()` written in the same transaction as the change, JSON `CHECK`s, foreign keys on.
 - Append-only triggers on every history table, including `INSERT OR REPLACE`; tests in `tests/test_database.py`.
-- Milestone 2 (6c963af): `server/importers.py` parses the BMW spreadsheets, PDFs and other formats into records with exact locations ([importer contract](../notes/importer-contract.md)).
+- Milestone 2: `server/importers.py` and `server/evidence.py` import BMW spreadsheets, PDFs and other formats with exact locations ([importer contract](../notes/importer-contract.md)).
+- Milestone 3: `server/analysis_engine.py` produces findings and requirement proposals (deterministic reference or OpenAI) ([analysis engine](../notes/analysis-engine.md)). `compose.yml` already mounts `./data` read-only at `DATA_DIR=/app/data`.
+- Next on the backend stream: milestone 4 (requirement versions, scoring, PM decisions). Decision gates (0004) must land with or before it, coordinated with Jakob.
 
 The pipeline chain the judges score (**source → evidence → finding → requirement version → score → decision → audit**) therefore already exists. This plan does **not** redesign it. It closes the gaps between "stores history" and "an enterprise system a PM organisation can trust", and adds the snapshot and Compose operations.
 
@@ -127,7 +129,7 @@ One CLI, `python -m database.cli <command>`, run in the container with `docker c
 
 Coordinate with the backend owner before merging; `compose.yml` is shared.
 
-- `api`: add read-only `./data:/app/data:ro` and `DATA_DIR=/app/data` for `rebuild` and the importer. Add `DATA_DIR` to `.env.example`.
+- `api`: the read-only `./data` mount and `DATA_DIR` are already on `main`; `rebuild` uses them.
 - `inspect` profile: [Datasette](https://datasette.io) service on `127.0.0.1:${INSPECT_PORT:-8002}`. It opens the **latest or golden snapshot as immutable** (`-i`), never the live WAL file, and ships canned queries for the trace and timeline views. Judges and PMs can click from requirement to original feedback row without any custom UI. Add `INSPECT_PORT` to `.env.example`.
 - No separate database service for SQLite. `postgres` profile only if the stretch goal is reached.
 
@@ -151,13 +153,13 @@ Interface contract to agree **before** parallel work: [notes/database-contract.m
 
 | # | Milestone (one commit each) | Done when | Effort |
 | --- | --- | --- | --- |
-| 0 | Restore `data/` from Drive; verify SHA-256 against inventory | All 8 inputs match | 15 min, human |
+| 0 | ~~Restore `data/` from Drive; verify SHA-256 against inventory~~ | Done 10 Oct: all 8 inputs match | — |
 | 1 | Migration runner + 0003 reference/people + seed | v2 DB upgrades cleanly; existing tests green; unknown actor rejected; unknown market registered as `discovered` | 1–1.5 h |
 | 2 | 0004 decision gates + requirement keys | Tests: AI approve fails; approval without decision fails; PM approve succeeds and is audited | 1 h |
 | 3 | 0005 audit hash chain + access events + `verify` | Tampering with a copied DB is detected at the exact sequence | 45 min |
 | 4 | 0006 views | A single query traces one G60/US requirement to sheet + row | 45 min |
 | 5 | CLI: snapshot/manifest/restore/verify/export/rebuild | Round-trip snapshot → restore → verify gives identical counts and chain head | 1 h |
-| 6 | Compose: data mount, `inspect` profile, `.env.example`, README | `docker compose up --build`, `ps` healthy, logs clean; Datasette shows the trace | 30 min |
+| 6 | Compose: `inspect` profile, `.env.example`, README | `docker compose up --build`, `ps` healthy, logs clean; Datasette shows the trace | 30 min |
 | 7 | Golden snapshot + committed manifest | After the first end-to-end requirement exists | 10 min |
 | — | Stretch: `postgres` profile loading a snapshot | Only if 0–7 are done | cut first |
 
