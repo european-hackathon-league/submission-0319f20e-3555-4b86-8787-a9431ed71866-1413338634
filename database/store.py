@@ -43,18 +43,6 @@ def _execute_schema(connection: sqlite3.Connection, path: Path) -> None:
         connection.execute(statement)
 
 
-def _enable_wal(connection: sqlite3.Connection) -> None:
-    """Switching a fresh file to WAL returns SQLITE_BUSY without consulting busy_timeout; retry briefly."""
-    for attempt in range(100):
-        try:
-            connection.execute("PRAGMA journal_mode = WAL")
-            return
-        except sqlite3.OperationalError as exc:
-            if "locked" not in str(exc) or attempt == 99:
-                raise
-            time.sleep(0.05)
-
-
 def init_database() -> None:
     with closing(connect()) as connection:
         _enable_wal(connection)
@@ -86,6 +74,22 @@ def init_database() -> None:
         except BaseException:
             connection.rollback()
             raise
+
+
+def _enable_wal(connection) -> None:
+    # SQLite's journal-mode transition can report BUSY immediately despite the
+    # connection busy timeout when multiple processes create a database at once.
+    deadline = time.monotonic() + 10
+    while True:
+        try:
+            connection.execute("PRAGMA journal_mode = WAL")
+            return
+        except sqlite3.OperationalError as exc:
+            code = getattr(exc, "sqlite_errorcode", 0) & 255
+            if (code not in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED)
+                    and str(exc) not in ("database is locked", "database table is locked")) or time.monotonic() >= deadline:
+                raise
+            time.sleep(0.025)
 
 
 def now() -> str:

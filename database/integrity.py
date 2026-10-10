@@ -9,8 +9,8 @@ from database.store import audit_event_hash, pre_chain_digest
 
 HISTORY_TABLES = ("evidence", "analysis_runs", "findings", "finding_evidence", "requirement_versions",
                   "requirement_findings", "scores", "decisions", "audit_events", "imports")
-GOVERNANCE_TRIGGERS = ("audit_events_known_actor", "requirement_versions_known_actor", "decisions_known_actor",
-                       "decisions_human_actor", "decisions_pm_role", "requirements_approval_requires_decision",
+GOVERNANCE_TRIGGERS = ("audit_events_actor", "requirement_versions_actor", "decisions_actor",
+                       "requirements_approval_requires_decision",
                        "requirements_status_workflow", "requirements_assign_key", "audit_events_chain")
 
 
@@ -90,5 +90,11 @@ def verify(path: Path, require_latest: bool = True) -> dict:
                 "SELECT DISTINCT actor FROM audit_events WHERE actor NOT IN (SELECT id FROM actors) ORDER BY actor")]
             if unknown:
                 warnings.append(f"history written by unregistered legacy actors: {', '.join(unknown)}")
+            if "origin" in {row[1] for row in connection.execute("PRAGMA table_info(actors)")}:
+                found = [f"{row[0]} ({row[1]})" for row in connection.execute(
+                    "SELECT id, kind FROM actors WHERE origin = 'discovered' AND active = 1 ORDER BY id")]
+                discovered["actors"] = found
+                if found:
+                    warnings.append(f"discovered actors awaiting lead PM review: {', '.join(found)}")
     return {"ok": not errors, "path": str(path), "user_version": version, "errors": errors, "warnings": warnings,
             "audit_chain": chain, "discovered": discovered}

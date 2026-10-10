@@ -10,9 +10,9 @@ Docker Compose (`compose.yml`) runs two Python services and keeps the SQLite dat
 
 | Folder | Role | Current implementation |
 | --- | --- | --- |
-| `mcp_server/` | MCP interface for AI clients. It calls the Python API over the Compose network rather than opening the database directly. | Streamable HTTP on port 8001, with `list_sources` and `get_source` tools. |
-| `server/` | Ordinary Python/FastAPI server and the application's business logic. It owns validation, workflows, and database access. | HTTP API on port 8000, with a health check and endpoints to create, list, and get source records. |
-| `database/` | Shared persistence code, SQLite schema, local database file, and snapshots. | A `sources` table; `database/local/` and `database/snapshots/` are mounted into the API container and persist across rebuilds. |
+| `mcp_server/` | MCP interface for AI clients. It calls the Python API over the Compose network rather than opening the database directly. | Streamable HTTP on port 8001, exposing import, analysis, requirements, scoring, decisions, updates, trace, review and audit tools. |
+| `server/` | Ordinary Python/FastAPI server and the application's business logic. It owns validation, workflows, and database access. | HTTP API on port 8000 implementing both the initial and cumulative update workflows, plus PM workspace data and evaluation metrics. |
+| `database/` | Shared persistence code, SQLite schema, local database file, and snapshots. | Sources, exact evidence locations, findings, immutable requirement versions and scores, review items, decisions and audit events. Local storage persists across rebuilds. |
 
 ```mermaid
 flowchart LR
@@ -24,7 +24,7 @@ flowchart LR
 
 The database folder is **not a third running service**: SQLite runs inside the API process. Compose starts the `api` and `mcp` services, waits for the API health check before starting MCP, and persists the database through bind mounts. The BMW input files remain outside the images in `data/`.
 
-This is the runtime foundation, not the completed product workflow. Source records and their MCP reads exist today; BMW file import, evidence analysis, requirements, prioritization, change assessment, and the PM workspace still need implementation.
+The backend workflow is implemented. BMW file import, reference/AI analysis, requirements, prioritization, change assessment, and PM workspace operations share this runtime. The graphical PM workspace remains a separate frontend; its data and actions are exposed by the backend. See [backend API and decisions](server/README.md) and the executable [live verifier](scripts/verify_backend.py).
 
 ## Components and connections
 
@@ -60,7 +60,7 @@ All components use the same source references, requirement IDs, and versions. Th
 
 ## Shared foundation
 
-The database currently holds source records. Expand its schema to hold findings, requirement versions, priority calculations, review items, and decision history as those workflows are built.
+The database holds source records, exact evidence spans, analysis runs, findings, requirement versions, priority calculations, review items, decision history and audit events. Existing source-only databases are upgraded without losing their records. Original uploads are archived locally by content hash.
 
 The essential connection is:
 
@@ -88,7 +88,7 @@ The Compose stack, the three-folder layout, API health check, source-record endp
 3. **Complete the update workflow:** detect meaningful changes, recalculate affected priorities, and support reviewed revisions.
 4. **Evaluate and refine:** measure evidence quality, decision time, and change-detection accuracy; improve the PM workspace around those results.
 
-The first milestone is one requirement completing both workflows end to end.
+The first milestone—one requirement completing both workflows end to end—is covered by automated workflow tests and the live HTTP/MCP verifier. The [synthetic evaluator](scripts/evaluate_pipeline.py) measures source-link coverage, elapsed time to first decision, and change detection against labeled examples. These reference checks do not establish live AI semantic quality or PM productivity; live OpenAI analysis requires configured credentials and independent review.
 
 ## Research background
 

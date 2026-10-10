@@ -80,6 +80,28 @@ def test_concurrent_initialization_is_idempotent(tmp_path, monkeypatch):
         assert len(list(connection.execute("PRAGMA table_info(sources)"))) == 11
 
 
+def test_journal_mode_retries_only_transient_lock_errors(monkeypatch):
+    class Connection:
+        attempts = 0
+
+        def execute(self, sql):
+            self.attempts += 1
+            if self.attempts == 1:
+                raise sqlite3.OperationalError("database is locked")
+
+    connection = Connection()
+    monkeypatch.setattr(store.time, "sleep", lambda _: None)
+    store._enable_wal(connection)
+    assert connection.attempts == 2
+
+    class BrokenConnection:
+        def execute(self, sql):
+            raise sqlite3.OperationalError("disk I/O error")
+
+    with pytest.raises(sqlite3.OperationalError, match="disk I/O"):
+        store._enable_wal(BrokenConnection())
+
+
 def test_concurrent_transactions_preserve_all_history(db):
     def write_event(index):
         with transaction() as connection:

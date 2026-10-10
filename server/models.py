@@ -44,6 +44,11 @@ def normalize_market(value: str) -> str:
 class Command(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, allow_inf_nan=False)
 
+    @model_validator(mode="after")
+    def serializable_command(self):
+        json_size(self.model_dump())
+        return self
+
 
 class Scope(Command):
     vehicle: Text = Field(default="G60", max_length=50)
@@ -178,6 +183,8 @@ class AcceptanceCriterion(Command):
     def source_basis_has_reference(self):
         if self.basis == "source" and not self.source_ids:
             raise ValueError("A source-based target must identify its sources")
+        if self.basis == "PM assumption" and self.source_ids:
+            raise ValueError("PM-assumed targets must not claim source citations")
         return self
 
 
@@ -212,6 +219,7 @@ class RequirementEdit(Command):
 
 class ScoreRequest(Command):
     expected_version_id: Text
+    expected_score_id: Text | None = None
     weights: Weights = Field(default_factory=Weights)
     actor: Text
     rationale: Text

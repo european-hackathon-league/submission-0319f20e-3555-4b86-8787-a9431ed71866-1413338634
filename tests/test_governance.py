@@ -42,7 +42,8 @@ def _status(requirement_id="req"):
 @pytest.mark.parametrize("actor,message", [
     ("ai:reference:v1", "human actor"),
     ("system:scoring", "human actor"),
-    ("Somebody", "unknown or inactive actor|human actor"),
+    ("AI:openai", "human actor"),
+    ("System:reference", "human actor"),
 ])
 def test_ai_and_system_actors_cannot_decide(requirement, actor, message):
     with pytest.raises(sqlite3.IntegrityError, match=message), transaction() as connection:

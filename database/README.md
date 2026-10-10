@@ -11,11 +11,11 @@ These rules hold for any client, including direct SQL, because they are triggers
 | Rule | Where |
 | --- | --- |
 | History tables are append-only, including `INSERT OR REPLACE` | `store.init_database()` |
-| Every `actor` written to `audit_events`, `requirement_versions`, `decisions` is a known, active `actors.id` | `0003` |
+| Every `actor` written to `audit_events`, `requirement_versions`, `decisions` is an active `actors` row; unknown actors are registered as `discovered` with the kind from their prefix (`AI:`/`ai:`, `System:`/`system:`, else human `pm`) | `0003`, `0007` |
 | Unknown vehicle / market codes are registered as `discovered`, never rejected | `0003` |
 | Decisions are made by humans only; `approve` / `reject` need role `pm` or `lead_pm` | `0004` |
 | `approved_version_id` / `approved_score_id` change only when the latest decision on the requirement approves exactly that version and score | `0004` |
-| `approved` / `rejected` / `postponed` status follows the latest decision; an approved requirement reopens via `needs_review`, not `proposed` | `0004` |
+| `approved` / `rejected` / `postponed` status follows the latest decision (the API sets status and pointers in one transaction); an approved requirement reopens via `needs_review`, not `proposed` | `0004` |
 | Requirement keys (`REQ-G60-US-001`) are assigned by the database on insert, sequential per vehicle and market, never changed or reused; requirements are never deleted | `0004` |
 | Every audit event extends a SHA-256 hash chain (`prev_hash` → `event_hash`); direct inserts that bypass `store.audit()` are refused | `0005` |
 
@@ -33,6 +33,7 @@ Insert into `requirements` with named columns: the table gained a `key` column, 
 | `0004_decision_gates.sql` | `requirements.key`, key sequences, decision and approval gates, status workflow |
 | `0005_audit_hash_chain.sql` | `audit_events.prev_hash` / `event_hash`, chain trigger, `(action, created_at)` index; seals pre-existing events under a genesis event |
 | `0006_read_views.sql` | `v_requirement_list`, `v_requirement_trace`, `v_audit_timeline`, `v_topic_markets`, `v_open_reviews` |
+| `0007_actor_discovery.sql` | Discovered actors instead of rejection (compatible with the API's free-text actors), `actors.origin` |
 
 Add a migration as the next number; never edit an applied one. New AI identities: `seed.ensure_actor(connection, seed.ai_actor_id("openai", model), "ai", name, "ai")`. `OPENAI_MODEL` is seeded automatically.
 
@@ -68,7 +69,7 @@ docker compose stop api && docker compose run --rm --no-deps api python -m datab
 
 Policy: snapshot before risky work (`pre-import`, `pre-analysis`). Append-only tables mean a wrong import cannot be deleted, so the snapshot is the undo. The `golden` snapshot is the frozen demo dataset; commit its manifest to `database/snapshot-manifests/golden.manifest.json` so every teammate can verify they hold the same file (`verify FILE` checks the SHA-256). Demo runs use a restored golden copy via `DB_PATH=/app/database/local/demo.db`, so rehearsals never touch it.
 
-Originals preserved by the importer live in `database/local/originals/` (content-addressed, not part of a snapshot); `rebuild` recreates them from `data/`.
+Originals preserved by the importer live in `database/local/originals/` (content-addressed, immutable, not part of a snapshot). Source downloads need them after a restore, so keep that directory alongside shared snapshots; `rebuild` recreates it from `data/`.
 
 ## Inspecting a snapshot
 

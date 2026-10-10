@@ -106,15 +106,24 @@ def test_failing_migration_rolls_back_completely(tmp_path, monkeypatch):
         assert "actors" not in names and "half_done" not in names
 
 
-def test_unknown_actor_is_rejected(db):
-    with pytest.raises(sqlite3.IntegrityError, match="unknown or inactive actor"), transaction() as connection:
-        store.audit(connection, "test", "id", "test", "Somebody", "free text is no longer an actor")
+def test_unknown_actors_are_discovered_and_inactive_actors_rejected(db):
+    with transaction() as connection:
+        store.audit(connection, "test", "id", "test", "Alice", "free-text human")
+        store.audit(connection, "test", "id", "test", "AI:openai", "legacy AI id")
+        store.audit(connection, "test", "id", "test", "System:reference", "legacy system id")
+    with connect() as connection:
+        rows = {row["id"]: (row["kind"], row["role"], row["origin"]) for row in connection.execute(
+            "SELECT * FROM actors WHERE origin = 'discovered'")}
+    assert rows == {"Alice": ("human", "pm", "discovered"), "AI:openai": ("ai", "ai", "discovered"),
+                    "System:reference": ("system", "system", "discovered")}
     with transaction() as connection:
         connection.execute("UPDATE actors SET active = 0 WHERE id = 'human:jakob'")
-    with pytest.raises(sqlite3.IntegrityError, match="unknown or inactive actor"), transaction() as connection:
+    with pytest.raises(sqlite3.IntegrityError, match="inactive actor"), transaction() as connection:
         store.audit(connection, "test", "id", "test", "human:jakob", "inactive")
     with pytest.raises(sqlite3.IntegrityError, match="never deleted"), transaction() as connection:
         connection.execute("DELETE FROM actors WHERE id = 'human:jakob'")
+    with pytest.raises(sqlite3.IntegrityError, match="fixed"), transaction() as connection:
+        connection.execute("UPDATE actors SET kind = 'human' WHERE id = 'AI:openai'")
 
 
 def test_unknown_scope_is_registered_as_discovered(client):

@@ -25,7 +25,7 @@ Slugs are lowercase `[a-z0-9-]`. Human roles: `lead_pm`, `pm`, `analyst`, `engin
 
 AI and system actors never write `decisions`. The database enforces both rules.
 
-Legacy: the existing value `PM` (today's default for the `actor` field in API request bodies) is seeded as a human with role `pm`, so current rows and calls stay valid. New code sends an `actors.id` in that same `actor` field; until there is SSO the client chooses it. An unknown actor is refused by the database (`unknown or inactive actor`), so the API should validate it and return 422.
+Legacy: the existing value `PM` (today's default for the `actor` field in API request bodies) is seeded as a human with role `pm`, so current rows and calls stay valid. New code sends an `actors.id` in that same `actor` field; until there is SSO the client chooses it. An unknown actor is not rejected: the database registers it as `discovered` (migration 0007), with the kind taken from the prefix (`ai:` / `AI:` → ai, `system:` / `System:` → system, anything else → human with role `pm`), and `database.cli verify` lists it for a lead PM to review. The API's current `AI:<provider>` and `System:reference` values are therefore AI and system actors. A deactivated actor is refused (`inactive actor`).
 
 ## 2. Vehicle codes
 

@@ -151,7 +151,7 @@ Interface contract to agree **before** parallel work: [notes/database-contract.m
 
 ## Sequence and checks
 
-Status 10 Oct: milestones 1–6 done on `codex/database`. A real-data `rebuild` of G60/US imports 5,218 evidence records from the 4 matching inputs (all 8 SHA-256s match) and verifies clean. Access events: the API still writes `evidence.viewed` / `source.downloaded` with actor `PM`; renaming to `access.*` and passing the real actor is a backend change.
+Status 10 Oct: milestones 1–6 done on `codex/database` and merged with the backend's decision workflow. Migration 0007 registers the API's free-text actors as `discovered` instead of rejecting them; AI and system actors still cannot decide. A real-data `rebuild` of G60/US imports 5,218 evidence records from the 4 matching inputs (all 8 SHA-256s match) and verifies clean. Access events: the API still writes `evidence.viewed` / `source.downloaded` with actor `PM`; renaming to `access.*` and passing the real actor is a backend change.
 
 | # | Milestone (one commit each) | Done when | Effort |
 | --- | --- | --- | --- |
