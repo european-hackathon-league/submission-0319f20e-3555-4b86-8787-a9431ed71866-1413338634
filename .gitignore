@@ -1,5 +1,7 @@
-# Original source data stays local, including every Google Drive input.
-/archive/
+# BMW explicitly requested that all Google Drive inputs stay out of Git.
+/data/
+# Large source document, retained locally.
+/materials/BMW-Group-Report-2025-en.pdf
 .DS_Store
 .env
 .env.*

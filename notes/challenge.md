@@ -1,6 +1,6 @@
 # BMW challenge: authoritative requirements
 
-Sources: [BMW channel](https://discord.com/channels/1553151744047976549/1553306479019429939), the two-page `BMW_Hackathon_Briefing_Short.pdf`, the four-slide `261010_BMW_Product_Management_Key_Note.pptx`, and seven channel images. Originals and searchable derivatives are in `archive/`; the full channel transcript is retained separately.
+Sources: [BMW channel](https://discord.com/channels/1553151744047976549/1553306479019429939), the two-page `BMW_Hackathon_Briefing_Short.pdf`, the four-slide `261010_BMW_Product_Management_Key_Note.pptx`, and seven channel images. Original BMW attachments are in `materials/`; [BMW team guidance](bmw-guidance.md) preserves their complete message text.
 
 ## Mission
 
@@ -55,7 +55,3 @@ The rubric explicitly rewards honesty: surface missing evidence, conflicting sig
 - Use the annual report for market/sales context (regions, series, EV adoption) and product/R&D strategy (ConnectedDrive, My BMW App, Neue Klasse). This does not override the explicit exclusions on engineering and detailed business cases.
 - Product management combines customer, brand, competition, market/sales, and engineering perspectives. The illustrative process is situation analysis → structure/context → requirement definition → prioritization → documentation/tracking.
 - BMW requested that every Google Drive input file be added to `.gitignore`.
-
-## Unanswered at capture time
-
-At 17:17, Abbi asked whether the pitch is three or five minutes and how long Q&A lasts. No answer was present in the BMW channel at final verification. Do not treat either duration as confirmed.

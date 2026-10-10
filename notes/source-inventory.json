@@ -1,163 +1,159 @@
 {
-  "created_at": "2026-10-10T17:24:55.544559+02:00",
-  "snapshot_scope": "All 25 BMW-channel messages available through 2026-10-10 17:17 Europe/Berlin; all 8 files in the shared Drive folder; all 9 channel attachments; annual report; linked Entire guide.",
-  "originals_are_gitignored": true,
+  "captured_on": "2026-10-10",
+  "scope": "Original files shared or recommended by BMW: 8 Drive inputs, 9 channel attachments, 1 annual report.",
   "files": [
     {
-      "path": "archive/drive/BMW-Data/F70_feedback_hackathon.xlsx",
+      "path": "data/BMW-Data/F70_feedback_hackathon.xlsx",
       "kind": "google-drive-input",
       "source_url": "https://drive.google.com/file/d/1IFcCXAJ4TGSQM8RYdoggGTOEp2KDrhXC/view",
       "bytes": 483037,
-      "sha256": "651f09e3d899eb6fd294ee89aee23cc41417030425ec19420fbf615ad798163e"
+      "sha256": "651f09e3d899eb6fd294ee89aee23cc41417030425ec19420fbf615ad798163e",
+      "gitignored": true
     },
     {
-      "path": "archive/drive/BMW-Data/F70_G60_G68_G70_customer_studies.xlsx",
+      "path": "data/BMW-Data/F70_G60_G68_G70_customer_studies.xlsx",
       "kind": "google-drive-input",
       "source_url": "https://drive.google.com/file/d/1wb2utLErwdrIVXIw_MN8o0zQ3H1VlTid/view",
       "bytes": 53677,
-      "sha256": "652386b8ccea0bec0e9f9b4648e6a971f1dc19d32e26c50111614153701bff17"
+      "sha256": "652386b8ccea0bec0e9f9b4648e6a971f1dc19d32e26c50111614153701bff17",
+      "gitignored": true
     },
     {
-      "path": "archive/drive/BMW-Data/F70_OptionList.PDF",
+      "path": "data/BMW-Data/F70_OptionList.PDF",
       "kind": "google-drive-input",
       "source_url": "https://drive.google.com/file/d/1bisr9gffa3QKZQwd1nNQAs0hT9B9vsmJ/view",
       "bytes": 1939165,
-      "sha256": "e7823aecbb4cc2b8b267ea65a0f128f464fc241719791082c30979dcb885635d"
+      "sha256": "e7823aecbb4cc2b8b267ea65a0f128f464fc241719791082c30979dcb885635d",
+      "gitignored": true
     },
     {
-      "path": "archive/drive/BMW-Data/G60_feedback_hackathon.xlsx",
+      "path": "data/BMW-Data/G60_feedback_hackathon.xlsx",
       "kind": "google-drive-input",
       "source_url": "https://drive.google.com/file/d/1YuCFSiGYza-60f3lrMACtWzEuxIt9VJg/view",
       "bytes": 722857,
-      "sha256": "ffaeb3ab943d299380542c228b3d944ed749bc80af54c75aa30a5e84b221d34f"
+      "sha256": "ffaeb3ab943d299380542c228b3d944ed749bc80af54c75aa30a5e84b221d34f",
+      "gitignored": true
     },
     {
-      "path": "archive/drive/BMW-Data/G60_OptionList.PDF",
+      "path": "data/BMW-Data/G60_OptionList.PDF",
       "kind": "google-drive-input",
       "source_url": "https://drive.google.com/file/d/1t9jSZT78Y06ZhKRJZQihUX-KaTrDT0EW/view",
       "bytes": 2550313,
-      "sha256": "97ee14fae6239473f125d72518b710d72e3a7c5481c2e6b635d3c1f289a2669d"
+      "sha256": "97ee14fae6239473f125d72518b710d72e3a7c5481c2e6b635d3c1f289a2669d",
+      "gitignored": true
     },
     {
-      "path": "archive/drive/BMW-Data/G70_feedback_hackathon.xlsx",
+      "path": "data/BMW-Data/G70_feedback_hackathon.xlsx",
       "kind": "google-drive-input",
       "source_url": "https://drive.google.com/file/d/1uaObSrfXDcDzXRiNVtQHAy9RCDcaZaSd/view",
       "bytes": 629749,
-      "sha256": "60d1c9932283bc244661ce9cd6c825099714d855bc4f3b9f1544d49a80821cf1"
+      "sha256": "60d1c9932283bc244661ce9cd6c825099714d855bc4f3b9f1544d49a80821cf1",
+      "gitignored": true
     },
     {
-      "path": "archive/drive/BMW-Data/G70_OptionList.PDF",
+      "path": "data/BMW-Data/G70_OptionList.PDF",
       "kind": "google-drive-input",
       "source_url": "https://drive.google.com/file/d/1p_lcd8PS2gVuWh94V2eMNASmCEepZY7i/view",
       "bytes": 2312312,
-      "sha256": "77be9d9cb39db058928e8f6a1a02ae1ec4e2055afde1235751466b5c97b524f0"
+      "sha256": "77be9d9cb39db058928e8f6a1a02ae1ec4e2055afde1235751466b5c97b524f0",
+      "gitignored": true
     },
     {
-      "path": "archive/drive/BMW-Data/sales_volumes.xlsx",
+      "path": "data/BMW-Data/sales_volumes.xlsx",
       "kind": "google-drive-input",
       "source_url": "https://drive.google.com/file/d/1Etq2cZ5aq7LAtKuT5Kno2uOKpyBecFNy/view",
       "bytes": 22544,
-      "sha256": "43db87dd0b52412a8912069a45c97b3b15900b5a00d3b79a5ec65ddcee1f49cf"
+      "sha256": "43db87dd0b52412a8912069a45c97b3b15900b5a00d3b79a5ec65ddcee1f49cf",
+      "gitignored": true
     },
     {
-      "path": "archive/discord/attachments/1558399734316535839-BMW_Hackathon_Briefing_Short.pdf",
+      "path": "materials/BMW_Hackathon_Briefing_Short.pdf",
       "kind": "discord-attachment",
       "source_url": "https://cdn.discordapp.com/attachments/1553306479019429939/1558399734316535839/BMW_Hackathon_Briefing_Short.pdf",
       "bytes": 4357280,
       "sha256": "fd2082cf034d5723f97802fe507d85b1eae62a1fc680294353bc63fe7a448d94",
-      "message_url": "https://discord.com/channels/1553151744047976549/1553306479019429939/1558399734639493160"
+      "message_url": "https://discord.com/channels/1553151744047976549/1553306479019429939/1558399734639493160",
+      "gitignored": false
     },
     {
-      "path": "archive/discord/attachments/1558404307521380412-image.png",
+      "path": "materials/images/findings-to-requirements.png",
       "kind": "discord-attachment",
       "source_url": "https://cdn.discordapp.com/attachments/1553306479019429939/1558404307521380412/image.png",
       "bytes": 1677893,
       "sha256": "5ed6bb50c9f251f2c404ed70f3d364653df20f9a0d4d521387fe5216ff2fd0a0",
-      "message_url": "https://discord.com/channels/1553151744047976549/1553306479019429939/1558404307634753568"
+      "message_url": "https://discord.com/channels/1553151744047976549/1553306479019429939/1558404307634753568",
+      "gitignored": false
     },
     {
-      "path": "archive/discord/attachments/1558404471870988399-image.png",
+      "path": "materials/images/product-management-process.png",
       "kind": "discord-attachment",
       "source_url": "https://cdn.discordapp.com/attachments/1553306479019429939/1558404471870988399/image.png",
       "bytes": 1036538,
       "sha256": "d18226ac90754d9d48f65a36ad78dad25d32ebeb1a0f5e463da08d0e977a52eb",
-      "message_url": "https://discord.com/channels/1553151744047976549/1553306479019429939/1558404471850139659"
+      "message_url": "https://discord.com/channels/1553151744047976549/1553306479019429939/1558404471850139659",
+      "gitignored": false
     },
     {
-      "path": "archive/discord/attachments/1558422619483807764-image.png",
+      "path": "materials/images/data-and-sources.png",
       "kind": "discord-attachment",
       "source_url": "https://cdn.discordapp.com/attachments/1553306479019429939/1558422619483807764/image.png",
       "bytes": 58413,
       "sha256": "8dc7e5eb15e48a8a6fb440980928b8ea24f826a499531d8bc9e2824db82feaba",
-      "message_url": "https://discord.com/channels/1553151744047976549/1553306479019429939/1558422619789856819"
+      "message_url": "https://discord.com/channels/1553151744047976549/1553306479019429939/1558422619789856819",
+      "gitignored": false
     },
     {
-      "path": "archive/discord/attachments/1558468345781551124-261010_BMW_Product_Management_Key_Note.pptx",
+      "path": "materials/261010_BMW_Product_Management_Key_Note.pptx",
       "kind": "discord-attachment",
       "source_url": "https://cdn.discordapp.com/attachments/1553306479019429939/1558468345781551124/261010_BMW_Product_Management_Key_Note.pptx",
       "bytes": 2590790,
       "sha256": "5d65e1e7ded6c1c6f24ff6e8231fc2c84cc28759b94eecdb98004ee2ddc73c37",
-      "message_url": "https://discord.com/channels/1553151744047976549/1553306479019429939/1558468346180145243"
+      "message_url": "https://discord.com/channels/1553151744047976549/1553306479019429939/1558468346180145243",
+      "gitignored": false
     },
     {
-      "path": "archive/discord/attachments/1558468842089353286-image.png",
+      "path": "materials/images/measurable-requirements.png",
       "kind": "discord-attachment",
       "source_url": "https://cdn.discordapp.com/attachments/1553306479019429939/1558468842089353286/image.png",
       "bytes": 151178,
       "sha256": "0235cca9aa843378fcec67eecd122f78d7f7cf273540d50d5873aa54f046a6ba",
-      "message_url": "https://discord.com/channels/1553151744047976549/1553306479019429939/1558468842328559727"
+      "message_url": "https://discord.com/channels/1553151744047976549/1553306479019429939/1558468842328559727",
+      "gitignored": false
     },
     {
-      "path": "archive/discord/attachments/1558468873064292453-image.png",
+      "path": "materials/images/smart-goals.png",
       "kind": "discord-attachment",
       "source_url": "https://cdn.discordapp.com/attachments/1553306479019429939/1558468873064292453/image.png",
       "bytes": 740607,
       "sha256": "cf199568e8e588252dcdd16167864d6e2ae2c56485049e0c5d12586c5c61fd05",
-      "message_url": "https://discord.com/channels/1553151744047976549/1553306479019429939/1558468873320140981"
+      "message_url": "https://discord.com/channels/1553151744047976549/1553306479019429939/1558468873320140981",
+      "gitignored": false
     },
     {
-      "path": "archive/discord/attachments/1558485916010549389-image.png",
+      "path": "materials/images/evaluation-criteria.png",
       "kind": "discord-attachment",
       "source_url": "https://cdn.discordapp.com/attachments/1553306479019429939/1558485916010549389/image.png",
       "bytes": 92980,
       "sha256": "9fff18bf3b6d4ec10526d54b955523fa800df1a8815dcfe8d74b6e065bd70ecd",
-      "message_url": "https://discord.com/channels/1553151744047976549/1553306479019429939/1558485916383969380"
+      "message_url": "https://discord.com/channels/1553151744047976549/1553306479019429939/1558485916383969380",
+      "gitignored": false
     },
     {
-      "path": "archive/discord/attachments/1558488186425188483-15-automotive-product-development-final-chapter.png",
+      "path": "materials/images/automotive-development-process.png",
       "kind": "discord-attachment",
       "source_url": "https://cdn.discordapp.com/attachments/1553306479019429939/1558488186425188483/15-automotive-product-development-final-chapter.png",
       "bytes": 1892313,
       "sha256": "5a05bb3104d350bfc4c9a35c67e5f7e07833d0ead656c0fa8819c283e6e42cde",
-      "message_url": "https://discord.com/channels/1553151744047976549/1553306479019429939/1558488186504613972"
+      "message_url": "https://discord.com/channels/1553151744047976549/1553306479019429939/1558488186504613972",
+      "gitignored": false
     },
     {
-      "path": "archive/documents/BMW-Group-Report-2025-en.pdf",
+      "path": "materials/BMW-Group-Report-2025-en.pdf",
       "kind": "external-document",
       "source_url": "https://www.bmwgroup.com/content/dam/grpw/websites/bmwgroup_com/ir/downloads/en/2026/bericht/BMW-Group-Report-2025-en.pdf",
       "bytes": 17775612,
-      "sha256": "970c0792d4d3600412564b4048cf38606b56151a5cef44598b09e115b85cf199"
-    },
-    {
-      "path": "archive/documents/entire-hackathon-guide.html",
-      "kind": "linked-event-guide",
-      "source_url": "https://hack.entire.io/ehl-munich-2026/",
-      "bytes": 33689,
-      "sha256": "56185e60f0a74b45ab5412d0ef0aed077b210f2877d78a8f3bc94f7b5cd8d882"
-    },
-    {
-      "path": "archive/discord/(28) Discord _ #bmw _ EHL-Munich-final.html",
-      "kind": "browser-page-snapshot",
-      "source_url": "https://discord.com/channels/1553151744047976549/1553306479019429939",
-      "bytes": 508487,
-      "sha256": "405739011453cfc6028bc76086312db988a3ef9ac077d0336e50c988758afd08"
-    },
-    {
-      "path": "archive/discord/bmw-channel.html",
-      "kind": "browser-page-snapshot",
-      "source_url": "https://discord.com/channels/1553151744047976549/1553306479019429939",
-      "bytes": 431956,
-      "sha256": "23f42198773c3bc79162991f4988395e0a83909f6646433f79fe5fb2658a54d9"
+      "sha256": "970c0792d4d3600412564b4048cf38606b56151a5cef44598b09e115b85cf199",
+      "gitignored": true
     }
   ]
 }
