@@ -113,11 +113,22 @@ for (let preset of [
   assert(c && c.position.length === 3 && c.target.length === 3);
   assert([...c.position, ...c.target, c.fov].every(Number.isFinite));
 }
-assert.equal(m.vehicle.code, "G60");
+assert(["G60", "G70"].includes(m.vehicle.code));
+assert.equal(m.dataBinding.vehicle, m.vehicle.code);
+assert.equal(m.dataBinding.market, m.vehicle.market);
 assert.equal(m.vehicle.market, "US");
 assert(m.licence.attribution && m.source.url && m.source.creator);
 for (let file of [m.licence.file, m.files.poster.path, m.files.fallback.path])
   assert((await fs.stat(path.join(folder, file))).size > 0);
+for (const [kind, file] of Object.entries(m.files)) {
+  const content = await fs.readFile(path.join(folder, file.path));
+  assert.equal(content.length, file.bytes, `Incorrect file size: ${kind}`);
+  assert.equal(
+    crypto.createHash("sha256").update(content).digest("hex"),
+    file.sha256,
+    `Incorrect hash: ${kind}`,
+  );
+}
 const result = await validator.validateBytes(bytes, { maxIssues: 100 });
 console.log(
   JSON.stringify(

@@ -1,0 +1,87 @@
+{
+  "schemaVersion": "1.0.0",
+  "purpose": "Official vehicle context only; never customer evidence, requirement scores or PM decisions.",
+  "checkedAt": "2026-10-10",
+  "facts": [
+    {
+      "id": "length",
+      "value": 212.2,
+      "units": "in",
+      "vehicle": "G70",
+      "variant": "i7 xDrive60",
+      "market": "US",
+      "modelYear": 2023,
+      "sourceUrl": "https://www.press.bmwgroup.com/usa/article/detail/T0382613EN_US/the-new-bmw-7-series?language=en_US",
+      "caveat": "Used for uniform scale only; artist proportions are not CAD."
+    },
+    {
+      "id": "width_excluding_mirrors",
+      "value": 76.8,
+      "units": "in",
+      "vehicle": "G70",
+      "variant": "i7 xDrive60",
+      "market": "US",
+      "modelYear": 2023,
+      "sourceUrl": "https://www.press.bmwgroup.com/usa/article/detail/T0382613EN_US/the-new-bmw-7-series?language=en_US",
+      "caveat": "Model bounding width includes mirrors; do not equate it with this specification."
+    },
+    {
+      "id": "height",
+      "value": 60.8,
+      "units": "in",
+      "vehicle": "G70",
+      "variant": "i7 xDrive60",
+      "market": "US",
+      "modelYear": 2023,
+      "sourceUrl": "https://www.press.bmwgroup.com/usa/article/detail/T0382613EN_US/the-new-bmw-7-series?language=en_US",
+      "caveat": "Reference specification; artist geometry may differ."
+    },
+    {
+      "id": "wheelbase",
+      "value": 126.6,
+      "units": "in",
+      "vehicle": "G70",
+      "variant": "i7 xDrive60",
+      "market": "US",
+      "modelYear": 2023,
+      "sourceUrl": "https://www.press.bmwgroup.com/usa/article/detail/T0382613EN_US/the-new-bmw-7-series?language=en_US",
+      "caveat": "Reference specification; artist wheel positions are approximate."
+    },
+    {
+      "id": "battery_location",
+      "value": "vehicle floor",
+      "units": null,
+      "vehicle": "G70",
+      "variant": "i7 xDrive60",
+      "market": "US",
+      "modelYear": 2023,
+      "sourceUrl": "https://www.press.bmwgroup.com/usa/article/detail/T0382613EN_US/the-new-bmw-7-series?language=en_US",
+      "caveat": "Reference location; battery geometry is not supplied."
+    },
+    {
+      "id": "rear_luggage_volume",
+      "value": 17.7,
+      "units": "cu ft",
+      "vehicle": "G70",
+      "variant": "i7 xDrive60",
+      "market": "US",
+      "modelYear": 2023,
+      "sourceUrl": "https://www.press.bmwgroup.com/usa/article/detail/T0382613EN_US/the-new-bmw-7-series?language=en_US",
+      "caveat": "No cargo interior supplied; do not derive usable capacity from mesh geometry."
+    }
+  ],
+  "visualReferences": [
+    {
+      "url": "https://www.press.bmwgroup.com/usa/article/detail/T0382613EN_US/the-new-bmw-7-series?language=en_US",
+      "market": "US",
+      "modelYear": 2023,
+      "use": "Launch specification and design reference. No imagery copied."
+    },
+    {
+      "url": "https://www.bmwusa.com/vehicles/7-series/sedan/bmw-i7-sedan.html",
+      "market": "US",
+      "modelYear": 2027,
+      "use": "Current product page checked; newer facelift and specifications excluded from MY2023 package."
+    }
+  ]
+}

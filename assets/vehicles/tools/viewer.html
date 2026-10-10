@@ -10,12 +10,16 @@
       }
       body {
         margin: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
         background: #101923;
         color: #e5edf6;
         font: 14px system-ui;
       }
       header {
         padding: 23px 30px;
+        flex-shrink: 0;
         border-bottom: 1px solid #293746;
         display: flex;
         justify-content: space-between;
@@ -33,8 +37,8 @@
       main {
         display: grid;
         grid-template-columns: minmax(0, 1fr) 320px;
-        height: calc(100vh - 153px);
-        min-height: 560px;
+        flex: 1;
+        min-height: 420px;
       }
       #stage {
         position: relative;
@@ -113,6 +117,7 @@
       }
       footer {
         padding: 15px 30px;
+        flex-shrink: 0;
         border-top: 1px solid #293746;
         color: #c0cedb;
         font-size: 12px;
@@ -166,6 +171,9 @@
         max-width: 70%;
       }
       @media (max-width: 800px) {
+        body {
+          height: auto;
+        }
         main {
           grid-template-columns: 1fr;
           height: auto;
@@ -197,10 +205,17 @@
   <body>
     <header>
       <div>
-        <h1>G60 / US · Vehicle asset review</h1>
-        <p>BMW i5 M60 · licensed artist model · MY2024 reference scope</p>
+        <h1 id="vehicleTitle">G60 / US · Vehicle asset review</h1>
+        <p id="vehicleSubtitle">
+          BMW i5 M60 · licensed artist model · MY2024 reference scope
+        </p>
       </div>
-      <p>Asset acceptance tool<br />Application data is fetched live</p>
+      <p>
+        Asset acceptance tool<br />Application data is fetched live<br /><label
+          >Vehicle
+          <select id="vehicleSelect"></select
+        ></label>
+      </p>
     </header>
     <main>
       <section id="stage" aria-label="Interactive BMW i5 M60">
@@ -254,6 +269,6 @@
       </aside>
     </main>
     <footer id="attribution"></footer>
-    <script type="module" src="./viewer.mjs?v=1.0.0-final"></script>
+    <script type="module" src="./viewer.mjs?v=1.1.0"></script>
   </body>
 </html>

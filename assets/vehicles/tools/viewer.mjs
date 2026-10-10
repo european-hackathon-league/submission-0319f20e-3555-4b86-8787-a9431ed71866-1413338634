@@ -3,7 +3,41 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 const $ = (id) => document.getElementById(id),
-  manifest = await fetch("../g60-us/manifest.json").then((r) => r.json());
+  catalog = await fetch("../index.json").then((r) => r.json()),
+  requestedVehicle =
+    new URLSearchParams(location.search).get("vehicle") ||
+    catalog.defaultVehicle,
+  entry = catalog.vehicles.find((v) => v.id === requestedVehicle);
+if (!entry) throw new Error("Unknown vehicle in asset catalog");
+const manifestURL = new URL(
+    entry.manifest,
+    new URL("../index.json", location.href),
+  ),
+  manifest = await fetch(manifestURL).then((r) => r.json()),
+  assetURL = (file) => new URL(file, manifestURL).href,
+  scope = `${manifest.vehicle.code} / ${manifest.vehicle.market}`;
+document.title = `${scope} asset acceptance viewer`;
+$("vehicleTitle").textContent = `${scope} · Vehicle asset review`;
+$("vehicleSubtitle").textContent =
+  `BMW ${manifest.vehicle.variant} · licensed artist model · MY${manifest.vehicle.modelYear} reference scope`;
+$("stage").setAttribute(
+  "aria-label",
+  `Interactive BMW ${manifest.vehicle.variant}`,
+);
+$("fallback").src = assetURL(manifest.files.fallback.path);
+$("fallback").alt = `${scope} topic schematic`;
+for (const vehicle of catalog.vehicles) {
+  const option = document.createElement("option");
+  option.value = vehicle.id;
+  option.textContent = vehicle.id;
+  $("vehicleSelect").append(option);
+}
+$("vehicleSelect").value = manifest.id;
+$("vehicleSelect").onchange = () => {
+  location.search = new URLSearchParams({
+    vehicle: $("vehicleSelect").value,
+  }).toString();
+};
 $("attribution").textContent = manifest.licence.attribution;
 const sourceLink = document.createElement("a");
 sourceLink.href = manifest.source.url;
@@ -14,7 +48,7 @@ ccLink.href = manifest.licence.url;
 ccLink.textContent = " CC BY 4.0";
 $("attribution").append(ccLink);
 const link = document.createElement("a");
-link.href = "../g60-us/LICENSE.txt";
+link.href = assetURL(manifest.licence.file);
 link.textContent = " Licence";
 $("attribution").append(link);
 const stage = $("stage"),
@@ -53,7 +87,7 @@ async function requirements() {
     offset = 0;
   while (true) {
     let d = await json(
-      `/requirements?vehicle=G60&market=US&limit=1000&offset=${offset}`,
+      `/requirements?vehicle=${encodeURIComponent(manifest.dataBinding.vehicle)}&market=${encodeURIComponent(manifest.dataBinding.market)}&limit=1000&offset=${offset}`,
     );
     out.push(...d.items);
     if (out.length >= d.total || !d.items.length) return out;
@@ -71,11 +105,11 @@ function cutaway(on) {
 }
 function preset(name) {
   let p = manifest.cameras[name];
-  $("cameraNote").textContent = ["cockpit", "seats", "rear_cabin"].includes(
-    name,
-  )
-    ? "Exterior window view only. Cabin, seating and cargo locations are approximate; no interior geometry."
-    : "";
+  $("cameraNote").textContent =
+    p.note ??
+    (["cockpit", "seats", "rear_cabin"].includes(name)
+      ? "Exterior window view only. Cabin, seating and cargo locations are approximate; no interior geometry."
+      : "");
   if (!camera) return;
   camera.position.fromArray(p.position);
   camera.fov = p.fov;
@@ -113,7 +147,7 @@ async function selectZone(id) {
     $("cutaway").checked = true;
   $("approx").textContent = z.approximation;
   $("data").replaceChildren();
-  escapeText("p", "Loading G60 / US requirements…", $("data"));
+  escapeText("p", `Loading ${scope} requirements…`, $("data"));
   setStatus(`Selected ${id} · topics: ${z.topics.join(", ")}`);
   render();
   try {
@@ -121,7 +155,9 @@ async function selectZone(id) {
     if (serial !== selectionSerial) return;
     let rows = all.filter(
       (r) =>
-        r.vehicle === "G60" && r.market === "US" && z.topics.includes(r.topic),
+        r.vehicle === manifest.dataBinding.vehicle &&
+        r.market === manifest.dataBinding.market &&
+        z.topics.includes(r.topic),
     );
     $("data").replaceChildren();
     escapeText(
@@ -385,11 +421,19 @@ try {
         "./node_modules/three/examples/jsm/libs/draco/gltf/",
       ),
     )
-    .loadAsync("../g60-us/i5-m60.glb");
+    .loadAsync(assetURL(manifest.files.model.path));
   model = gltf.scene;
   model.traverse((n) => {
     if (n.isMesh) n.castShadow = true;
   });
+  $("isolate").replaceChildren(new Option("All materials", "all"));
+  const materialNames = new Set();
+  model.traverse((n) => {
+    if (n.isMesh)
+      for (const m of [n.material].flat()) materialNames.add(m.name);
+  });
+  for (const name of [...materialNames].sort())
+    $("isolate").append(new Option(name.replaceAll("_", " "), name));
   scene.add(model);
   model.updateMatrixWorld(true);
   for (let [id, z] of Object.entries(manifest.zones)) {
@@ -473,11 +517,11 @@ $("poster").onclick = () => {
   ctx.drawImage(renderer.domElement, 0, 0);
   ctx.fillStyle = "#e5edf6";
   ctx.font = "500 34px system-ui";
-  ctx.fillText("G60 / US · Requirement Twin", 58, 73);
+  ctx.fillText(`${scope} · Requirement Twin`, 58, 73);
   ctx.fillStyle = "#acbfd0";
   ctx.font = "20px system-ui";
   ctx.fillText(
-    "Licensed artist model · US MY2024 reference scope · exterior only",
+    `Licensed artist model · ${manifest.vehicle.market} MY${manifest.vehicle.modelYear} reference scope · ${manifest.interior ? "simplified cabin" : "exterior only"}`,
     58,
     110,
   );
@@ -499,8 +543,8 @@ $("poster").onclick = () => {
   render();
 };
 
-const facts = await fetch("../g60-us/official-facts.json").then((r) =>
-  r.json(),
+const facts = await fetch(assetURL(manifest.files.officialFacts.path)).then(
+  (r) => r.json(),
 );
 for (const f of facts.facts) {
   const p = document.createElement("p");

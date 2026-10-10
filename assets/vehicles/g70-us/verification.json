@@ -1,0 +1,79 @@
+{
+  "checkedAt": "2026-10-10T21:40:25Z",
+  "asset": {
+    "path": "i7-g70.glb",
+    "bytes": 856420,
+    "triangles": 202304,
+    "sha256": "9c30b6a3b67d3d790d90acb7a2f29bb02c3b98f89d6705fd4e4511f4821a0203"
+  },
+  "checks": {
+    "selfContained": true,
+    "elevenAnchorNamesAndTranslationsMatchManifest": true,
+    "cameraPresetsVisuallyChecked": [
+      "default_orbit",
+      "charging_port",
+      "cockpit",
+      "seats",
+      "rear_cabin"
+    ],
+    "chargingRightRearAlignment": "Closed right rear quarter-panel zone checked in default, charging and rear-cabin views. No open socket geometry.",
+    "chargingTargetCSSPixels": {
+      "width": 80.164,
+      "height": 44
+    },
+    "linkedFooterAttributionVisible": true,
+    "interiorLimitationLabelsVisible": true,
+    "fallbackSchematicAndZoneSelectorChecked": true,
+    "posterRenderedFromFinalGLB": true,
+    "khronosCompressed": {
+      "errors": 0,
+      "warnings": 0,
+      "infos": 9,
+      "note": "Draco payload is not inspected by Khronos; decoded geometry independently validated."
+    },
+    "khronosDecoded": {
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0
+    }
+  },
+  "browser": {
+    "name": "Codex in-app browser",
+    "renderer": "WebKit WebGL",
+    "viewportCSS": [1280, 800],
+    "devicePixelRatio": 1,
+    "hardware": "Apple M3 Pro, Mac15,6, 18 GiB RAM",
+    "localHTTPDecodeLoadMs": 47.2,
+    "medianFPS": 120.5,
+    "p95FrameMs": 9.3,
+    "drawCalls": 9,
+    "method": "180-frame orbit, first 30 discarded; manual camera/pin/fallback checks.",
+    "limits": "Local loopback HTTP on this laptop. No mobile/network or Troy frontend performance claim.",
+    "warnings": "Existing acceptance-viewer studio environment reports PMREM blur-kernel clamping. Rendering and measured performance are unaffected; no change to existing G60 lighting."
+  },
+  "dataFlow": {
+    "service": "Existing loopback BMW API on port 18000",
+    "scope": {
+      "vehicle": "G70",
+      "market": "US",
+      "topic": "charging"
+    },
+    "customerEvidenceBundled": false,
+    "requirementsReturned": 0,
+    "verified": [
+      "Charging hotspot issues G70/US query and filters charging topic.",
+      "Empty state displayed; no G60 fallback or invented evidence."
+    ],
+    "g70Trace": "Not exercised: no G70 records exist in this test API.",
+    "g60Regression": "Verified existing synthetic G60 charging trace: score 76.4, 15 evidence records, 1 PM decision, 48 audit events; source remained explicitly labelled synthetic."
+  },
+  "integration": {
+    "base": "3cba028ca651a763a8a1b07fa0fdb14ef19fc611",
+    "scope": "Only assets/vehicles/",
+    "g60PackageUnchanged": true,
+    "troyContacted": false,
+    "troyFrontendLoaded": "Not verified. Standalone browser can load the committed package; no frontend implemented.",
+    "latestRemoteChecked": "f4c46f1d300ea6bdc89ecdfeb641106b3f0bcbdb",
+    "remoteDelta": "Three documentation commits since the frontend merge; no overlap with files changed for G70."
+  }
+}

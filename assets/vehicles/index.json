@@ -5,6 +5,10 @@
     {
       "id": "g60-us-i5-m60",
       "manifest": "./g60-us/manifest.json"
+    },
+    {
+      "id": "g70-us-i7",
+      "manifest": "./g70-us/manifest.json"
     }
   ]
 }
