@@ -95,3 +95,5 @@ The first milestone is one requirement completing both workflows end to end.
 The [internal research review](research/RESEARCH.md) provides the papers, methods, and evaluation principles behind this plan. It also records broader research options; the implementation scope is defined by this plan.
 
 The [BMW demo proposal](notes/winning-demo-proposal.md) preserves additional presentation and 3D ideas for later review.
+
+The [PM workspace and 3D Requirement Twin plan](notes/pm-workspace-and-3d-twin.md) designs component 6, enterprise integration, and the 3D layer on top of the database views.

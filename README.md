@@ -21,6 +21,7 @@ Stop the services with `docker compose down`.
 
 - [High-level implementation plan: components, connections, and workflows](IMPLEMENTATION_PLAN.md)
 - [Internal research: papers, existing approaches, and evaluation metrics](research/RESEARCH.md)
+- [PM workspace and 3D Requirement Twin: enterprise UI, integration, and north star](notes/pm-workspace-and-3d-twin.md)
 
 ## Challenge and guidance
 
