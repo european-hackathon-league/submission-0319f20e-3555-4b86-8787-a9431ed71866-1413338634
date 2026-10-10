@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from mcp_server.apps import SCORING_UI, TRACE_UI, register_app_resources
 from mcp_server.research_tools import register_research_tools
+from mcp_server.workflow_tools import register_workflow_tools
 
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000").rstrip("/")
 API_TIMEOUT_SECONDS = float(os.getenv("API_TIMEOUT_SECONDS", "180"))
@@ -300,10 +301,15 @@ async def get_requirement_versions(requirement_id: str) -> list[dict]:
 @mcp.tool(meta={"ui": {"resourceUri": TRACE_UI}})
 async def trace_requirement(
     requirement_id: str, version_id: str | None = None, limit: int = 100, offset: int = 0,
+    score_id: str | None = None,
 ) -> dict:
-    """Trace a chosen requirement version through findings, original evidence, sources, scores, and decisions."""
+    """Trace a version and optional exact score through findings, sources and recorded decisions.
+
+    Without score_id, uses the latest score. Pinned traces filter decisions to that score;
+    their history can grow. Completed planning briefs retain their frozen decision IDs.
+    """
     return await api_request("GET", f"/requirements/{_id(requirement_id)}/trace", params=_present(
-        version_id=version_id, limit=limit, offset=offset))
+        version_id=version_id, score_id=score_id, limit=limit, offset=offset))
 
 
 @mcp.tool()
@@ -378,6 +384,7 @@ async def get_workspace(vehicle: str = "G60", market: str = "US") -> dict:
 
 register_research_tools(mcp)
 register_app_resources(mcp)
+register_workflow_tools(mcp, lambda *args, **kwargs: api_request(*args, **kwargs), _id)
 
 
 if __name__ == "__main__":

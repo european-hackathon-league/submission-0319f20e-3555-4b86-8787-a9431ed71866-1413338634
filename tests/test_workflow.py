@@ -553,3 +553,37 @@ def test_oversized_model_proposal_returns_validation_error_without_mutating_requ
     assert response.status_code == 422, response.text
     current = client.get(f"/requirements/{approved['id']}").json()
     assert current["current_version_id"] == approved["current_version_id"]
+
+
+def test_trace_can_pin_exact_score_and_rejects_mismatched_scores(client):
+    result = initial(client)
+    requirement = decision(client, by_topic(result, "charging"))
+    version = requirement["current_version"]
+    original_score = version["score"]
+    other_requirement = by_topic(result, "comfort")
+    endpoint = f"/requirements/{requirement['id']}/trace"
+    rescored = client.post(f"/requirements/{requirement['id']}/scores", json={
+        "expected_version_id": version["id"], "actor": "PM", "rationale": "Emphasize customers",
+        "weights": {"customer_impact": 1, "market_relevance": 0, "strategic_fit": 0,
+                    "differentiation": 0, "feasibility": 0}})
+    assert rescored.status_code == 201, rescored.text
+    current = client.get(f"/requirements/{requirement['id']}").json()
+    decision(client, current, "reject")
+    latest = client.get(endpoint).json()
+    assert latest["version"]["score"]["id"] == rescored.json()["id"]
+    assert {item["action"] for item in latest["decisions"]} == {"approve", "reject"}
+    pinned = client.get(endpoint, params={"version_id": version["id"], "score_id": original_score["id"]})
+    assert pinned.status_code == 200, pinned.text
+    assert pinned.json()["version"]["score"] == original_score
+    assert [item["action"] for item in pinned.json()["decisions"]] == ["approve"]
+    for score_id in ("missing", "", other_requirement["current_version"]["score"]["id"]):
+        assert client.get(endpoint, params={"version_id": version["id"], "score_id": score_id}).status_code == 404
+    edited = client.patch(f"/requirements/{requirement['id']}", json={
+        "expected_version_id": version["id"], "actor": "PM", "rationale": "Clarify outcome",
+        "title": "A revised charging outcome"})
+    assert edited.status_code == 200, edited.text
+    assert client.get(endpoint, params={"score_id": original_score["id"]}).status_code == 404
+    assert client.get(endpoint, params={"version_id": edited.json()["current_version_id"],
+                                        "score_id": original_score["id"]}).status_code == 404
+    assert client.get(endpoint, params={"version_id": other_requirement["current_version_id"],
+                                        "score_id": original_score["id"]}).status_code == 404

@@ -1,15 +1,18 @@
 import os
 import sqlite3
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import Field, model_validator
 
 from database.store import create_source, get_source, init_database, list_sources, ping_database
+from server.decision_briefs import router as decision_briefs_router
 from server.evaluation import router as evaluation_router
 from server.evidence import ImportRoute, scope_filters
 from server.evidence import router as evidence_router
@@ -17,6 +20,7 @@ from server.models import Scope, json_size
 from server.pipeline import router as pipeline_router
 from server.requirements import router as requirements_router
 from server.web_fetch import router as web_fetch_router
+from server.workflows import router as workflows_router
 
 
 class SourceCreate(Scope):
@@ -60,6 +64,8 @@ app.include_router(pipeline_router)
 app.include_router(requirements_router)
 app.include_router(web_fetch_router)
 app.include_router(evaluation_router)
+app.include_router(workflows_router)
+app.include_router(decision_briefs_router)
 app.router.route_class = ImportRoute
 
 
@@ -112,3 +118,6 @@ def source(source_id: str) -> dict:
     if result is None:
         raise HTTPException(status_code=404, detail="Source not found")
     return result
+
+
+app.mount("/pm", StaticFiles(directory=Path(__file__).parent / "pm_static", html=True), name="pm")

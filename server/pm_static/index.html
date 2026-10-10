@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#142534">
+  <title>BMW · Product evidence cockpit</title>
+  <link rel="stylesheet" href="/pm/styles.css">
+  <script defer src="/pm/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#workspace">Skip to requirements</a>
+  <header class="masthead">
+    <a class="brand" href="/pm/" aria-label="Product evidence home"><span class="brand-mark" aria-hidden="true">P<span>↗</span></span><span>PRODUCT INTELLIGENCE<small>BMW challenge · working prototype</small></span></a>
+    <span class="header-note">Evidence in. Better decisions out.</span>
+  </header>
+  <main>
+    <section class="intro" aria-labelledby="page-title">
+      <div><p class="eyebrow">THE PRODUCT MANAGEMENT PROCESS</p><h1 id="page-title">From customer signals<br>to product decisions.</h1><p class="lead">Build the baseline. Challenge the assumptions. Keep requirements current throughout the two-year development cycle.</p></div>
+      <div class="scope-card">
+        <form id="scope-form">
+          <div class="two-col"><label>Vehicle<input id="vehicle" name="vehicle" value="G60" maxlength="50" required></label><label>Market<input id="market" name="market" value="US" maxlength="50" required></label></div>
+          <button class="secondary" type="submit" id="apply-scope">Apply scope</button>
+        </form>
+        <label class="actor-label">Working as<select id="actor" aria-describedby="actor-help"><option value="">Loading people…</option></select></label>
+        <small id="actor-help">Prototype identity selector; this is not sign-in.</small>
+      </div>
+    </section>
+
+    <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+    <div id="error" class="notice error" role="alert" hidden></div>
+
+    <section class="panel process-panel" aria-labelledby="process-title">
+      <div class="section-heading"><div><p class="eyebrow">YOUR WORKFLOW</p><h2 id="process-title">One process. A traceable handover.</h2></div><span class="badge" id="workflow-status">No workflow selected</span></div>
+      <ol class="stages" id="stages" aria-label="BMW product management stages"></ol>
+      <div id="workflow-error" class="notice error" hidden></div>
+      <div class="workflow-toolbar">
+        <label class="history-label">Saved workflows<select id="workflow-select"><option value="">Create a workflow below</option></select></label>
+        <div class="button-row"><button class="secondary" id="refresh" type="button">Refresh workspace</button><button id="run-workflow" type="button" hidden>Run workflow</button></div>
+      </div>
+      <p class="muted small" id="workflow-meta">Automatic analysis and prioritization stop at mandatory human review.</p>
+    </section>
+
+    <div class="setup-grid">
+      <section class="panel" aria-labelledby="evidence-title">
+        <div class="section-heading"><div><p class="eyebrow">01 / SITUATION ANALYSIS</p><h2 id="evidence-title">Bring the evidence</h2></div><span class="metric" id="source-count">—<small>sources</small></span></div>
+        <p class="muted">Customer feedback, predecessor learnings, studies and market context. Originals and exact locations stay linked to the decision.</p>
+        <details id="import-details"><summary>Add evidence</summary>
+          <form id="import-form" class="stack">
+            <label>Input type<select id="import-mode"><option value="file">Upload a BMW input file</option><option value="local">File in the server’s data folder</option><option value="feedback">Enter feedback or a simulated demo</option></select></label>
+            <div id="file-fields"><label>Select input file<input id="import-file" type="file" accept=".xlsx,.csv,.pdf,.txt,.json"></label><small>Up to 25 MiB. Files remain local to this application.</small></div>
+            <div id="local-fields" hidden><label>Path relative to the data folder<input id="import-path" placeholder="BMW_Customer_Feedback.xlsx" maxlength="4096"></label></div>
+            <label>Source title<input id="import-title" maxlength="200" placeholder="G60 customer feedback"></label>
+            <label id="kind-field">Source kind<select id="import-kind"><option value="feedback">Customer feedback</option><option value="study">Study</option><option value="sales">Sales context</option><option value="document">Document</option><option value="other">Other</option></select></label>
+            <div id="feedback-fields" class="stack" hidden>
+              <label>Source reference<input id="feedback-reference" maxlength="2000" placeholder="Interview notes, survey ID, or demo:charging"></label>
+              <label>Customer feedback<textarea id="feedback-content" rows="4" maxlength="100000" placeholder="Paste a customer observation. Each import is one evidence record."></textarea></label>
+              <label>Observed on (optional)<input id="feedback-date" type="date"></label>
+              <label class="checkbox"><input id="feedback-demo" type="checkbox">This is simulated demo evidence</label>
+              <small>Demo inputs are explicitly labeled in the source and trace. No sample evidence is added automatically.</small>
+            </div>
+            <button type="submit" id="import-submit">Import evidence</button>
+          </form>
+        </details>
+        <details class="source-details"><summary>Source register <span id="source-register-count"></span></summary><ul id="source-list" class="source-list"></ul></details>
+      </section>
+      <section class="panel" aria-labelledby="start-title">
+        <div class="section-heading"><div><p class="eyebrow">02—04 / AGENT WORKFLOW</p><h2 id="start-title">Turn evidence into proposals</h2></div><span class="agent-symbol" aria-hidden="true">✧</span></div>
+        <form id="workflow-form" class="stack">
+          <div class="two-col"><label>Cycle<select id="workflow-kind"><option value="initial">Initial baseline</option><option value="update">Ongoing update</option></select></label><label>Analysis provider<select id="provider"><option value="deterministic">Reference · deterministic</option><option value="openai">Live AI · OpenAI</option></select></label></div>
+          <p class="provider-note" id="provider-note">Reference mode uses repeatable rules and heuristic scores. It demonstrates the process; it does not establish AI quality.</p>
+          <p class="muted small">The agent structures findings, drafts customer-facing requirements and explains priorities. You review targets, evidence and trade-offs before a decision becomes final.</p>
+          <button type="submit" id="create-workflow">Create and run workflow <span aria-hidden="true">↗</span></button>
+        </form>
+      </section>
+    </div>
+
+    <section id="workspace" tabindex="-1" class="workspace" aria-labelledby="workspace-title">
+      <div class="section-heading"><div><p class="eyebrow">05 / HUMAN REVIEW</p><h2 id="workspace-title">Make the decisions that matter.</h2></div><label class="checkbox filter"><input id="needs-review" type="checkbox">Needs decision</label></div>
+      <p class="muted small" id="requirements-context">Select a workflow to review its requirements.</p>
+      <div class="review-grid">
+        <div class="panel requirement-panel"><div id="requirement-list" role="group" aria-label="Prioritized requirements"></div></div>
+        <article class="panel detail-panel" id="requirement-detail" aria-label="Requirement detail"><div class="empty-state"><span aria-hidden="true">↖</span><h3>Your evidence, in context.</h3><p>Select a requirement to inspect its priority, measurable targets and the sources behind it.</p></div></article>
+      </div>
+    </section>
+
+    <section class="panel handover-panel" aria-labelledby="handover-title">
+      <div><p class="eyebrow">06 / DOCUMENTATION</p><h2 id="handover-title">Close the loop. Keep the record.</h2><p class="muted">Every requirement needs an explicit approval or rejection before the workflow can finish. Postponed or challenged proposals stay open.</p></div>
+      <form id="complete-form" class="stack"><label>Handover rationale<textarea id="complete-rationale" rows="2" required maxlength="4000" placeholder="Summarize why this requirement set is ready for the next development step."></textarea></label><div class="button-row"><button type="submit" id="complete-workflow">Complete workflow</button><button class="secondary" type="button" id="export-brief">Export decision brief ↓</button></div><small id="completion-hint">Choose a workflow to prepare the decision brief.</small></form>
+    </section>
+  </main>
+  <footer>Source → finding → requirement → priority → human decision <span>Customer product requirements · G60 / US first</span></footer>
+</body>
+</html>

@@ -15,9 +15,11 @@ docker compose up --build -d
 
 The FastAPI server is at [http://localhost:8000/docs](http://localhost:8000/docs), with a health check at `/health`. The MCP server uses Streamable HTTP at `http://localhost:8001/mcp`. Both interfaces use the same validation, persistence, scoring, and PM decision rules.
 
-The backend implements BMW's PM process: **situation analysis → structure and context → requirement definition → prioritization → documentation and tracking**. It imports original evidence, generates linked findings and requirements, records PM decisions, and proposes reviewed revisions when evidence changes. The backend supplies the PM workspace API; a graphical frontend is a separate component.
+The backend implements BMW's PM process: **situation analysis → structure and context → requirement definition → prioritization → documentation and tracking**. It imports original evidence, generates linked findings and requirements, records PM decisions, and proposes reviewed revisions when evidence changes. Open the included [PM cockpit](http://localhost:8000/pm/) for a complete browser workflow: import evidence, run agent preparation, inspect sources, edit and decide, then export the frozen planning brief. The broader enterprise workspace and 3D twin remain separate roadmap items.
 
-Import the real G60/US feedback and run the initial workflow:
+The cockpit defaults to G60 / US. Choose a file from the server’s data folder (for example `BMW-Data/G60_feedback_hackathon.xlsx`) or upload an input, then create an initial workflow. Autonomous stages stop at human review. PMs decide each exact requirement version and score; completion freezes the decision record. Later evidence enters an ongoing update. See [workflow controls and verification](notes/pm-workflows.md).
+
+The lower-level API remains available. Import real G60/US feedback and run the initial pipeline:
 
 ```sh
 curl -X POST http://localhost:8000/imports/local -H 'Content-Type: application/json' \
@@ -39,6 +41,7 @@ Stop the services with `docker compose down`.
 uv sync --locked
 uv run pytest -q
 uv run ruff check server database mcp_server scripts tests
+node scripts/verify_pm_ui_state.cjs
 uv run python scripts/evaluate_pipeline.py
 uv run python scripts/verify_backend.py --real-data
 ```

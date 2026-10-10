@@ -277,19 +277,24 @@ def get_versions(requirement_id: str):
 
 @router.get("/requirements/{requirement_id}/trace")
 def trace_requirement(requirement_id: str, version_id: str | None = None,
-                      limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0)):
+                      limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0),
+                      score_id: str | None = None):
     with transaction() as connection:
         req = require_row(connection, requirement_id)
-        version = version_detail(connection, version_id or req["current_version_id"])
+        version = version_detail(connection, version_id or req["current_version_id"], score_id)
         if version["requirement_id"] != requirement_id:
             raise HTTPException(404, "Version does not belong to this requirement")
+        if score_id is not None and (version["score"] is None or version["score"]["id"] != score_id):
+            raise HTTPException(404, "Score does not belong to this requirement version")
         findings = [finding_detail(connection, fid) for fid in version["finding_ids"]]
         evidence = evidence_for_findings(connection, version["finding_ids"])
         sources = [decode(connection.execute("SELECT * FROM sources WHERE id=?", (sid,)).fetchone(), ("metadata",))
                    for sid in sorted({e["source_id"] for e in evidence})]
         audit(connection, "requirement", requirement_id, "requirement.trace_viewed", "PM", "Source-to-decision trace accessed",
-              metadata={"version_id": version["id"]})
-        decisions = [dict(row) for row in connection.execute("SELECT * FROM decisions WHERE version_id=? ORDER BY created_at", (version["id"],))]
+              metadata={"version_id": version["id"], "score_id": score_id})
+        decisions = [dict(row) for row in connection.execute(
+            "SELECT * FROM decisions WHERE version_id=?" + (" AND score_id=?" if score_id is not None else "")
+            + " ORDER BY created_at,rowid", [version["id"], score_id] if score_id is not None else [version["id"]])]
         return {"requirement": req, "version": version, "findings": findings, "sources": sources,
                 "evidence": {"items": evidence[offset:offset + limit], "total": len(evidence), "limit": limit, "offset": offset},
                 "decisions": decisions}
