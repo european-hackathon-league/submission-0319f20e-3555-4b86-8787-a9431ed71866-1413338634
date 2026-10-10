@@ -304,6 +304,7 @@ def test_fetch_uses_official_contents_body_and_preserves_candidate_state(cache):
     def handler(request):
         requests.append(request)
         return httpx.Response(200, json=provider_response(
+            [provider_result(text="Synthetic fetched source text.")],
             statuses=[{"id": PUBLIC_URL, "status": "success", "source": "cached"}],
         ))
 
@@ -317,6 +318,7 @@ def test_fetch_uses_official_contents_body_and_preserves_candidate_state(cache):
     assert payload.get("highlights") is True or payload.get("text")
     candidate = response["candidates"][0]
     assert candidate["query"] == PUBLIC_QUERY
+    assert candidate["content"] == "Synthetic fetched source text."
     assert candidate["review_status"] == "unreviewed"
     assert candidate["persisted"] is False
 
@@ -326,7 +328,7 @@ def test_fetch_known_exa_id_resolves_from_search_cache(cache):
 
     def handler(request):
         requests.append(request)
-        return httpx.Response(200, json=provider_response())
+        return httpx.Response(200, json=provider_response([provider_result(text="Synthetic fetched source text.")]))
 
     client = provider_client(cache, handler)
     client.search(search_request())
@@ -341,7 +343,7 @@ def test_fetched_content_is_reusable_without_key(cache):
 
     def handler(request):
         requests.append(request)
-        return httpx.Response(200, json=provider_response())
+        return httpx.Response(200, json=provider_response([provider_result(text="Synthetic fetched source text.")]))
 
     first = provider_client(cache, handler).fetch(fetch_request())
     offline = provider_client(cache, handler, api_key=None).fetch(fetch_request())

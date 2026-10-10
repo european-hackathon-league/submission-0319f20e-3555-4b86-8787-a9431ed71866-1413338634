@@ -107,7 +107,7 @@ class ExaClient:
             candidates.append(candidate)
             if len(candidates) >= (request.max_results if isinstance(request, SearchRequest) else 1):
                 break
-        if endpoint == "/contents" and (not candidates or not candidates[0]["supporting_excerpt"]):
+        if endpoint == "/contents" and (not candidates or not candidates[0]["content"]):
             raise EvidenceError("EXA_CONTENT_UNAVAILABLE", "Exa returned no usable source text; no fetched evidence was cached.")
         result = {"provider": "exa", "candidates": candidates, "cache": {"hit": False, "stale": False},
                   "persistence_status": "not_persisted", "warnings": warnings, "request_metadata": metadata}

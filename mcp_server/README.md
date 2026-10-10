@@ -1,6 +1,6 @@
 # BMW evidence MCP
 
-Three new research tools join Jakob's 26 operational workflow tools for **G60 / US**
+Three new research tools join Jakob's 27 operational workflow tools for **G60 / US**
 (defaults, not hardcoded scope). The table below shows the research path and its source reads. The adapter writes only through FastAPI. It never
 opens the application database or creates its own audit events.
 
@@ -15,11 +15,14 @@ opens the application database or creates its own audit events.
 The published import contract was inspected at `f5cd4e3`. The older `18275d7`
 source API could not preserve web provenance. This adapter requires the import API
 for `import_web_candidate`; a missing route is an MCP error, never simulated success.
-At integration base `71d3266`, all 26 upstream tools have matching persisted backend
+At integration base `edfef95`, all 27 upstream tools have matching persisted backend
 routes and remain registered. See [workflow contracts](../notes/mcp-api.md) for
 analysis, findings, requirements, scoring, PM decisions, trace, reviews and audit.
-The combined server advertises 29 tools; research never invokes workflow decisions
-automatically. Unknown tool arguments are rejected before requests are executed.
+The combined server advertises 30 tools; research never invokes workflow decisions
+automatically. Jakob's existing `fetch_web_source(url, title, ...)` remains a separate
+backend fetch-and-import operation through `POST /imports/web-fetch`. It is never
+used as an Exa fallback. Exa's candidate-only fetch is named `fetch_market_evidence`
+to avoid changing that existing operational contract. Unknown tool arguments are rejected before requests are executed.
 
 ## Setup
 
@@ -53,7 +56,7 @@ Configuration:
   has no authentication; shared deployment needs an authenticated boundary.
 
 The existing Compose service installs `mcp_server/requirements.txt`. Its current
-configuration passes `API_BASE_URL`, but **does not pass `EXA_API_KEY` or mount the
+configuration passes `API_BASE_URL` and `API_TIMEOUT_SECONDS`, but **does not pass `EXA_API_KEY` or mount the
 cache**. Source reads and cached/imported evidence still work without Exa. Troy owns
 Compose changes; agree environment passthrough and a cache volume before relying
 on live research or durable cache inside Compose. A host `.env` alone does not pass
@@ -147,6 +150,8 @@ uv run python -m pytest -q mcp_server/tests/test_roundtrip.py
 It starts isolated HTTP MCP and FastAPI servers on loopback with a temporary SQLite
 database, seeds a clearly synthetic provider response into a temporary cache, and
 checks client calls, import provenance, deduplication and backend audit history.
+It also exercises synthetic feedback through deterministic requirements, explicit
+PM approval, new conflicting evidence, cumulative updates and preserved decisions.
 Synthetic test content is not BMW evidence or a live Exa result.
 
 For a live/client demo:

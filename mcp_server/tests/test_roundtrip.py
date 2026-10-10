@@ -26,7 +26,12 @@ from mcp_server.models import FetchRequest
 
 ROOT = Path(__file__).resolve().parents[2]
 IMPLEMENTED_TOOLS = {
-    "list_sources", "get_source", "search_market_evidence", "fetch_web_source", "import_web_candidate",
+    "health", "list_sources", "get_source", "import_local_file", "import_records", "import_web_source", "fetch_web_source",
+    "list_evidence", "get_evidence", "analyze_evidence", "get_analysis", "list_findings", "get_finding",
+    "generate_requirements", "run_pipeline", "assess_updates", "list_requirements", "get_requirement",
+    "get_requirement_versions", "trace_requirement", "create_requirement", "edit_requirement",
+    "score_requirement", "decide_requirement", "list_reviews", "list_audit", "get_workspace",
+    "search_market_evidence", "fetch_market_evidence", "import_web_candidate",
 }
 PUBLIC_QUERY = "BMW 5 Series cabin controls US public product information"
 PUBLIC_URL = "https://example.com/research/bmw-five-series"
@@ -187,7 +192,22 @@ async def test_only_real_tools_and_explicit_public_query_schemas_are_advertised(
     assert set(tools) == IMPLEMENTED_TOOLS
     for tool in tools.values():
         Draft202012Validator.check_schema(tool.input_schema)
+        assert tool.input_schema["additionalProperties"] is False
     assert "source_id" in tools["get_source"].input_schema["required"]
+    decision_schema = tools["decide_requirement"].input_schema
+    assert set(decision_schema["required"]) == {
+        "requirement_id", "version_id", "score_id", "action", "actor", "rationale",
+    }
+    decision = {
+        "requirement_id": "requirement-fixture", "version_id": "version-fixture", "score_id": "score-fixture",
+        "action": "approve", "actor": "Fixture PM", "rationale": "Reviewed supporting and conflicting evidence",
+    }
+    decision_validator = Draft202012Validator(decision_schema)
+    assert decision_validator.is_valid(decision)
+    for field in ("version_id", "score_id"):
+        assert not decision_validator.is_valid({key: value for key, value in decision.items() if key != field})
+    assert "source_ids" not in tools["assess_updates"].input_schema["properties"]
+    assert "expected_version_id" in tools["edit_requirement"].input_schema["required"]
 
     import_schema = tools["import_web_candidate"].input_schema
     import_validator = Draft202012Validator(import_schema)
@@ -200,11 +220,11 @@ async def test_only_real_tools_and_explicit_public_query_schemas_are_advertised(
         assert not import_validator.is_valid({key: value for key, value in selection.items() if key != required})
     assert not import_validator.is_valid({**selection, "selection_confirmed": False})
 
-    for name in ("search_market_evidence", "fetch_web_source"):
+    for name in ("search_market_evidence", "fetch_market_evidence"):
         schema = tools[name].input_schema
         validator = Draft202012Validator(schema)
         base = {"query": "BMW 5 Series US public product specifications", "public_data_confirmed": True}
-        if name == "fetch_web_source":
+        if name == "fetch_market_evidence":
             base["identifier"] = "https://www.bmwusa.com/vehicles/5-series/sedan/overview.html"
         assert validator.is_valid(base), list(validator.iter_errors(base))
         assert not validator.is_valid({key: value for key, value in base.items() if key != "public_data_confirmed"})
@@ -231,7 +251,7 @@ async def test_cached_fetch_import_preserves_provenance_and_deduplicates_without
         async with ClientSession(read, write, read_timeout_seconds=10) as session:
             await session.initialize()
             await session.list_tools()
-            fetched = result_payload(await session.call_tool("fetch_web_source", {
+            fetched = result_payload(await session.call_tool("fetch_market_evidence", {
                 "identifier": PUBLIC_URL, "query": PUBLIC_QUERY, "public_data_confirmed": True,
                 "vehicle": "G60", "market": "US", "cache_only": True,
             }))
@@ -285,3 +305,108 @@ async def test_cached_fetch_import_preserves_provenance_and_deduplicates_without
         # Importing source context must not approve a claim or construct a PM decision.
         for table in ("findings", "requirements", "scores", "decisions"):
             assert connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] == 0
+
+
+@pytest.mark.asyncio
+async def test_pm_pipeline_updates_and_historical_trace_roundtrip(live_stack):
+    actor = "Fixture PM Alice"
+
+    async with streamable_http_client(live_stack["url"]) as (read, write):
+        async with ClientSession(read, write, read_timeout_seconds=15) as session:
+            await session.initialize()
+            await session.list_tools()
+
+            async def call(name, **arguments):
+                return result_payload(await session.call_tool(name, arguments))
+
+            async def import_feedback(reference, records):
+                return await call("import_records", title=reference, reference=reference, kind="feedback",
+                                  vehicle="G60", market="US", actor=actor, records=[
+                                      {"content": text, "location": {"row": row},
+                                       "metadata": {"topic": topic, "sentiment": sentiment, "synthetic_fixture": True}}
+                                      for row, (text, topic, sentiment) in enumerate(records, 2)
+                                  ])
+
+            async def approve(requirement):
+                version = requirement["current_version"]
+                return await call("decide_requirement", requirement_id=requirement["id"],
+                                  version_id=version["id"], score_id=version["score"]["id"], action="approve",
+                                  actor=actor, rationale="Fixture PM reviewed evidence, uncertainty, and proposed targets.")
+
+            initial_import = await import_feedback("synthetic-initial-feedback", [
+                ("Public charging is confusing and unreliable", "charging", "problem"),
+                ("I love the comfortable seats", "comfort", "strength"),
+            ])
+            initial = await call("run_pipeline", vehicle="G60", market="US", provider="deterministic", actor=actor)
+            assert initial["analysis"]["provider"] == "deterministic"
+            assert any(finding["kind"] == "strength" for finding in initial["analysis"]["findings"])
+            requirements = {item["topic"]: item for item in initial["generation"]["requirements"]}
+            assert {"charging", "comfort"} <= requirements.keys()
+            charging_decision = await approve(requirements["charging"])
+            charging = charging_decision["requirement"]
+            comfort = (await approve(requirements["comfort"]))["requirement"]
+            original_version = charging["approved_version"]
+            assert charging["status"] == "approved"
+            assert charging["approved_version_id"] == original_version["id"]
+            assert charging["approved_score_id"] == original_version["score"]["id"]
+
+            newer_import = await import_feedback("synthetic-followup-feedback", [
+                ("I love the easy public charging", "charging", "strength"),
+            ])
+            update = await call("assess_updates", vehicle="G60", market="US", provider="deterministic", actor=actor)
+            updated = {item["topic"]: item for item in update["generation"]["requirements"]}
+            revised = updated["charging"]
+            current_version = revised["current_version"]
+            assert revised["approved_version"] == original_version
+            assert current_version["id"] != original_version["id"]
+            assert current_version["version"] == original_version["version"] + 1
+            assert current_version["score"]["explanation"]["conflict_flag"] is True
+            assert revised["needs_review"] is True
+            assert updated["comfort"]["current_version_id"] == comfort["current_version_id"]
+            assert {review["requirement_id"] for review in update["reviews"]} == {charging["id"]}
+
+            # Prove score and version locks independently on the real MCP wire.
+            for version_id, score_id in (
+                (original_version["id"], current_version["score"]["id"]),
+                (current_version["id"], original_version["score"]["id"]),
+            ):
+                failure = await session.call_tool("decide_requirement", {
+                    "requirement_id": charging["id"], "version_id": version_id, "score_id": score_id,
+                    "action": "approve", "actor": actor, "rationale": "Fixture stale decision must be rejected",
+                })
+                assert failure.is_error
+                assert "409" in " ".join(item.text for item in failure.content if item.type == "text")
+
+            trace = await call("trace_requirement", requirement_id=charging["id"], version_id=current_version["id"])
+            assert {source["id"] for source in trace["sources"]} == {
+                initial_import["source_id"], newer_import["source_id"],
+            }
+            assert trace["evidence"]["total"] == 2
+            assert all(evidence["location"] == {"row": 2} for evidence in trace["evidence"]["items"])
+            assert any(finding["conflicting_evidence_ids"] for finding in trace["findings"])
+            accepted_decision = await approve(revised)
+            accepted = accepted_decision["requirement"]
+            assert accepted["approved_version_id"] == current_version["id"]
+            assert accepted["status"] == "approved" and not accepted["needs_review"]
+            assert await call("list_reviews", vehicle="G60", market="US") == []
+
+            old_trace = await call("trace_requirement", requirement_id=charging["id"], version_id=original_version["id"])
+            assert old_trace["version"] == original_version
+            assert {source["id"] for source in old_trace["sources"]} == {initial_import["source_id"]}
+            assert old_trace["decisions"][0]["id"] == charging_decision["decision_id"]
+            assert old_trace["decisions"][0]["actor"] == actor
+            versions = await call("get_requirement_versions", requirement_id=charging["id"])
+            assert [version["id"] for version in versions] == [original_version["id"], current_version["id"]]
+            audit = await call("list_audit", entity_id=charging["id"], limit=100)
+            events = audit["items"]
+            assert [event["sequence"] for event in events] == sorted(event["sequence"] for event in events)
+            approvals = [event for event in events if event["action"] == "requirement.approve"]
+            assert [event["metadata"]["decision_id"] for event in approvals] == [
+                charging_decision["decision_id"], accepted_decision["decision_id"],
+            ]
+            assert all(event["actor"] == actor for event in approvals)
+
+    with sqlite3.connect(live_stack["database"]) as connection:
+        # Stale calls created no decisions; the two charging approvals and one comfort approval persisted.
+        assert connection.execute("SELECT COUNT(*) FROM decisions").fetchone()[0] == 3
+        assert connection.execute("SELECT COUNT(*) FROM evidence").fetchone()[0] == 3

@@ -99,3 +99,16 @@ def test_provenance_loss_is_reported_after_real_import(snapshot):
     backend.get_source.return_value = {"metadata": {}}
     with pytest.raises(EvidenceError, match="PROVENANCE_MISMATCH"):
         selection(cache, backend, candidate)
+
+
+def test_highlights_cannot_substitute_for_fetched_source_text(tmp_path):
+    cache = FileCache(tmp_path / "cache")
+    with httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(200, json={
+        "results": [{"url": "https://example.com/page", "text": " ", "highlights": ["A cached search highlight"]}],
+        "statuses": [{"status": "success"}],
+    }))) as transport:
+        client = ExaClient(api_key="synthetic", client=transport, cache=cache)
+        with pytest.raises(EvidenceError, match="EXA_CONTENT_UNAVAILABLE"):
+            client.fetch(FetchRequest(identifier="https://example.com/page", query="BMW cabin",
+                                      public_data_confirmed=True))
+    assert list(cache.candidates()) == []

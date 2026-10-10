@@ -21,6 +21,13 @@ before implementation. Editing agents used separate worktrees and topic branches
   Both sides required the identical HTTPX dependency. No competing behavior was
   discarded; research retains its bounded/sanitized backend client for ingestion.
 
+- Final base `edfef95`: inspected additional backend runtime/evaluation changes.
+  A new upstream `fetch_web_source` directly fetches AND imports via the backend.
+  Preserved it unchanged, named the Exa candidate fetch `fetch_market_evidence`,
+  and retained the new `expected_score_id` concurrency guard. The final server
+  exposes 30 tools (27 upstream plus 3 research tools), with no registration collision.
+  This reconciliation follows the user's existing instruction to combine both versions.
+
 Assigned ownership:
 
 - Alex / lead: `mcp_server/` runtime and documentation; final integration.
@@ -61,10 +68,9 @@ Remaining owner dependencies / limitations:
   or an audit event ID. These must be obtained through existing evidence/audit
   reads; the research tool does not invent them.
 - [ ] Jakob: source listing is unpaginated; add bounded pagination.
-- [ ] Jakob + Alex: optional `expected_score_id` exists in the backend scoring
-  contract but is not exposed by the preserved upstream scoring MCP tool.
+- [x] Preserve upstream `expected_score_id` in the scoring tool and test version/score locks.
 - [ ] Troy: agree Exa environment passthrough and a persistent public-cache mount
-  for Compose; current MCP service passes only API_BASE_URL.
+  for Compose; current MCP service passes API_BASE_URL and API_TIMEOUT_SECONDS.
 - [ ] Troy: run Compose with health/log/persistence checks once its Docker daemon
   is available. `docker compose config --quiet` passes; the daemon is absent here.
 - [ ] Alex: run one live Exa smoke when EXA_API_KEY is configured; no key was present.

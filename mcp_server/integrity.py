@@ -20,7 +20,8 @@ def valid_candidate(candidate) -> bool:
             and candidate["review_status"] == "unreviewed"
         )
         if candidate.get("content_status") == "fetched":
-            valid = valid and isinstance(candidate["content"], str) and digest(candidate["content"]) == candidate["content_hash"]
+            valid = (valid and isinstance(candidate["content"], str) and bool(candidate["content"].strip())
+                     and digest(candidate["content"]) == candidate["content_hash"])
         return valid
     except (KeyError, TypeError, ValueError, AttributeError, EvidenceError):
         return False
