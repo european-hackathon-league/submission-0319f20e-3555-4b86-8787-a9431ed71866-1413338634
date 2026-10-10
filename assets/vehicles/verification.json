@@ -41,7 +41,10 @@
   "browser": {
     "name": "Codex in-app browser",
     "renderer": "WebKit WebGL",
-    "viewportCSS": [1280, 720],
+    "viewportCSS": [
+      1280,
+      720
+    ],
     "devicePixelRatio": 2,
     "hardware": "Apple M3 Pro, Mac15,6, 18 GiB RAM",
     "localHTTPDecodeLoadMs": 131.6,
@@ -77,5 +80,26 @@
     "codexWebVisible": false,
     "contactedTroy": false
   },
-  "troyFrontendLoaded": "Not verified; no frontend implementation or contact performed in this work stage."
+  "troyFrontendLoaded": "Not verified; no frontend implementation or contact performed in this work stage.",
+  "windowFinishRecheck": {
+    "checkedAt": "2026-10-10T22:04:07Z",
+    "assetSha256": "214b4a1c16e7a3bde7b8ce68cf9a7e1b443cda7343f687e2d44e95586f406794",
+    "tintedAndUntintedVisuallyChecked": true,
+    "untintedLimitation": "G60 has no cabin geometry; lighter glass remains opaque.",
+    "chargingTraceRechecked": {
+      "scope": "G60/US",
+      "score": 76.4,
+      "syntheticEvidenceRecords": 15,
+      "pmDecisions": 1,
+      "auditEvents": 49
+    },
+    "browser": {
+      "name": "Codex in-app browser",
+      "localHTTPDecodeLoadMs": 155,
+      "medianFPS": 120,
+      "p95FrameMs": 8.8,
+      "drawCalls": 10
+    },
+    "originMainAtCheck": "cddb91013a41d21279addd483f3087a4fb4fbfc8"
+  }
 }

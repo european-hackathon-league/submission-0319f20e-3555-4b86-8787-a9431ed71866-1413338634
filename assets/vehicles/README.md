@@ -1,6 +1,6 @@
 # BMW Requirement Twin vehicle assets
 
-**Ready for integration: G60 / US i5 M60 and G70 / US i7.**
+**Ready for integration: G60 / US i5 M60 and G70 / US i7 M70 xDrive visualisation.**
 
 The [package manifest](g60-us/manifest.json) describes the actual GLB, provenance, CC BY 4.0 attribution, 11 stable anchors, 5 camera presets, material overrides and SHA-256. Start with the [integration note](g60-us/INTEGRATION.md) for exact loading paths and real API topic/trace mapping. [index.json](index.json) now includes both vehicles and keeps G60 as the default. Each entry resolves its own manifest and vehicle/market scope.
 
@@ -16,12 +16,12 @@ No Troy frontend files, API, database or shared plans were changed. The package 
 
 ## BMW i7 / G70
 
-The second package is in [g70-us/](g70-us/INTEGRATION.md): **0.86 MB, 202,304 triangles**, simplified cabin geometry, 11 anchors, five window/exterior camera presets, poster, schematic, licence and cited US MY2023 reference facts. The [manifest](g70-us/manifest.json) is the loading contract and includes the exact SHA-256; [verification](g70-us/verification.json) records browser acceptance. Source panel faceting and coarse interior/lamp surfaces remain. It is a licensed artist model, not BMW-supplied CAD.
+The second package is in [g70-us/](g70-us/INTEGRATION.md): **0.87 MB, 204,072 triangles**, simplified cabin geometry, 11 anchors, six camera presets including a rear-badge view, poster, schematic, licence and cited US MY2024 M70 reference facts. The [manifest](g70-us/manifest.json) is the loading contract and includes the exact SHA-256; [verification](g70-us/verification.json) records browser acceptance. Author-built `i7` and `M70 xDrive` rear lettering and dark wheel faces add M70 distinction. Source panel faceting and coarse interior/lamp surfaces remain; the fascia, wheel design and diffuser are not exact M70 geometry. It is a licensed artist model, not BMW-supplied CAD.
 
 ![Locally rendered i7 GLB poster](g70-us/poster.webp)
 
-[2023 BMW I7 G70](https://sketchfab.com/3d-models/2023-bmw-i7-g70-07937cca69864dfe9f4b4ed235fc32f7) by [Nazh Design ✔](https://sketchfab.com/NazhDesign), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Optimized geometry, materials and anchors modified. Keep this linked credit visible and include [LICENSE.txt](g70-us/LICENSE.txt).
+[2023 BMW I7 G70](https://sketchfab.com/3d-models/2023-bmw-i7-g70-07937cca69864dfe9f4b4ed235fc32f7) by [Nazh Design ✔](https://sketchfab.com/NazhDesign), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Optimized and visually adapted toward US MY2024 i7 M70 xDrive; details are illustrative. Keep this linked credit visible and include [LICENSE.txt](g70-us/LICENSE.txt).
 
-The i7 was added on `codex/g70-vehicle-asset` from Troy's committed frontend merge. All changes stay under `assets/vehicles/`; the G60 package remains byte-for-byte unchanged. The developer viewer can select either catalog entry without modifying Troy's frontend or dependency files. G70 requests use G70/US exclusively; the current test API has no G70 requirements, so no G70 evidence trace is claimed. See the [source/licence record](research/g70-candidate.json).
+The i7 was originally added on `codex/g70-vehicle-asset` from Troy's committed frontend merge. This M70 visual update stays under `assets/vehicles/`; the G60 GLB remains byte-for-byte unchanged. The developer viewer can select either catalog entry and switch both vehicles between tinted and untinted window appearances without modifying Troy's frontend or dependency files. G70 requests use G70/US exclusively; the current test API has no G70 requirements, so no G70 evidence trace is claimed. See the [source/licence record](research/g70-candidate.json).
 
 Current organizer guidance (recorded in Troy's `f4c46f1`) says BMW has no 3D pack and provides a third-party collection as another source. Each model's own licence applies; both supplied assets use their artist-offered CC BY 4.0. See the [updated research log](research/README.md). This supersedes earlier organizer-response status in the original G60 delivery record.

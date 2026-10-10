@@ -10,7 +10,7 @@ python3 assets/vehicles/tools/serve.py --api http://127.0.0.1:18000
 node assets/vehicles/tools/validate.mjs assets/vehicles/g60-us
 ```
 
-The viewer includes all five camera presets, material isolation, paint override, a 44 px charging target, approximate zone toggle, API topic filtering, source/score/decision/audit trace, attribution, 2D fallback and poster export. The local server only binds loopback and proxies GET requests for requirement and audit routes. Existing access logging may write API audit events. Never start or stop another worker's API stack for this tool. Override `--api` to the intended stack.
+The viewer includes the manifest camera presets (five G60; six G70 with a rear-badge view), material isolation, paint override, tinted/untinted glass controls, a 44 px charging target, approximate zone toggle, API topic filtering, source/score/decision/audit trace, attribution, 2D fallback and poster export. The local server only binds loopback and proxies GET requests for requirement and audit routes. Existing access logging may write API audit events. Never start or stop another worker's API stack for this tool. Override `--api` to the intended stack.
 
 Rebuild only from the authorized **Sketchfab converted GLB download** stored outside Git. The source hash must match the manifest; the script rejects other input. The original downloaded GLB is also retained privately for provenance. The build removes coincident/covered back faces, normalizes coordinates, rebuilds normals and materials, simplifies protected mesh borders, compresses with Draco, embeds anchors and updates the size/hash/triangle metadata. It does not extract any website viewer resource.
 
@@ -36,4 +36,4 @@ node assets/vehicles/tools/build-g70.mjs \
 node assets/vehicles/tools/validate.mjs assets/vehicles/g70-us
 ```
 
-Its builder preserves source detail, removes duplicate/covered backing faces, smooths paint normals, splits named PBR finishes, normalizes metres and adds the same anchor contract. No decimation is needed for this source. Re-run each vehicle's validator if modifying the shared utility or validator. The G70 package has its own `g70-us/verification.json`; the existing top-level verification record remains the G60 delivery record.
+Its builder preserves source detail, removes duplicate/covered backing faces, smooths paint normals, splits named PBR finishes, adds author-built M70 rear lettering and dark wheel faces, normalizes metres and adds the same anchor contract. No decimation is needed for this source. Re-run each vehicle's validator if modifying the shared utility or validator. The G70 package has its own `g70-us/verification.json`; the existing top-level verification record remains the G60 delivery record.

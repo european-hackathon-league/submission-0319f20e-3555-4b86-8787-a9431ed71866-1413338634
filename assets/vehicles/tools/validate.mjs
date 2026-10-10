@@ -117,6 +117,23 @@ assert(["G60", "G70"].includes(m.vehicle.code));
 assert.equal(m.dataBinding.vehicle, m.vehicle.code);
 assert.equal(m.dataBinding.market, m.vehicle.market);
 assert.equal(m.vehicle.market, "US");
+const glass = m.rendering.windowFinishes;
+assert(glass && glass.default in glass.modes);
+assert(data.materials.some((material) => material.name === glass.material));
+for (const mode of ["tinted", "untinted"]) {
+  const finish = glass.modes[mode];
+  assert(finish && finish.baseColorLinearRGB.length === 3);
+  assert(finish.baseColorLinearRGB.every((value) => value >= 0 && value <= 1));
+  assert(finish.opacity > 0 && finish.opacity <= 1);
+  assert(finish.metalness >= 0 && finish.metalness <= 1);
+  assert(finish.roughness >= 0 && finish.roughness <= 1);
+}
+if (m.vehicle.code === "G70") {
+  assert.equal(m.vehicle.modelYear, 2024);
+  for (const badge of ["badge_rear_i7", "badge_rear_m70_xdrive"])
+    assert(nodeNames.includes(badge), `Missing author-built ${badge}`);
+  assert(m.cameras.rear_badges);
+}
 assert(m.licence.attribution && m.source.url && m.source.creator);
 for (let file of [m.licence.file, m.files.poster.path, m.files.fallback.path])
   assert((await fs.stat(path.join(folder, file))).size > 0);

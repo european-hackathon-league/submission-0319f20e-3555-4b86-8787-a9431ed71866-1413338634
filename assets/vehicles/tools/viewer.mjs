@@ -299,6 +299,33 @@ $("paint").oninput = (e) => {
   });
   render();
 };
+const windowFinishes = manifest.rendering.windowFinishes;
+let selectedWindowFinish = windowFinishes.default;
+$("windowFinishNote").textContent = windowFinishes.note;
+function applyWindowFinish(name) {
+  const choice = windowFinishes.modes[name];
+  if (!choice) return;
+  selectedWindowFinish = name;
+  for (const button of $("windowFinishes").querySelectorAll("button")) {
+    button.setAttribute("aria-pressed", String(button.dataset.windowFinish === name));
+  }
+  model?.traverse((node) => {
+    if (!node.isMesh || node.material?.name !== windowFinishes.material) return;
+    const material = node.material;
+    material.color.fromArray(choice.baseColorLinearRGB);
+    material.opacity = choice.opacity;
+    material.metalness = choice.metalness;
+    material.roughness = choice.roughness;
+    material.transparent = choice.opacity < 1;
+    material.depthWrite = choice.opacity === 1;
+    material.needsUpdate = true;
+  });
+  render();
+}
+for (const button of $("windowFinishes").querySelectorAll("button")) {
+  button.onclick = () => applyWindowFinish(button.dataset.windowFinish);
+}
+applyWindowFinish(selectedWindowFinish);
 $("fallbackToggle").onclick = () => {
   showFallback = !showFallback;
   fallback.style.display = showFallback ? "block" : "none";
@@ -441,6 +468,7 @@ try {
     if (!n) throw Error(`Missing ${z.anchor}`);
     anchorWorld.set(id, n.getWorldPosition(new THREE.Vector3()));
   }
+  applyWindowFinish(selectedWindowFinish);
   let loadMs = performance.now() - start;
   metrics.dataset.loadMs = loadMs.toFixed(1);
   metrics.dataset.triangles = manifest.files.model.triangles;

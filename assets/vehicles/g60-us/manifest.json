@@ -36,7 +36,8 @@
     "Recomputed and smoothed normals; simplified meshes with protected borders.",
     "Replaced vertex-color finishes with named PBR paint, trim, opaque glass, alloy, tire and lamp materials. Lamp finishes are illustrative.",
     "Centered on ground, rotated +Z forward and uniformly scaled to 5.05968 m reference length.",
-    "Added eleven empty anchor nodes and Draco geometry compression."
+    "Added eleven empty anchor nodes and Draco geometry compression.",
+    "Defined reversible tinted and untinted window material overrides for browser interaction; the GLB geometry remains unchanged."
   ],
   "interior": false,
   "interiorDescription": "Exterior shell with opaque windows. No usable seats, dashboard or rear-cabin geometry. Cabin cameras frame the exterior window area; cabin anchors are visual approximations.",
@@ -73,35 +74,96 @@
     }
   },
   "rendering": {
-    "extensionsRequired": ["KHR_draco_mesh_compression"],
-    "extensionsOptional": ["KHR_materials_clearcoat"],
-    "paintMaterials": ["body_paint"],
-    "paintDefaultLinearRGB": [0.024, 0.052, 0.083],
+    "extensionsRequired": [
+      "KHR_draco_mesh_compression"
+    ],
+    "extensionsOptional": [
+      "KHR_materials_clearcoat"
+    ],
+    "paintMaterials": [
+      "body_paint"
+    ],
+    "paintDefaultLinearRGB": [
+      0.024,
+      0.052,
+      0.083
+    ],
     "cutawayHide": [],
     "recommendedPixelRatioCap": 2,
     "recommendedEnvironment": "Studio IBL; neutral soft key light; ACES filmic tone mapping",
     "noInteriorCutaway": true,
     "paintFinish": "Authored satin blue, not an official BMW paint code",
     "boundsMetres": {
-      "min": [-1.07402, 0, -2.5297],
-      "max": [1.07403, 1.50092, 2.52968]
+      "min": [
+        -1.07402,
+        0,
+        -2.5297
+      ],
+      "max": [
+        1.07403,
+        1.50092,
+        2.52968
+      ]
+    },
+    "windowFinishes": {
+      "material": "glass_opaque",
+      "default": "tinted",
+      "modes": {
+        "untinted": {
+          "baseColorLinearRGB": [
+            0.1,
+            0.14,
+            0.17
+          ],
+          "opacity": 1,
+          "metalness": 0.16,
+          "roughness": 0.2
+        },
+        "tinted": {
+          "baseColorLinearRGB": [
+            0.009,
+            0.014,
+            0.022
+          ],
+          "opacity": 1,
+          "metalness": 0.32,
+          "roughness": 0.13
+        }
+      },
+      "note": "The i5 model has no cabin geometry. Untinted shows lighter reflective glass without implying an interior view."
     }
   },
   "zones": {
     "charging": {
       "anchor": "anchor_charging",
-      "position": [-0.958, 0.965, -1.63],
-      "topics": ["charging"],
+      "position": [
+        -0.958,
+        0.965,
+        -1.63
+      ],
+      "topics": [
+        "charging"
+      ],
       "camera": "charging_port",
       "approximation": "Right rear charge-flap zone; closed flap, no socket geometry.",
       "geometry": "approximate_zone",
       "minimumClickTargetPx": 44,
-      "surfaceNormal": [-1, 0, 0]
+      "surfaceNormal": [
+        -1,
+        0,
+        0
+      ]
     },
     "battery_range": {
       "anchor": "anchor_battery_range",
-      "position": [0, 0.2, 0],
-      "topics": ["range"],
+      "position": [
+        0,
+        0.2,
+        0
+      ],
+      "topics": [
+        "range"
+      ],
       "camera": "default_orbit",
       "approximation": "Approximate underfloor battery zone; no battery geometry.",
       "geometry": "approximate_zone",
@@ -109,8 +171,14 @@
     },
     "seats_front": {
       "anchor": "anchor_seats_front",
-      "position": [0.4, 0.86, 0.28],
-      "topics": ["comfort"],
+      "position": [
+        0.4,
+        0.86,
+        0.28
+      ],
+      "topics": [
+        "comfort"
+      ],
       "camera": "seats",
       "approximation": "Approximate front seating zone; no interior geometry.",
       "geometry": "approximate_zone",
@@ -118,8 +186,14 @@
     },
     "rear_cabin": {
       "anchor": "anchor_rear_cabin",
-      "position": [0, 0.91, -0.95],
-      "topics": ["comfort"],
+      "position": [
+        0,
+        0.91,
+        -0.95
+      ],
+      "topics": [
+        "comfort"
+      ],
       "camera": "rear_cabin",
       "approximation": "Approximate rear passenger zone; no interior geometry.",
       "geometry": "approximate_zone",
@@ -127,8 +201,14 @@
     },
     "cockpit": {
       "anchor": "anchor_cockpit",
-      "position": [0.43, 1.02, 0.88],
-      "topics": ["controls"],
+      "position": [
+        0.43,
+        1.02,
+        0.88
+      ],
+      "topics": [
+        "controls"
+      ],
       "camera": "cockpit",
       "approximation": "Approximate left-hand-drive cockpit zone; no interior geometry.",
       "geometry": "approximate_zone",
@@ -136,8 +216,14 @@
     },
     "infotainment": {
       "anchor": "anchor_infotainment",
-      "position": [0, 1.05, 0.87],
-      "topics": ["connectivity"],
+      "position": [
+        0,
+        1.05,
+        0.87
+      ],
+      "topics": [
+        "connectivity"
+      ],
       "camera": "cockpit",
       "approximation": "Approximate display zone; no interior geometry.",
       "geometry": "approximate_zone",
@@ -145,8 +231,14 @@
     },
     "acoustics": {
       "anchor": "anchor_acoustics",
-      "position": [-0.85, 0.74, -0.1],
-      "topics": ["quietness"],
+      "position": [
+        -0.85,
+        0.74,
+        -0.1
+      ],
+      "topics": [
+        "quietness"
+      ],
       "camera": "seats",
       "approximation": "Approximate cabin acoustics zone; no speaker/interior geometry.",
       "geometry": "approximate_zone",
@@ -154,28 +246,54 @@
     },
     "assistance": {
       "anchor": "anchor_assistance",
-      "position": [0, 0.62, 2.5],
-      "topics": ["driver-assistance"],
+      "position": [
+        0,
+        0.62,
+        2.5
+      ],
+      "topics": [
+        "driver-assistance"
+      ],
       "camera": "default_orbit",
       "approximation": "Front sensor topic zone; does not certify installed sensors.",
       "geometry": "exterior_surface",
       "minimumClickTargetPx": 44,
-      "surfaceNormal": [0, 0, 1]
+      "surfaceNormal": [
+        0,
+        0,
+        1
+      ]
     },
     "chassis": {
       "anchor": "anchor_chassis",
-      "position": [-0.95, 0.37, 1.57],
-      "topics": ["driving-experience"],
+      "position": [
+        -0.95,
+        0.37,
+        1.57
+      ],
+      "topics": [
+        "driving-experience"
+      ],
       "camera": "default_orbit",
       "approximation": "Front wheel/chassis topic zone; no suspension mechanism.",
       "geometry": "exterior_surface",
       "minimumClickTargetPx": 44,
-      "surfaceNormal": [-1, 0, 0]
+      "surfaceNormal": [
+        -1,
+        0,
+        0
+      ]
     },
     "cargo": {
       "anchor": "anchor_cargo",
-      "position": [0, 0.98, -2.04],
-      "topics": ["access-storage"],
+      "position": [
+        0,
+        0.98,
+        -2.04
+      ],
+      "topics": [
+        "access-storage"
+      ],
       "camera": "rear_cabin",
       "approximation": "Approximate trunk zone; trunk is closed with no cargo interior.",
       "geometry": "approximate_zone",
@@ -183,51 +301,101 @@
     },
     "exterior": {
       "anchor": "anchor_exterior",
-      "position": [-0.88, 0.84, 1.02],
-      "topics": ["design"],
+      "position": [
+        -0.88,
+        0.84,
+        1.02
+      ],
+      "topics": [
+        "design"
+      ],
       "camera": "default_orbit",
       "approximation": "Exterior body topic zone; artist geometry is not dimensional CAD.",
       "geometry": "exterior_surface",
       "minimumClickTargetPx": 44,
-      "surfaceNormal": [-1, 0, 0]
+      "surfaceNormal": [
+        -1,
+        0,
+        0
+      ]
     }
   },
   "cameras": {
     "default_orbit": {
-      "position": [-4.6, 2.15, 5.4],
-      "target": [0, 0.68, 0],
+      "position": [
+        -4.6,
+        2.15,
+        5.4
+      ],
+      "target": [
+        0,
+        0.68,
+        0
+      ],
       "fov": 38,
       "near": 0.03,
       "far": 60,
       "cutaway": false
     },
     "charging_port": {
-      "position": [-4, 1.85, -3.4],
-      "target": [-0.72, 0.9, -1.56],
+      "position": [
+        -4,
+        1.85,
+        -3.4
+      ],
+      "target": [
+        -0.72,
+        0.9,
+        -1.56
+      ],
       "fov": 36,
       "near": 0.03,
       "far": 60,
       "cutaway": false
     },
     "cockpit": {
-      "position": [2.8, 2.1, 2.9],
-      "target": [0.3, 1, 0.65],
+      "position": [
+        2.8,
+        2.1,
+        2.9
+      ],
+      "target": [
+        0.3,
+        1,
+        0.65
+      ],
       "fov": 38,
       "near": 0.03,
       "far": 60,
       "cutaway": false
     },
     "seats": {
-      "position": [3.6, 1.9, 0.85],
-      "target": [0.25, 0.95, 0],
+      "position": [
+        3.6,
+        1.9,
+        0.85
+      ],
+      "target": [
+        0.25,
+        0.95,
+        0
+      ],
       "fov": 38,
       "near": 0.03,
       "far": 60,
       "cutaway": false
     },
     "rear_cabin": {
-      "position": [-3.4, 2, -3.8],
-      "target": [0, 0.96, -1.2],
+      "position": [
+        -3.4,
+        2,
+        -3.8
+      ],
+      "target": [
+        0,
+        0.96,
+        -1.2
+      ],
       "fov": 38,
       "near": 0.03,
       "far": 60,
@@ -251,6 +419,7 @@
     "Paint, lens and material finishes are authored visualization choices, not official BMW paint or option availability.",
     "No BMW website imagery, hidden configurator model or textures used.",
     "Organizer permission request has no verified response; licence is the artist-offered CC BY 4.0.",
-    "Source has some panel faceting and simplified opaque lamp shapes; this is an interactive artist model, not BMW visualization CAD."
+    "Source has some panel faceting and simplified opaque lamp shapes; this is an interactive artist model, not BMW visualization CAD.",
+    "Window tint choices are authored visual states; they do not certify BMW option availability or legal tint levels."
   ]
 }

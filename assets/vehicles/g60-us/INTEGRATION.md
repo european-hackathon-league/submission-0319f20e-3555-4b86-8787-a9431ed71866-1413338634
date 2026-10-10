@@ -41,6 +41,8 @@ Named render meshes are `mesh_body_paint`, `mesh_alloy_satin`, `mesh_trim_black`
 
 Override only material `body_paint`. Clone it before changing a vehicle instance's color. Three.js `material.color.set('#...')` accepts sRGB colors; the manifest's default RGB is **linear**. Do not recolor badges, glass, tires or lamps. The supplied finish is authored satin blue, not a named BMW paint option. Use a neutral studio environment map and soft lighting; the diagnostic viewer's generated studio setup is a reference. Cap DPR at 2 and render on interaction. Postprocessing is not required.
 
+The `rendering.windowFinishes` contract provides tinted and untinted visual states on `glass_opaque`: set the material color from `baseColorLinearRGB` (linear space), opacity, metalness and roughness, then mark it for update. The default is tinted. Both states remain opaque because this artist model has no cabin; untinted means lighter reflective glass, not a view inside. The standalone viewer demonstrates the switch.
+
 Use camera positions/targets/FOV/near/far from the manifest. Cockpit, seats and rear-cabin presets deliberately frame the corresponding **window/exterior region**. Keep the approximation label visible; never move the camera inside this shell or advertise an interior cutaway. Render hotspots at least 44×44 CSS pixels, with an accessible zone selector. Hide approximate internal pins by default; selection can reveal them. Use poster then schematic on WebGL/load failure.
 
 ## Live requirements and trace

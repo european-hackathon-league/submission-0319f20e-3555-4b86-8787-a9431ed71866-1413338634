@@ -22,6 +22,8 @@ import {
   BufferGeometry,
   BufferAttribute,
 } from "three";
+import { FontLoader } from "three/addons/loaders/FontLoader.js";
+import { TextGeometry } from "three/addons/geometries/TextGeometry.js";
 import { MeshBVH } from "three-mesh-bvh";
 const [input, output] = process.argv.slice(2);
 if (!input || !output)
@@ -123,7 +125,8 @@ for (const vs of triangles.values()) {
   let name;
   if (c[1] < 0.15 && c[0] > 0.5) name = "lamp_rear";
   else if (Math.abs(c[0] - 0.3294) < 0.005) name = "body_paint";
-  else if (Math.abs(c[0] - 0.502) < 0.005) name = "alloy_satin";
+  else if (Math.abs(c[0] - 0.502) < 0.005)
+    name = nearWheel ? "wheel_m70_dark" : "alloy_satin";
   else if (c[0] < 0.15) {
     if (y > 1.03 && Math.abs(x) < 0.91 && z < 1.02 && z > -1.92)
       name = "glass_tinted";
@@ -148,6 +151,7 @@ const clearcoat = doc.createExtension(KHRMaterialsClearcoat);
 const finishes = {
   body_paint: { color: [0.19, 0.215, 0.24, 1], metal: 0.36, rough: 0.5 },
   alloy_satin: { color: [0.48, 0.51, 0.54, 1], metal: 0.9, rough: 0.23 },
+  wheel_m70_dark: { color: [0.027, 0.029, 0.034, 1], metal: 0.78, rough: 0.25 },
   trim_black: { color: [0.008, 0.01, 0.013, 1], metal: 0.25, rough: 0.28 },
   rubber_tires: { color: [0.008, 0.01, 0.012, 1], metal: 0, rough: 0.86 },
   glass_tinted: { color: [0.012, 0.022, 0.029, 0.58], metal: 0.1, rough: 0.12 },
@@ -223,6 +227,46 @@ for (const [name, g] of groups) {
       .setMesh(doc.createMesh("mesh_" + name).addPrimitive(p)),
   );
 }
+// Small, separately named author-built details. The source artist mesh is retained,
+// while the lettering suggests the MY2024 M70 reference; neither is CAD.
+const badgeMaterial = doc.createMaterial("badge_satin_metal")
+  .setBaseColorFactor([0.09, 0.105, 0.12, 1])
+  .setMetallicFactor(0.52).setRoughnessFactor(0.24).setDoubleSided(true);
+function addDetail(name, geometry, material) {
+  const g = geometry.index ? geometry.toNonIndexed() : geometry;
+  const p = doc.createPrimitive().setMaterial(material);
+  for (const semantic of ["POSITION", "NORMAL"]) {
+    const a = g.getAttribute(semantic.toLowerCase());
+    p.setAttribute(semantic, doc.createAccessor().setType("VEC3")
+      .setArray(new Float32Array(a.array)).setBuffer(buffer));
+  }
+  scene.addChild(doc.createNode(name).setMesh(doc.createMesh(name).addPrimitive(p)));
+  g.dispose();
+  if (geometry !== g) geometry.dispose();
+}
+const font = new FontLoader().parse(JSON.parse(await fs.readFile(
+  new URL("./node_modules/three/examples/fonts/helvetiker_bold.typeface.json", import.meta.url), "utf8")));
+for (const [name, label, x, y, z, size] of [
+  ["badge_rear_i7", "i7", 0.60, 0.855, -2.52, 0.09],
+  ["badge_rear_m70_xdrive", "M70 xDrive", -0.56, 0.855, -2.525, 0.058],
+]) {
+  const g = new TextGeometry(label, { font, size, depth: 0.004, curveSegments: 3,
+    bevelEnabled: true, bevelThickness: 0.0006, bevelSize: 0.0006, bevelSegments: 1 });
+  g.computeBoundingBox();
+  // Centre each label locally; a half turn makes its face readable from behind.
+  const width = g.boundingBox.max.x - g.boundingBox.min.x;
+  g.translate(-width / 2, -size / 2, 0);
+  g.rotateY(Math.PI);
+  g.translate(x, y, z);
+  // The G70 source trunk curves rearward towards its centre. Bend the tiny
+  // lettering onto that local contour so neither end disappears into paint.
+  const position = g.getAttribute("position");
+  for (let i = 0; i < position.count; i++)
+    position.setZ(i, -2.68 + 0.17 * Math.abs(position.getX(i)) + position.getZ(i) - z);
+  position.needsUpdate = true;
+  g.computeVertexNormals();
+  addDetail(name, g, badgeMaterial);
+}
 await doc.transform(
   dedup(),
   weld(),
@@ -241,7 +285,7 @@ for (const [id, z] of Object.entries(manifest.zones))
       .setExtras({ topicZone: id, approximation: z.approximation }),
   );
 root.getAsset().copyright =
-  "2023 BMW I7 G70 by Nazh Design ✔ (Sketchfab), CC BY 4.0. Modified: optimized, PBR finishes, metre coordinates and anchors. Independent artist model.";
+  "2023 BMW I7 G70 by Nazh Design ✔ (Sketchfab), CC BY 4.0. Modified: optimized, PBR finishes, M70-inspired details, metre coordinates and anchors. Independent artist model; MY2024 US M70 design reference.";
 await io.write(output, doc);
 const bytes = await fs.readFile(output);
 manifest.files.model = {

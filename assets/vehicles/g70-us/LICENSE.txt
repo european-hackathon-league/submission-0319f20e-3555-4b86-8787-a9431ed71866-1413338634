@@ -11,6 +11,8 @@ You may share and adapt, including commercially, subject to the licence.
 Retain credit, link to the source and licence, and indicate modifications.
 Modifications: duplicate geometry cleanup, PBR finishes, normal smoothing,
 metre normalization, Draco compression, stable anchors and authored renders.
+Further changes: author-built i7 / M70 xDrive rear lettering and M70-inspired
+dark wheel finish, using US MY2024 official vehicle design as reference only.
 No extra restrictions are imposed on the licensed model.
 
 Independent artist model; not supplied or endorsed by BMW. The licence

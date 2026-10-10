@@ -1,10 +1,10 @@
 {
-  "checkedAt": "2026-10-10T21:40:25Z",
+  "checkedAt": "2026-10-10T22:04:07Z",
   "asset": {
     "path": "i7-g70.glb",
-    "bytes": 856420,
-    "triangles": 202304,
-    "sha256": "9c30b6a3b67d3d790d90acb7a2f29bb02c3b98f89d6705fd4e4511f4821a0203"
+    "bytes": 870040,
+    "triangles": 204072,
+    "sha256": "3845bf9f9ff042efce4da79f17d72266a55ec2f8fb7a0f038996cfb3735bbcc8"
   },
   "checks": {
     "selfContained": true,
@@ -14,7 +14,8 @@
       "charging_port",
       "cockpit",
       "seats",
-      "rear_cabin"
+      "rear_cabin",
+      "rear_badges"
     ],
     "chargingRightRearAlignment": "Closed right rear quarter-panel zone checked in default, charging and rear-cabin views. No open socket geometry.",
     "chargingTargetCSSPixels": {
@@ -28,26 +29,31 @@
     "khronosCompressed": {
       "errors": 0,
       "warnings": 0,
-      "infos": 9,
+      "infos": 12,
       "note": "Draco payload is not inspected by Khronos; decoded geometry independently validated."
     },
     "khronosDecoded": {
       "errors": 0,
       "warnings": 0,
       "infos": 0
-    }
+    },
+    "rearBadges": "Browser rear view shows readable author-built i7 (left) and M70 xDrive (right) lettering on the trunk panel; no added protruding diffuser geometry.",
+    "windowFinishes": "Tinted and untinted states visually compared in browser; untinted reveals the simplified cabin. Controls expose pressed state."
   },
   "browser": {
     "name": "Codex in-app browser",
     "renderer": "WebKit WebGL",
-    "viewportCSS": [1280, 800],
+    "viewportCSS": [
+      1280,
+      800
+    ],
     "devicePixelRatio": 1,
     "hardware": "Apple M3 Pro, Mac15,6, 18 GiB RAM",
-    "localHTTPDecodeLoadMs": 47.2,
-    "medianFPS": 120.5,
-    "p95FrameMs": 9.3,
-    "drawCalls": 9,
-    "method": "180-frame orbit, first 30 discarded; manual camera/pin/fallback checks.",
+    "localHTTPDecodeLoadMs": 81,
+    "medianFPS": 120,
+    "p95FrameMs": 8.9,
+    "drawCalls": 12,
+    "method": "Local browser visual checks; viewer metrics use 180-frame orbit with first 30 discarded. Rear badges, both window finishes, charging selection and footer inspected.",
     "limits": "Local loopback HTTP on this laptop. No mobile/network or Troy frontend performance claim.",
     "warnings": "Existing acceptance-viewer studio environment reports PMREM blur-kernel clamping. Rendering and measured performance are unaffected; no change to existing G60 lighting."
   },
@@ -62,18 +68,20 @@
     "requirementsReturned": 0,
     "verified": [
       "Charging hotspot issues G70/US query and filters charging topic.",
-      "Empty state displayed; no G60 fallback or invented evidence."
+      "Empty state displayed; no G60 fallback or invented evidence.",
+      "US MY2024 official M70 facts remain separately cited and are not used as customer evidence."
     ],
     "g70Trace": "Not exercised: no G70 records exist in this test API.",
-    "g60Regression": "Verified existing synthetic G60 charging trace: score 76.4, 15 evidence records, 1 PM decision, 48 audit events; source remained explicitly labelled synthetic."
+    "g60Regression": "Existing synthetic G60 charging requirement and trace rechecked after viewer change: score 76.4, 15 evidence records, 1 PM decision, 49 audit events. Source remained labelled synthetic."
   },
   "integration": {
-    "base": "3cba028ca651a763a8a1b07fa0fdb14ef19fc611",
+    "base": "cddb91013a41d21279addd483f3087a4fb4fbfc8",
     "scope": "Only assets/vehicles/",
-    "g60PackageUnchanged": true,
+    "g60PackageUnchanged": false,
     "troyContacted": false,
     "troyFrontendLoaded": "Not verified. Standalone browser can load the committed package; no frontend implemented.",
-    "latestRemoteChecked": "f4c46f1d300ea6bdc89ecdfeb641106b3f0bcbdb",
-    "remoteDelta": "Three documentation commits since the frontend merge; no overlap with files changed for G70."
+    "latestRemoteChecked": "cddb91013a41d21279addd483f3087a4fb4fbfc8",
+    "remoteDelta": "No new origin/main commit after G70 integration at time of this verification; all edited files are under assets/vehicles/.",
+    "g60GLBUnchanged": true
   }
 }
