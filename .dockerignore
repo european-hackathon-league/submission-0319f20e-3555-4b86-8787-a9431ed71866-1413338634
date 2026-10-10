@@ -9,3 +9,9 @@ database/snapshots/*
 **/__pycache__
 **/*.pyc
 !notes/source-inventory.json
+
+**/node_modules
+**/.next
+**/.bmw-demo
+**/artifacts
+**/*.tsbuildinfo

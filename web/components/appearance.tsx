@@ -5,7 +5,7 @@ import { Moon, Sun } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export function AppearanceProvider({ children }: { children: React.ReactNode }) {
-  return <ThemeProvider attribute="class" defaultTheme="light" enableSystem storageKey="finance-bmw-theme" disableTransitionOnChange>{children}</ThemeProvider>
+  return <ThemeProvider attribute="class" defaultTheme="light" enableSystem storageKey="bmw-product-theme" disableTransitionOnChange>{children}</ThemeProvider>
 }
 
 export function AppearanceToggle() {
