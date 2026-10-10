@@ -1,0 +1,24 @@
+{
+  "checkedAt": "2026-10-10",
+  "sourceUrl": "https://sketchfab.com/3d-models/2023-bmw-i7-g70-07937cca69864dfe9f4b4ed235fc32f7",
+  "creator": "Nazh Design \u2714",
+  "sourceTitle": "2023 BMW I7 G70",
+  "publishedAt": "2024-01-21T03:02:33.338018",
+  "trianglesListed": 210138,
+  "verticesListed": 123059,
+  "licenseOffered": {
+    "uri": "https://api.sketchfab.com/v3/licenses/322a749bcfa841b29dff1e8a1bb74b0b",
+    "label": "CC Attribution",
+    "fullName": "Creative Commons Attribution",
+    "requirements": "Author must be credited. Commercial use is allowed.",
+    "url": "http://creativecommons.org/licenses/by/4.0/",
+    "slug": "by"
+  },
+  "downloadable": true,
+  "downloadMethod": "Authenticated Safari Download 3D Model dialog; original GLB and converted GLB buttons. No viewer extraction.",
+  "downloadDialogObserved": "Author must be credited. Commercial use is allowed.",
+  "handoff": "Optimized GLB in Git with source, author, CC BY 4.0 link and modification notice. Raw sources remain outside Git.",
+  "interiorInspection": "Simplified seat, steering wheel, dashboard and rear-cabin surfaces found after material isolation. Window-facing presets supplied; not a detailed walkthrough.",
+  "officialContextFile": "../g70-us/official-facts.json",
+  "organizerPermission": "Troy's f4c46f1 records BMW replies at 22:55 and 23:36: no BMW 3D pack; third-party collection offered as another source. This does not replace the per-model artist licence. See research/README.md and notes/bmw-guidance.md."
+}

@@ -23,3 +23,17 @@ node assets/vehicles/tools/inspect.mjs assets/vehicles/g60-us/i5-m60.glb
 Re-render the poster and repeat browser acceptance after changing geometry, lighting or materials. Set manifest status to `review` while making changes, and only set it to `ready` after acceptance. `optimize.mjs` is an intermediate source-inspection utility; it is not the final G60 build (the original needs backing-face cleanup before simplification). Keep intermediates and all original downloads outside Git. The Khronos validator cannot inspect compressed Draco internals, so independently decoding the GLB and opening it in the browser are required alongside `validate.mjs`.
 
 The poster is generated with the viewer's **Save poster** control from the actual GLB, then encoded as WebP. No screenshot of BMW's site is used. Browser performance numbers are local warm HTTP/decode measurements, not a mobile/network SLA.
+
+## Second vehicle
+
+The catalog-backed acceptance viewer keeps G60 as its default. Select G70 with the developer vehicle selector or open `http://127.0.0.1:18460/tools/viewer.html?vehicle=g70-us-i7`. Asset paths, attribution, official facts and API vehicle/market scope come from the selected manifest. An empty G70 API result is intentionally not filled with G60 data.
+
+G70 uses a separate build so future authoring cannot change the delivered G60 geometry:
+
+```sh
+node assets/vehicles/tools/build-g70.mjs \
+  /private/path/i7-sketchfab-converted.glb assets/vehicles/g70-us/i7-g70.glb
+node assets/vehicles/tools/validate.mjs assets/vehicles/g70-us
+```
+
+Its builder preserves source detail, removes duplicate/covered backing faces, smooths paint normals, splits named PBR finishes, normalizes metres and adds the same anchor contract. No decimation is needed for this source. Re-run each vehicle's validator if modifying the shared utility or validator. The G70 package has its own `g70-us/verification.json`; the existing top-level verification record remains the G60 delivery record.

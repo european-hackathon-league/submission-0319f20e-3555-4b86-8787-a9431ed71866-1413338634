@@ -1,0 +1,263 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "g70-us-i7",
+  "status": "ready",
+  "vehicle": {
+    "make": "BMW",
+    "code": "G70",
+    "variant": "i7 (artist model; xDrive60 reference)",
+    "modelYear": 2023,
+    "market": "US",
+    "modelYearBasis": "Creator labels geometry 2023 BMW I7 G70; US MY2023 xDrive60 is the official reference scope. US trim and equipment are not certified by the artist."
+  },
+  "source": {
+    "url": "https://sketchfab.com/3d-models/2023-bmw-i7-g70-07937cca69864dfe9f4b4ed235fc32f7",
+    "title": "2023 BMW I7 G70",
+    "creator": "Nazh Design \u2714",
+    "creatorUrl": "https://sketchfab.com/NazhDesign",
+    "downloadedAt": "2026-10-10",
+    "method": "Signed-in Sketchfab Download 3D Model, original and converted GLB buttons",
+    "originalBytes": 4491816,
+    "originalSha256": "277a8939266e7ae2b0d6cd86bce568d3a24a151ac4e9fb9909129eff46252341",
+    "buildInput": "Sketchfab converted GLB",
+    "buildInputSha256": "abb614543b6bb152a508de6e16bc6501a981ce7f32ecbbaafb779b1b88692da6"
+  },
+  "licence": {
+    "id": "CC-BY-4.0",
+    "url": "https://creativecommons.org/licenses/by/4.0/",
+    "file": "LICENSE.txt",
+    "attribution": "\u201c2023 BMW I7 G70\u201d by Nazh Design \u2714 / Sketchfab \u00b7 CC BY 4.0 \u00b7 optimized and materials modified.",
+    "attributionMarkdown": "[2023 BMW I7 G70](https://sketchfab.com/3d-models/2023-bmw-i7-g70-07937cca69864dfe9f4b4ed235fc32f7) by [Nazh Design \u2714](https://sketchfab.com/NazhDesign), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Optimized geometry, materials and anchors modified.",
+    "redistribution": "Git and browser redistribution permitted under the offered CC BY 4.0 licence with attribution, licence link and modification notice.",
+    "brandNotice": "Independent artist model. BMW trademarks remain with their owners; no BMW endorsement or BMW-supplied asset claim."
+  },
+  "modifications": [
+    "Baked scene transforms and centered at ground in metre units; uniformly scaled to 5.38988 m US MY2023 reference length.",
+    "Grouped and tuned PBR finishes; preserved silhouette and exterior details.",
+    "Added eleven stable anchor nodes and Draco compression.",
+    "Removed 399 coincident triangles and 7,435 covered backing triangles and smoothed paint normals at gentle creases.",
+    "Converted source grayscale into satin silver paint, warm cabin trim, alloy, rubber and tinted glass; no BMW textures used."
+  ],
+  "interior": true,
+  "interiorDescription": "Simplified artist interior: visible seats, steering wheel, dashboard, center console and rear passenger surfaces. No detailed screen UI, verified US trim, seat functions or accurate acoustic hardware. Cabin geometry is illustrative. Cabin presets use window views; close interior walkthroughs expose coarse source geometry.",
+  "units": "metres",
+  "coordinateSystem": {
+    "handedness": "right",
+    "up": "+Y",
+    "forward": "+Z",
+    "vehicleLeft": "+X",
+    "vehicleRight": "-X",
+    "origin": "Ground at center of exterior bounding box including mirrors"
+  },
+  "files": {
+    "model": {
+      "path": "i7-g70.glb",
+      "bytes": 856420,
+      "triangles": 202304,
+      "sha256": "9c30b6a3b67d3d790d90acb7a2f29bb02c3b98f89d6705fd4e4511f4821a0203"
+    },
+    "poster": {
+      "path": "poster.webp",
+      "bytes": 72122,
+      "sha256": "6830ea4dfaf1e421621de6f6e0bae65377bafb533d512ddd357247f943bafb1b"
+    },
+    "fallback": {
+      "path": "schematic.svg",
+      "bytes": 4499,
+      "sha256": "ca38efe4f3a9f37bc9ded5c65044034a3788bc01eadba5b1a349c07d833916cc"
+    },
+    "officialFacts": {
+      "path": "official-facts.json",
+      "bytes": 3087,
+      "sha256": "5adb70dd11f10312df117bb701fd29328ec0838c5e1c0ce4d45a08ff9596f62d"
+    }
+  },
+  "rendering": {
+    "extensionsRequired": ["KHR_draco_mesh_compression"],
+    "extensionsOptional": ["KHR_materials_clearcoat"],
+    "paintMaterials": ["body_paint"],
+    "paintDefaultLinearRGB": [0.19, 0.215, 0.24],
+    "cutawayHide": [],
+    "recommendedPixelRatioCap": 2,
+    "recommendedEnvironment": "Studio IBL; neutral soft key light; ACES filmic tone mapping",
+    "noInteriorCutaway": true,
+    "paintFinish": "Authored silver finish, not an official BMW paint code",
+    "boundsMetres": {
+      "min": [-1.1078262329101562, 0, -2.6949400901794434],
+      "max": [1.1078262329101562, 1.539482831954956, 2.6949400901794434]
+    }
+  },
+  "zones": {
+    "charging": {
+      "anchor": "anchor_charging",
+      "position": [-0.98, 1.05, -1.79],
+      "topics": ["charging"],
+      "camera": "charging_port",
+      "approximation": "Right rear charge-flap zone; closed flap, no socket geometry.",
+      "geometry": "approximate_zone",
+      "minimumClickTargetPx": 44,
+      "surfaceNormal": [-1, 0, 0]
+    },
+    "battery_range": {
+      "anchor": "anchor_battery_range",
+      "position": [0, 0.22, 0],
+      "topics": ["range"],
+      "camera": "default_orbit",
+      "approximation": "Approximate underfloor battery zone; no battery geometry.",
+      "geometry": "approximate_zone",
+      "minimumClickTargetPx": 44
+    },
+    "seats_front": {
+      "anchor": "anchor_seats_front",
+      "position": [0.42, 0.86, 0.2],
+      "topics": ["comfort"],
+      "camera": "seats",
+      "approximation": "Simplified front-seat geometry; topic anchor is an approximate seating location.",
+      "geometry": "interior_surface",
+      "minimumClickTargetPx": 44
+    },
+    "rear_cabin": {
+      "anchor": "anchor_rear_cabin",
+      "position": [0, 0.94, -1.12],
+      "topics": ["comfort"],
+      "camera": "rear_cabin",
+      "approximation": "Simplified rear-passenger geometry; not a verified Executive Lounge configuration.",
+      "geometry": "interior_surface",
+      "minimumClickTargetPx": 44
+    },
+    "cockpit": {
+      "anchor": "anchor_cockpit",
+      "position": [0.43, 1.05, 0.91],
+      "topics": ["controls"],
+      "camera": "cockpit",
+      "approximation": "Simplified steering wheel and dashboard; approximate left-hand-drive control zone.",
+      "geometry": "interior_surface",
+      "minimumClickTargetPx": 44
+    },
+    "infotainment": {
+      "anchor": "anchor_infotainment",
+      "position": [0, 1.07, 0.92],
+      "topics": ["connectivity"],
+      "camera": "cockpit",
+      "approximation": "Approximate display topic zone; no readable or functioning infotainment UI.",
+      "geometry": "approximate_zone",
+      "minimumClickTargetPx": 44
+    },
+    "acoustics": {
+      "anchor": "anchor_acoustics",
+      "position": [-0.86, 0.76, -0.3],
+      "topics": ["quietness"],
+      "camera": "seats",
+      "approximation": "Approximate cabin acoustics topic zone; no verified loudspeaker placement.",
+      "geometry": "approximate_zone",
+      "minimumClickTargetPx": 44
+    },
+    "assistance": {
+      "anchor": "anchor_assistance",
+      "position": [0, 0.62, 2.68],
+      "topics": ["driver-assistance"],
+      "camera": "default_orbit",
+      "approximation": "Front sensor topic zone; does not certify installed sensors.",
+      "geometry": "exterior_surface",
+      "minimumClickTargetPx": 44,
+      "surfaceNormal": [0, 0, 1]
+    },
+    "chassis": {
+      "anchor": "anchor_chassis",
+      "position": [-0.97, 0.38, 1.63],
+      "topics": ["driving-experience"],
+      "camera": "default_orbit",
+      "approximation": "Front wheel/chassis topic zone; no suspension mechanism.",
+      "geometry": "exterior_surface",
+      "minimumClickTargetPx": 44,
+      "surfaceNormal": [-1, 0, 0]
+    },
+    "cargo": {
+      "anchor": "anchor_cargo",
+      "position": [0, 1.03, -2.17],
+      "topics": ["access-storage"],
+      "camera": "rear_cabin",
+      "approximation": "Approximate trunk zone; trunk is closed with no cargo interior.",
+      "geometry": "approximate_zone",
+      "minimumClickTargetPx": 44
+    },
+    "exterior": {
+      "anchor": "anchor_exterior",
+      "position": [-0.95, 0.83, 0.75],
+      "topics": ["design"],
+      "camera": "default_orbit",
+      "approximation": "Exterior body topic zone; artist geometry is not dimensional CAD.",
+      "geometry": "exterior_surface",
+      "minimumClickTargetPx": 44,
+      "surfaceNormal": [-1, 0, 0]
+    }
+  },
+  "cameras": {
+    "default_orbit": {
+      "position": [-4.922, 2.3, 5.778],
+      "target": [0, 0.728, 0],
+      "fov": 38,
+      "near": 0.03,
+      "far": 60,
+      "cutaway": false,
+      "note": ""
+    },
+    "charging_port": {
+      "position": [-4.28, 1.98, -3.638],
+      "target": [-0.77, 0.963, -1.669],
+      "fov": 36,
+      "near": 0.03,
+      "far": 60,
+      "cutaway": false,
+      "note": ""
+    },
+    "cockpit": {
+      "position": [1.8, 1.9, 2.6],
+      "target": [0.12, 1.01, 0.3],
+      "fov": 40,
+      "near": 0.03,
+      "far": 60,
+      "cutaway": false,
+      "note": "Window view of simplified artist cabin. Not a detailed walkthrough or verified US trim."
+    },
+    "seats": {
+      "position": [2.8, 1.95, 0.48],
+      "target": [0, 0.92, 0.05],
+      "fov": 42,
+      "near": 0.03,
+      "far": 60,
+      "cutaway": false,
+      "note": "Window view of simplified artist cabin. Not a detailed walkthrough or verified US trim."
+    },
+    "rear_cabin": {
+      "position": [-2.6, 1.85, -2.75],
+      "target": [0, 1.05, -1.1],
+      "fov": 40,
+      "near": 0.03,
+      "far": 60,
+      "cutaway": false,
+      "note": "Window view of simplified artist cabin. Not a detailed walkthrough or verified US trim."
+    }
+  },
+  "dataBinding": {
+    "vehicle": "G70",
+    "market": "US",
+    "requirementsEndpoint": "/requirements?vehicle=G70&market=US",
+    "topicFiltering": "Filter returned item.topic against zone.topics; paginate until total reached.",
+    "requirementIdentity": "Use item.id for API calls; item.key for display.",
+    "traceEndpoint": "/requirements/{id}/trace",
+    "auditEndpoint": "/audit?entity_id={id}",
+    "modelYearNotAnEvidenceFilter": true,
+    "officialFactsAreCustomerEvidence": false
+  },
+  "limitations": [
+    "Artist model of a 2023 i7; US xDrive60 reference scope does not certify geometry, trim or installed equipment.",
+    "Simplified interior; no door animation, functional displays, seat adjustment or cargo/battery internals. Cabin and equipment detail is illustrative.",
+    "Authored visualization finishes are not official BMW paint or equipment options.",
+    "No BMW website imagery, hidden configurator model or textures used.",
+    "Latest organizer guidance recorded by Troy says BMW has no 3D pack and links third-party sources. The artist-offered CC BY 4.0 remains this asset's permission basis.",
+    "A G70 click must query G70/US evidence; never reuse G60 requirements if G70 results are empty.",
+    "Cabin geometry is coarse and steering/trim layout is not certified for the US market. Camera presets deliberately frame through windows.",
+    "Source panel faceting, simplified lamps and coarse grille/cabin surfaces remain; this is artist geometry, not BMW visualization CAD."
+  ]
+}
