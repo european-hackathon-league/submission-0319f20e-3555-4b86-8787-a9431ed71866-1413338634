@@ -1,5 +1,6 @@
 """Versioned requirements, explainable priorities, PM decisions, and review history."""
 
+import re
 from contextlib import closing
 from typing import Literal
 
@@ -71,28 +72,55 @@ def requirement_detail(connection, requirement_id):
 def validate_findings(connection, finding_ids, vehicle, market):
     if not finding_ids:
         raise HTTPException(422, "At least one finding is required")
+    customer_findings = False
     for finding_id in set(finding_ids):
-        finding = connection.execute("SELECT vehicle,market FROM findings WHERE id=?", (finding_id,)).fetchone()
+        finding = connection.execute("SELECT vehicle,market,kind FROM findings WHERE id=?", (finding_id,)).fetchone()
         if finding is None:
             raise HTTPException(422, f"Unknown finding: {finding_id}")
-        if tuple(finding) != (vehicle, market):
+        if (finding["vehicle"], finding["market"]) != (vehicle, market):
             raise HTTPException(422, "Findings must match the requirement vehicle and market")
+        customer_findings |= finding["kind"] != "context"
+    if not customer_findings:
+        raise HTTPException(422, "A requirement needs customer findings; context alone is insufficient")
 
 
-def evidence_for_findings(connection, finding_ids):
+def finding_interpretations(connection, finding_ids):
+    """Compare immutable interpretations without generated finding identities."""
+    groups = []
+    for finding_id in finding_ids:
+        finding = finding_detail(connection, finding_id)
+        groups.append({"topic": finding["topic"], "kind": finding["kind"], "summary": finding["summary"],
+                       "confidence": finding["confidence"], "supports": sorted(finding["evidence_ids"]),
+                       "conflicts": sorted(finding["conflicting_evidence_ids"])})
+    return sorted(groups, key=encode)
+
+
+def evidence_for_findings(connection, finding_ids, relation=None):
     if not finding_ids:
         return []
     marks = ",".join("?" for _ in finding_ids)
+    relation_clause = " AND f.relation=?" if relation else ""
+    params = [*finding_ids, relation] if relation else finding_ids
     return [decode(row, ("metadata", "location")) for row in connection.execute(
         "SELECT DISTINCT e.* FROM evidence e JOIN finding_evidence f ON f.evidence_id=e.id "
-        f"WHERE f.finding_id IN ({marks}) ORDER BY e.id", finding_ids)]
+        f"WHERE f.finding_id IN ({marks}){relation_clause} ORDER BY e.id", params)]
 
 
 def validate_targets(connection, content, finding_ids):
-    sources = {e["source_id"] for e in evidence_for_findings(connection, finding_ids)}
+    supporting = evidence_for_findings(connection, finding_ids, "supports")
+    sources = {e["source_id"] for e in supporting}
     for criterion in content["acceptance_criteria"]:
         if criterion["basis"] == "source" and not set(criterion["source_ids"]).issubset(sources):
             raise HTTPException(422, "Acceptance target source references must belong to the linked evidence")
+        if criterion["basis"] == "source":
+            target = re.sub(r"\s+", " ", str(criterion["target"])).strip().casefold()
+            sentences = [sentence for record in supporting if record["source_id"] in criterion["source_ids"]
+                         for sentence in re.split(r"[!?\n]|(?<!\d)\.(?!\d)", record["content"])]
+            if not any(re.search(r"(?<!\w)" + re.escape(target) + r"(?!\w)",
+                                 re.sub(r"\s+", " ", sentence).strip().casefold())
+                       and re.search(r"\b(target|goal|shall|must|require\w*|want\w*|wish\w*|need\w*|should)\b", sentence, re.I)
+                       for sentence in sentences):
+                raise HTTPException(422, "Source-based target must be quoted in a linked explicit desired outcome; use PM assumption otherwise")
 
 
 def score_version(connection, version_id, weights, actor, rationale):
@@ -103,7 +131,8 @@ def score_version(connection, version_id, weights, actor, rationale):
     provenances = {str(row["metadata"].get("provenance") or row["source_id"]) for row in evidence}
     sources = sorted({row["source_id"] for row in evidence})
     dated = sum(bool(row["observed_at"]) for row in evidence)
-    conflicts = sum(len(finding_detail(connection, fid)["conflicting_evidence_ids"]) for fid in version["finding_ids"])
+    conflicts = len({eid for fid in version["finding_ids"]
+                     for eid in finding_detail(connection, fid)["conflicting_evidence_ids"]})
     grade = "A" if len(provenances) >= 3 and dated == len(evidence) and not conflicts else (
         "B" if len(provenances) >= 2 and not conflicts else "C" if evidence else "D")
     explanation = {
@@ -181,6 +210,8 @@ def open_review(connection, requirement_id, reason, changes, actor):
                        for key in CONTENT_FIELDS if baseline[key] != proposed[key]},
             "added_evidence_ids": sorted(proposed_evidence - baseline_evidence),
             "removed_evidence_ids": sorted(baseline_evidence - proposed_evidence),
+            "finding_interpretation": {"before": finding_interpretations(connection, baseline["finding_ids"]),
+                                       "after": finding_interpretations(connection, proposed["finding_ids"])},
             "approved_score": baseline["score"], "proposed_score": proposed["score"],
         }}
     timestamp = now()
@@ -288,9 +319,15 @@ def edit_requirement(requirement_id: str, command: RequirementEdit):
         finding_ids = command.finding_ids or previous["finding_ids"]
         if content == {key: previous[key] for key in CONTENT_FIELDS} and set(finding_ids) == set(previous["finding_ids"]):
             raise HTTPException(422, "Edit must change the requirement or evidence")
+        edited_fields = [key for key in CONTENT_FIELDS if content[key] != previous[key]]
+        if set(finding_ids) != set(previous["finding_ids"]):
+            edited_fields.append("finding_ids")
         new_version(connection, requirement, content, finding_ids, command.actor, command.rationale)
+        audit(connection, "requirement", requirement_id, "requirement.edited", command.actor, command.rationale,
+              metadata={"edited_fields": edited_fields,
+                        "before_finding_ids": previous["finding_ids"], "after_finding_ids": finding_ids})
         if requirement["approved_version_id"] or requirement["status"] == "needs_review":
-            open_review(connection, requirement_id, "PM edited the requirement", {"edited_fields": sorted(set(changes) - {"actor", "rationale", "expected_version_id"})}, command.actor)
+            open_review(connection, requirement_id, "PM edited the requirement", {"edited_fields": sorted(edited_fields)}, command.actor)
         return requirement_detail(connection, requirement_id)
 
 
@@ -301,6 +338,10 @@ def rescore_requirement(requirement_id: str, command: ScoreRequest):
         if requirement["current_version_id"] != command.expected_version_id:
             raise HTTPException(409, "Requirement changed; reload before scoring")
         before = latest_score(connection, requirement["current_version_id"])
+        if command.expected_score_id is not None and before["id"] != command.expected_score_id:
+            raise HTTPException(409, "Score changed; reload before scoring")
+        if before["weights"] == command.weights.model_dump():
+            return before
         result = score_version(connection, requirement["current_version_id"], command.weights.model_dump(), command.actor, command.rationale)
         if requirement["approved_version_id"] and before["weights"] != result["weights"]:
             open_review(connection, requirement_id, "Prioritization weights changed", {"previous_score": before, "proposed_score": result}, command.actor)

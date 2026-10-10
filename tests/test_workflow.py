@@ -243,3 +243,313 @@ def test_sqlite_enforces_immutable_approved_versions(client):
     with pytest.raises(sqlite3.IntegrityError, match="append-only"), transaction() as connection:
         connection.execute("UPDATE requirement_versions SET title='tampered' WHERE id=?", (approved["approved_version_id"],))
     assert client.get(f"/requirements/{approved['id']}").json()["approved_version"] == approved["approved_version"]
+
+
+def fake_ai(monkeypatch, transform=lambda result, records: None):
+    """Exercise persisted AI workflows using the validated reference output."""
+    import os
+
+    from server import analysis_engine
+
+    reference = analysis_engine.analyze_evidence
+
+    def analyze(records, vehicle, market, provider):
+        result = reference(records, vehicle, market, "deterministic")
+        result.update(provider=provider, model=os.getenv("OPENAI_MODEL", "test-model"))
+        transform(result, records)
+        return result
+
+    monkeypatch.setattr(analysis_engine, "analyze_evidence", analyze)
+    monkeypatch.setenv("OPENAI_MODEL", "test-model")
+
+
+def test_old_analysis_cannot_revert_newer_interpretation_of_same_evidence(client, monkeypatch):
+    first = initial(client)
+
+    def revised_title(result, records):
+        for proposal in result["proposals"]:
+            proposal["title"] = "New interpretation: " + proposal["title"]
+
+    fake_ai(monkeypatch, revised_title)
+    newer = client.post("/pipeline/run", json={"provider": "openai"})
+    assert newer.status_code == 201, newer.text
+    current = by_topic(newer.json(), "charging")
+    stale = client.post("/requirements/generate", json={"run_id": first["analysis"]["id"]})
+    assert stale.status_code == 409, stale.text
+    assert client.get(f"/requirements/{current['id']}").json()["current_version_id"] == current["current_version_id"]
+
+
+def test_partial_ai_input_snapshot_cannot_drop_previously_linked_evidence(client, monkeypatch):
+    approved = decision(client, by_topic(initial(client), "charging"))
+    trace = client.get(f"/requirements/{approved['id']}/trace").json()
+    original_ids = {e["id"] for e in trace["evidence"]["items"]}
+    import_feedback(client, [("Charging stations keep failing", "charging", "problem")], reference="new")
+
+    def partial(result, records):
+        result["analyzed_evidence_ids"] = [r["id"] for r in records if r["id"] not in original_ids]
+        for finding in result["findings"]:
+            finding["evidence_ids"] = [eid for eid in finding["evidence_ids"] if eid not in original_ids]
+        result["warnings"].append("Partial AI source coverage")
+
+    fake_ai(monkeypatch, partial)
+    response = client.post("/updates", json={"provider": "openai"})
+    assert response.status_code == 409, response.text
+    current = client.get(f"/requirements/{approved['id']}").json()
+    assert current["current_version_id"] == approved["current_version_id"]
+    assert current["approved_version"] == approved["approved_version"]
+    assert not current["needs_review"]
+
+
+def test_ai_cache_is_invalidated_when_batch_coverage_changes(client, monkeypatch):
+    initial(client)
+    fake_ai(monkeypatch)
+    monkeypatch.setenv("ANALYSIS_MAX_BATCHES", "1")
+    first = client.post("/analyses", json={"provider": "openai"}).json()
+    assert not first["cached"]
+    assert client.post("/analyses", json={"provider": "openai"}).json()["cached"]
+    monkeypatch.setenv("ANALYSIS_MAX_BATCHES", "2")
+    second = client.post("/analyses", json={"provider": "openai"}).json()
+    assert not second["cached"] and second["id"] != first["id"]
+    monkeypatch.setenv("ANALYSIS_BATCH_SIZE", "10")
+    third = client.post("/analyses", json={"provider": "openai"}).json()
+    assert not third["cached"] and third["id"] != second["id"]
+
+
+def test_pm_override_survives_a_coinciding_generator_proposal(client, monkeypatch):
+    approved = decision(client, by_topic(initial(client), "charging"))
+    pm_title = "Agreed charging experience"
+    edited = client.patch(f"/requirements/{approved['id']}", json={
+        "expected_version_id": approved["current_version_id"], "actor": "Alice", "rationale": "Choose product language",
+        "title": pm_title,
+    }).json()
+    approved = decision(client, edited)
+
+    def matching_title(result, records):
+        for proposal in result["proposals"]:
+            if proposal["topic"] == "charging":
+                proposal["title"] = pm_title
+
+    fake_ai(monkeypatch, matching_title)
+    import_feedback(client, [("Charging is unreliable", "charging", "problem")], reference="coinciding")
+    aligned = client.post("/updates", json={"provider": "openai"})
+    assert aligned.status_code == 201, aligned.text
+    import_feedback(client, [("Charging is too slow", "charging", "problem")], reference="later")
+    later = client.post("/updates", json={})
+    assert later.status_code == 201, later.text
+    revised = by_topic(later.json(), "charging")
+    assert revised["current_version"]["title"] == pm_title
+    assert revised["approved_version"] == approved["approved_version"]
+
+
+def test_rescore_checks_current_score_and_noop_does_not_invalidate_approval(client):
+    approved = decision(client, by_topic(initial(client), "charging"))
+    original = approved["current_version"]["score"]
+    common = {"expected_version_id": approved["current_version_id"], "expected_score_id": original["id"],
+              "actor": "Alice", "rationale": "Reconsider priority"}
+    noop = client.post(f"/requirements/{approved['id']}/scores", json={**common, "weights": original["weights"]})
+    assert noop.status_code == 201, noop.text
+    assert noop.json()["id"] == original["id"]
+    assert not client.get(f"/requirements/{approved['id']}").json()["needs_review"]
+    weights = {"customer_impact": 1, "market_relevance": 0, "strategic_fit": 0, "differentiation": 0, "feasibility": 0}
+    revised = client.post(f"/requirements/{approved['id']}/scores", json={**common, "weights": weights})
+    assert revised.status_code == 201, revised.text
+    stale = client.post(f"/requirements/{approved['id']}/scores", json={**common, "weights": original["weights"]})
+    assert stale.status_code == 409, stale.text
+    current = client.get(f"/requirements/{approved['id']}").json()
+    assert current["current_version"]["score"]["id"] == revised.json()["id"]
+    assert current["approved_version"]["score"] == original
+
+
+def test_pm_assumed_targets_cannot_claim_source_citations(client):
+    requirement = by_topic(initial(client), "charging")
+    source_id = client.get(f"/requirements/{requirement['id']}/trace").json()["sources"][0]["id"]
+    response = client.patch(f"/requirements/{requirement['id']}", json={
+        "expected_version_id": requirement["current_version_id"], "actor": "PM", "rationale": "Define target",
+        "acceptance_criteria": [{"metric": "success", "target": "95%", "basis": "PM assumption", "source_ids": [source_id]}],
+    })
+    assert response.status_code == 422, response.text
+
+
+def test_context_alone_cannot_be_the_basis_of_a_pm_requirement(client):
+    import_feedback(client, [("Charging survey has 250 respondents", "charging", "context")])
+    run = client.post("/analyses", json={}).json()
+    assert run["findings"][0]["kind"] == "context"
+    response = client.post("/requirements", json={
+        "topic": "charging", "title": "Improve charging", "statement": "Customers can charge confidently",
+        "customer_need": "Charge confidently", "acceptance_criteria": [{"metric": "success", "target": "90%", "basis": "PM assumption"}],
+        "factors": {"customer_impact": 3, "market_relevance": 3, "strategic_fit": 3, "differentiation": 3, "feasibility": 3},
+        "finding_ids": [run["findings"][0]["id"]], "rationale": "Review context",
+    })
+    assert response.status_code == 422, response.text
+    assert client.get("/requirements").json()["total"] == 0
+
+
+def test_interpretation_only_updates_compare_against_complete_approved_baseline(client, monkeypatch):
+    approved = decision(client, by_topic(initial(client), "charging"))
+
+    def reinterpret(result, records):
+        for finding in result["findings"]:
+            if finding["topic"] == "charging":
+                finding["summary"] = "Same customer report now assessed with additional uncertainty"
+                finding["confidence"] = 0.25
+
+    fake_ai(monkeypatch, reinterpret)
+    response = client.post("/updates", json={"provider": "openai"})
+    assert response.status_code == 201, response.text
+    revised = by_topic(response.json(), "charging")
+    comparison = revised["reviews"][-1]["changes"]["against_approved"]
+    assert comparison["added_evidence_ids"] == comparison["removed_evidence_ids"] == []
+    assert comparison["fields"] == {}
+    interpretation = comparison["finding_interpretation"]
+    assert interpretation["before"][0]["confidence"] != interpretation["after"][0]["confidence"]
+    assert interpretation["after"][0]["confidence"] == 0.25
+    assert revised["approved_version"] == approved["approved_version"]
+
+
+def test_conflict_counts_unique_evidence_instead_of_repeated_links(client):
+    import_feedback(client, [("Charging is unreliable", "charging", "problem"),
+                             ("I need easy charging", "charging", "need"),
+                             ("I love easy charging", "charging", "strength")])
+    result = client.post("/pipeline/run", json={}).json()
+    explanation = by_topic(result, "charging")["current_version"]["score"]["explanation"]
+    assert explanation["conflict_count"] == 3
+    assert explanation["evidence_count"] == 3
+
+
+def test_conflicting_source_alone_cannot_support_a_source_based_target(client, monkeypatch):
+    first = import_feedback(client, [("Charging is unreliable", "charging", "problem")], reference="support")
+    contrary = import_feedback(client, [("Customers want 95% charging success", "charging", "strength")], reference="contrary")
+
+    def use_only_problem(result, records):
+        for proposal in result["proposals"]:
+            if proposal["topic"] == "charging":
+                proposal["finding_indexes"] = [i for i, f in enumerate(result["findings"]) if f["kind"] == "problem"]
+
+    fake_ai(monkeypatch, use_only_problem)
+    response = client.post("/pipeline/run", json={"provider": "openai"})
+    assert response.status_code == 201, response.text
+    requirement = by_topic(response.json(), "charging")
+    response = client.patch(f"/requirements/{requirement['id']}", json={
+        "expected_version_id": requirement["current_version_id"], "actor": "PM", "rationale": "Define source target",
+        "acceptance_criteria": [{"metric": "charging success", "target": "95%", "basis": "source", "source_ids": [contrary["source_id"]]}],
+    })
+    assert first["source_id"] != contrary["source_id"]
+    assert response.status_code == 422, response.text
+
+
+def test_concurrent_import_during_analysis_cannot_apply_an_outdated_cumulative_snapshot(client, monkeypatch):
+    approved = decision(client, by_topic(initial(client), "charging"))
+
+    def concurrent_import(result, records):
+        import_feedback(client, [("Charging failed today", "charging", "problem")], reference="arrived-during-analysis")
+
+    fake_ai(monkeypatch, concurrent_import)
+    response = client.post("/updates", json={"provider": "openai"})
+    assert response.status_code == 409, response.text
+    current = client.get(f"/requirements/{approved['id']}").json()
+    assert current["current_version_id"] == approved["current_version_id"]
+    assert not current["needs_review"]
+    retry = client.post("/updates", json={})
+    assert retry.status_code == 201, retry.text
+    assert by_topic(retry.json(), "charging")["needs_review"]
+
+
+def test_generated_whitespace_is_normalized_before_noop_comparison(client, monkeypatch):
+    initial(client)
+
+    def padding(result, records):
+        for proposal in result["proposals"]:
+            for key in ("title", "statement", "customer_need"):
+                proposal[key] = "  " + proposal[key] + "  "
+            proposal["assumptions"] = ["  " + item + "  " for item in proposal["assumptions"]]
+            for criterion in proposal["acceptance_criteria"]:
+                criterion["metric"] = "  " + criterion["metric"] + "  "
+
+    fake_ai(monkeypatch, padding)
+    response = client.post("/updates", json={"provider": "openai"})
+    assert response.status_code == 201, response.text
+    assert response.json()["generation"]["updated"] == []
+    assert response.json()["reviews"] == []
+
+
+def test_explicit_pm_added_findings_remain_linked_in_future_updates(client):
+    result = initial(client)
+    approved = decision(client, by_topic(result, "charging"))
+    extra_finding = by_topic(result, "comfort")["current_version"]["finding_ids"][0]
+    selected = [*approved["current_version"]["finding_ids"], extra_finding]
+    edited = client.patch(f"/requirements/{approved['id']}", json={
+        "expected_version_id": approved["current_version_id"], "actor": "Alice", "rationale": "Track cabin comfort while charging",
+        "finding_ids": selected,
+    })
+    assert edited.status_code == 200, edited.text
+    approved = decision(client, edited.json())
+    import_feedback(client, [("Public charging is slow", "charging", "problem")], reference="later")
+    response = client.post("/updates", json={})
+    assert response.status_code == 201, response.text
+    revised = by_topic(response.json(), "charging")
+    assert extra_finding in revised["current_version"]["finding_ids"]
+    assert revised["approved_version"] == approved["approved_version"]
+
+
+def test_preserved_pm_source_target_keeps_its_support_after_model_omits_it(client, monkeypatch):
+    original_source = import_feedback(client, [("Customers want 95% successful charging", "charging", "need")])
+    approved = decision(client, by_topic(client.post("/pipeline/run", json={}).json(), "charging"))
+    edited = client.patch(f"/requirements/{approved['id']}", json={
+        "expected_version_id": approved["current_version_id"], "actor": "Alice", "rationale": "Adopt the requested target",
+        "acceptance_criteria": [{"metric": "charging success", "target": "95%", "basis": "source",
+                                 "source_ids": [original_source["source_id"]]}],
+    })
+    assert edited.status_code == 200, edited.text
+    approved = decision(client, edited.json())
+    import_feedback(client, [("Charging fails", "charging", "problem")], reference="new")
+
+    def omit_need(result, records):
+        for proposal in result["proposals"]:
+            proposal["finding_indexes"] = [i for i, f in enumerate(result["findings"]) if f["kind"] == "problem"]
+
+    fake_ai(monkeypatch, omit_need)
+    response = client.post("/updates", json={"provider": "openai"})
+    assert response.status_code == 201, response.text
+    revised = by_topic(response.json(), "charging")
+    assert revised["current_version"]["acceptance_criteria"] == approved["current_version"]["acceptance_criteria"]
+    assert set(approved["current_version"]["finding_ids"]) <= set(revised["current_version"]["finding_ids"])
+    assert revised["current_version"]["score"]["explanation"]["evidence_count"] == 2
+
+
+def test_linked_customer_text_cannot_be_misrepresented_as_a_source_target(client):
+    source = import_feedback(client, [("Charging satisfaction measured 95%", "charging", "problem")])
+    requirement = by_topic(client.post("/pipeline/run", json={}).json(), "charging")
+    response = client.patch(f"/requirements/{requirement['id']}", json={
+        "expected_version_id": requirement["current_version_id"], "actor": "Alice", "rationale": "Set target",
+        "acceptance_criteria": [{"metric": "charging satisfaction", "target": "95%", "basis": "source", "source_ids": [source["source_id"]]}],
+    })
+    assert response.status_code == 422, response.text
+    assert len(client.get(f"/requirements/{requirement['id']}/versions").json()) == 1
+
+
+def test_new_evidence_preserves_pm_scoring_weights(client):
+    approved = decision(client, by_topic(initial(client), "charging"))
+    weights = {"customer_impact": 1, "market_relevance": 0, "strategic_fit": 0, "differentiation": 0, "feasibility": 0}
+    score = client.post(f"/requirements/{approved['id']}/scores", json={
+        "expected_version_id": approved["current_version_id"], "actor": "Alice", "rationale": "Prioritize impact", "weights": weights,
+    })
+    assert score.status_code == 201, score.text
+    import_feedback(client, [("Charging stations are hard to find", "charging", "problem")], reference="new")
+    response = client.post("/updates", json={})
+    assert response.status_code == 201, response.text
+    revised = by_topic(response.json(), "charging")
+    assert revised["current_version"]["score"]["weights"] == weights
+    assert revised["approved_version"] == approved["approved_version"]
+
+
+def test_oversized_model_proposal_returns_validation_error_without_mutating_requirements(client, monkeypatch):
+    approved = decision(client, by_topic(initial(client), "charging"))
+
+    def too_many_criteria(result, records):
+        result["proposals"][0]["acceptance_criteria"] *= 31
+
+    fake_ai(monkeypatch, too_many_criteria)
+    response = client.post("/updates", json={"provider": "openai"})
+    assert response.status_code == 422, response.text
+    current = client.get(f"/requirements/{approved['id']}").json()
+    assert current["current_version_id"] == approved["current_version_id"]

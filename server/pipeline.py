@@ -5,15 +5,24 @@ import os
 from contextlib import closing
 
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import ValidationError
 
 from database.store import audit, connect, decode, encode, new_id, now, transaction
 from server.evidence import evidence_rows
-from server.models import AnalysisRequest, GenerateRequest, RequirementCreate, Scope, normalize_market
+from server.models import (
+    AnalysisRequest,
+    GenerateRequest,
+    RequirementContent,
+    RequirementCreate,
+    Scope,
+    normalize_market,
+)
 from server.requirements import (
     CONTENT_FIELDS,
     create_requirement,
     evidence_for_findings,
     finding_detail,
+    finding_interpretations,
     list_requirements,
     list_reviews,
     new_version,
@@ -53,7 +62,10 @@ def run_analysis(command: AnalysisRequest):
             raise HTTPException(422, "Import evidence for this vehicle and market before analysis")
         fingerprint = {"evidence": [(row["id"], row["content_hash"]) for row in records],
                        "provider": command.provider, "model": os.getenv("OPENAI_MODEL", "") if command.provider == "openai" else "reference",
-                       "prompt_version": PROMPT_VERSION}
+                       "prompt_version": PROMPT_VERSION, "coverage_contract": 1}
+        if command.provider == "openai":
+            fingerprint["batch_size"] = os.getenv("ANALYSIS_BATCH_SIZE", "40")
+            fingerprint["max_batches"] = os.getenv("ANALYSIS_MAX_BATCHES", "20")
         digest = hashlib.sha256(encode(fingerprint).encode()).hexdigest()
         cached = connection.execute("SELECT id FROM analysis_runs WHERE input_hash=? ORDER BY created_at DESC LIMIT 1", (digest,)).fetchone()
         if cached:
@@ -94,34 +106,54 @@ def run_analysis(command: AnalysisRequest):
 
 def evidence_signature(connection, finding_ids):
     """Compare immutable evidence and its interpretation, independent of generated finding IDs."""
-    groups = []
-    for finding_id in finding_ids:
-        finding = finding_detail(connection, finding_id)
-        groups.append({"topic": finding["topic"], "kind": finding["kind"], "summary": finding["summary"],
-                       "supports": sorted(finding["evidence_ids"]), "conflicts": sorted(finding["conflicting_evidence_ids"])})
-    return sorted(groups, key=encode)
+    return finding_interpretations(connection, finding_ids)
 
 
-def preceding_proposal(connection, previous, topic):
-    """Recover the generator baseline so new evidence cannot overwrite later PM edits."""
-    for finding_id in previous["finding_ids"]:
-        row = connection.execute("SELECT a.result FROM analysis_runs a JOIN findings f ON f.run_id=a.id WHERE f.id=?", (finding_id,)).fetchone()
-        if row:
-            result = decode(row, ("result",))["result"]
-            proposal = next((p for p in result["proposals"] if p["topic"] == topic), None)
-            if proposal:
-                return proposal
-    return None
+def pm_ownership(connection, requirement_id):
+    """Remember explicit PM edits even if a later generated proposal matches them."""
+    fields, pinned_findings = set(), set()
+    events = connection.execute(
+        "SELECT action,actor,before_state,after_state,metadata FROM audit_events "
+        "WHERE entity_id=? AND action IN ('requirement.edited','requirement.version_created') ORDER BY sequence",
+        (requirement_id,),
+    )
+    for row in events:
+        event = decode(row, ("before_state", "after_state", "metadata"))
+        if event["action"] == "requirement.edited":
+            fields.update(set(event["metadata"]["edited_fields"]) & set(CONTENT_FIELDS))
+            if "finding_ids" in event["metadata"]["edited_fields"]:
+                prior_ids = set(event["metadata"].get("before_finding_ids", []))
+                selected_ids = set(event["metadata"].get("after_finding_ids", []))
+                pinned_findings.difference_update(prior_ids - selected_ids)
+                pinned_findings.update(selected_ids - prior_ids)
+        elif event["actor"] not in ("AI:openai", "System:reference"):
+            # Existing records predate the explicit edit event. Recover their
+            # edits from the immutable before/after version audit snapshots.
+            before, after = event["before_state"], event["after_state"]
+            fields.update(key for key in CONTENT_FIELDS if before is None or before[key] != after[key])
+            prior_ids = set(before["finding_ids"]) if before else set()
+            selected_ids = set(after["finding_ids"])
+            pinned_findings.difference_update(prior_ids - selected_ids)
+            pinned_findings.update(selected_ids - prior_ids)
+    return fields, pinned_findings
 
 
-def generate_requirements(command: GenerateRequest):
+def generate_requirements(command: GenerateRequest, require_cumulative=False):
     with transaction() as connection:
         run = run_detail(connection, command.run_id)
+        if require_cumulative:
+            current_evidence = {row[0] for row in connection.execute(
+                "SELECT id FROM evidence WHERE vehicle=? AND market=?", (run["vehicle"], run["market"]))}
+            if current_evidence != set(run["evidence_ids"]):
+                raise HTTPException(409, "Evidence changed during analysis; rerun cumulative analysis before generating")
         findings = run["findings"]
         created, updated, unchanged, requirements = [], [], [], []
         for proposal in run["result"]["proposals"]:
             finding_ids = [findings[index]["id"] for index in proposal["finding_indexes"]]
-            content = {key: proposal[key] for key in CONTENT_FIELDS}
+            try:
+                content = RequirementContent.model_validate({key: proposal[key] for key in CONTENT_FIELDS}).model_dump()
+            except ValidationError as exc:
+                raise HTTPException(422, "Analysis proposal exceeds requirement content constraints; revise the analysis before generating") from exc
             existing = connection.execute("SELECT * FROM requirements WHERE vehicle=? AND market=? AND topic=?",
                                           (run["vehicle"], run["market"], proposal["topic"])).fetchone()
             actor = f"AI:{run['provider']}" if run["provider"] != "deterministic" else "System:reference"
@@ -134,17 +166,22 @@ def generate_requirements(command: GenerateRequest):
                 requirement = dict(existing)
                 previous = version_detail(connection, requirement["current_version_id"])
                 previous_signature = evidence_signature(connection, previous["finding_ids"])
+                preserved, pinned_findings = pm_ownership(connection, requirement["id"])
+                for key in preserved:
+                    content[key] = previous[key]
+                finding_ids = sorted(set(finding_ids) | pinned_findings)
+                # A preserved source-based PM target retains its supporting
+                # finding even if the next model proposal leaves it out.
+                required_sources = {sid for criterion in content["acceptance_criteria"]
+                                    if criterion["basis"] == "source" for sid in criterion["source_ids"]}
+                supplied_sources = {e["source_id"] for e in evidence_for_findings(connection, finding_ids, "supports")}
+                for fid in previous["finding_ids"]:
+                    if required_sources - supplied_sources:
+                        sources = {e["source_id"] for e in evidence_for_findings(connection, [fid], "supports")}
+                        if sources & (required_sources - supplied_sources):
+                            finding_ids.append(fid)
+                            supplied_sources.update(sources)
                 proposed_signature = evidence_signature(connection, finding_ids)
-                prior_proposal = preceding_proposal(connection, previous, proposal["topic"])
-                preserved = []
-                if prior_proposal:
-                    for key in CONTENT_FIELDS:
-                        if previous[key] != prior_proposal[key]:
-                            content[key] = previous[key]
-                            preserved.append(key)
-                elif previous["actor"] not in ("AI:openai", "System:reference"):
-                    content = {key: previous[key] for key in CONTENT_FIELDS}
-                    preserved = list(CONTENT_FIELDS)
                 same_content = content == {key: previous[key] for key in CONTENT_FIELDS}
                 if previous_signature == proposed_signature and same_content:
                     unchanged.append(requirement["id"])
@@ -155,13 +192,23 @@ def generate_requirements(command: GenerateRequest):
                     proposed_evidence = {e["id"] for e in evidence_for_findings(connection, finding_ids)}
                     if not previous_evidence.issubset(set(run["evidence_ids"])):
                         raise HTTPException(409, "Analysis omits evidence in an existing requirement; run cumulative analysis for this scope")
+                    latest_applied = connection.execute(
+                        "SELECT max(a.created_at) FROM analysis_runs a JOIN findings f ON f.run_id=a.id "
+                        "JOIN requirement_findings rf ON rf.finding_id=f.id WHERE rf.version_id=?",
+                        (previous["id"],),
+                    ).fetchone()[0]
+                    if run["created_at"] < latest_applied:
+                        raise HTTPException(409, "A newer analysis has already been applied; reload before generating")
+                    analyzed = set(run["result"].get("analyzed_evidence_ids", []))
+                    if not previous_evidence.issubset(analyzed):
+                        raise HTTPException(409, "Analysis did not analyze all evidence in an existing requirement; increase AI coverage before generating")
                     version = new_version(connection, requirement, content, finding_ids, actor,
                                           f"New evidence assessed by analysis {run['id']}")
                     changes = {"added_evidence_ids": sorted(proposed_evidence - previous_evidence),
                                "removed_evidence_ids": sorted(previous_evidence - proposed_evidence),
                                "changed_fields": [key for key in CONTENT_FIELDS if previous[key] != content[key]],
                                "previous_score": previous["score"]["total"], "proposed_score": version["score"]["total"],
-                               "preserved_pm_fields": preserved, "run_id": run["id"],
+                               "preserved_pm_fields": sorted(preserved), "run_id": run["id"],
                                "evidence_interpretation_changed": previous_signature != proposed_signature}
                     # New support/conflict/acceptance changes affect the basis of a commitment even at the same score.
                     if requirement["approved_version_id"] or requirement["status"] in ("needs_review", "postponed", "rejected"):
@@ -193,7 +240,8 @@ def generate(command: GenerateRequest):
 @router.post("/pipeline/run", status_code=201)
 def pipeline(command: AnalysisRequest):
     analysis = run_analysis(command)
-    generation = generate_requirements(GenerateRequest(run_id=analysis["id"], actor=command.actor))
+    generation = generate_requirements(GenerateRequest(run_id=analysis["id"], actor=command.actor),
+                                       require_cumulative=command.source_ids is None)
     return {"analysis": analysis, "generation": generation}
 
 
