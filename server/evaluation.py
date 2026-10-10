@@ -7,23 +7,27 @@ from statistics import median
 from fastapi import APIRouter
 
 from database.store import connect
-from server.models import Scope
+from server.evidence import scope_filters
 
 router = APIRouter()
 
 
 @router.get("/metrics")
 def metrics(vehicle: str = "G60", market: str = "US"):
-    scope = Scope(vehicle=vehicle, market=market)
-    params = (scope.vehicle, scope.market)
+    vehicle, market = scope_filters(vehicle, market)
+    params = (vehicle, market)
     with closing(connect()) as connection:
+        # All measurements describe the same committed database snapshot.
+        connection.execute("BEGIN")
         counts = {table: connection.execute(f"SELECT count(*) FROM {table} WHERE vehicle=? AND market=?", params).fetchone()[0]
                   for table in ("sources", "evidence", "findings", "requirements")}
         traced = connection.execute(
             "SELECT count(*) FROM requirements r WHERE r.vehicle=? AND r.market=? AND EXISTS ("
             "SELECT 1 FROM requirement_findings rf JOIN finding_evidence fe ON fe.finding_id=rf.finding_id "
-            "JOIN evidence e ON e.id=fe.evidence_id JOIN sources s ON s.id=e.source_id "
-            "WHERE rf.version_id=r.current_version_id AND fe.relation='supports')", params).fetchone()[0]
+            "JOIN findings f ON f.id=rf.finding_id JOIN evidence e ON e.id=fe.evidence_id "
+            "JOIN sources s ON s.id=e.source_id WHERE rf.version_id=r.current_version_id "
+            "AND fe.relation='supports' AND f.vehicle=r.vehicle AND f.market=r.market "
+            "AND e.vehicle=r.vehicle AND e.market=r.market AND s.vehicle=r.vehicle AND s.market=r.market)", params).fetchone()[0]
         open_reviews = connection.execute("SELECT count(*) FROM review_items q JOIN requirements r ON r.id=q.requirement_id "
                                           "WHERE r.vehicle=? AND r.market=? AND q.status='open'", params).fetchone()[0]
         statuses = {row[0]: row[1] for row in connection.execute(
@@ -35,11 +39,12 @@ def metrics(vehicle: str = "G60", market: str = "US"):
         durations = [max(0.0, (datetime.fromisoformat(row[1]) - datetime.fromisoformat(row[0])).total_seconds()) for row in rows]
         decision_count = connection.execute("SELECT count(*) FROM decisions d JOIN requirements r ON r.id=d.requirement_id "
                                              "WHERE r.vehicle=? AND r.market=?", params).fetchone()[0]
-    return {"scope": scope.model_dump(), "counts": {**counts, "decisions": decision_count, "open_reviews": open_reviews},
+    return {"scope": {"vehicle": vehicle, "market": market}, "counts": {**counts, "decisions": decision_count, "open_reviews": open_reviews},
             "requirement_statuses": statuses,
             "traceability": {"requirements_with_source_links": traced, "requirements": counts["requirements"],
                              "coverage": traced / counts["requirements"] if counts["requirements"] else None},
             "time_to_first_decision_seconds": {"sample_count": len(durations), "median": median(durations) if durations else None},
-            "limitations": ["Traceability measures the existence of links, not semantic correctness of evidence or requirement quality.",
-                            "Decision time is elapsed wall time from version creation, not active PM effort or a productivity claim.",
+            "limitations": ["Traceability covers current requirement versions with at least one in-scope supporting source link; it does not measure semantic correctness or requirement quality.",
+                            "Decision time counts each decided requirement version once, from creation to its first approve/reject/postpone/challenge action. Undecided versions are excluded.",
+                            "Decision time is elapsed wall time, not active PM effort or a productivity claim.",
                             "Change-detection precision/recall require labeled evaluation; run scripts/evaluate_pipeline.py."]}

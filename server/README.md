@@ -16,6 +16,8 @@ The scope is customer-facing requirements for a successor vehicle, starting with
 
 The OpenAPI schema at `/docs` defines all request fields. Paginated evidence, findings, requirements, and trace evidence return `items`, `total`, `limit`, and `offset`. `/audit` uses increasing `sequence` and `next_after` cursors. Existing `GET /sources` remains a list for compatibility. Scope inputs normalize common aliases such as USA → US.
 
+Metrics use one database snapshot for the selected scope. Source-link coverage counts current requirement versions with at least one supporting link through an in-scope finding, evidence record and source; it does not measure completeness or semantic correctness. Decision latency counts each decided version once, from creation to its first approve, reject, postpone or challenge action. Undecided versions are excluded, and later revisions are separate samples. This elapsed time includes idle time and is not active PM effort.
+
 ## Approval and revision contract
 
 1. Fetch the requirement detail. It includes `current_version`, `approved_version`, their score snapshots, and review items.
@@ -38,4 +40,4 @@ Set `OPENAI_API_KEY` and `OPENAI_MODEL` to use `provider=openai`; no specific mo
 
 Selected web fetching retrieves one public HTML/text source, validates redirects and public addresses, and archives the decoded snapshot. Supplied web snapshots are useful for already collected research. PDFs use file import; scanned PDFs require OCR outside this backend. The prototype does not implement an open crawler, engineering requirements, detailed costs, or autonomous PM approval.
 
-Use `uv run pytest -q` for regressions, `uv run python scripts/evaluate_pipeline.py` for labeled synthetic workflow evaluation, and `uv run python scripts/verify_backend.py --real-data` for live HTTP/MCP and real-data verification. The default provider makes the complete reference workflow reproducible without external credentials; mocked provider tests exercise the real AI contract, while live AI calls require credentials.
+Use `uv run pytest -q` for regressions, `uv run python scripts/evaluate_pipeline.py` for labeled synthetic workflow evaluation, and `uv run python scripts/verify_backend.py --real-data` for live HTTP/MCP and real-data verification. The evaluator measures new review alerts across eight updates to two approved themes, includes TP/FP/FN/TN counts, and reports failures before exiting nonzero. Its supplied topic/sentiment metadata and small fixture do not benchmark AI extraction or unseen data. The default provider makes the complete reference workflow reproducible without external credentials; mocked provider tests exercise the real AI contract, while live AI calls require credentials.
