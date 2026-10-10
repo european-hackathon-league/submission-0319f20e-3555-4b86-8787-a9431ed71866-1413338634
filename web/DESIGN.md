@@ -4,7 +4,7 @@ A product-planning adaptation of the user-supplied BMW financial dashboard, with
 
 ## Direction
 
-Automotive precision with a quiet product-planning cockpit. Graphite navigation, cool white working surfaces, hairline borders and blue emphasis. Design variance 3/10, motion intensity 4/10, density 6/10. The existing Base UI primitives and Recharts remain in place.
+Automotive precision with a quiet product-planning cockpit. Graphite navigation, cool white working surfaces, hairline dividers and blue emphasis. Design variance 3/10, motion intensity 4/10, density 6/10. The existing Base UI primitives remain in place.
 
 - Reference: [BMW USA](https://www.bmwusa.com/) for its light sans-serif headings, blue calls to action, monochrome surfaces and logo treatment.
 - Typeface: Barlow, weights 300–600, for titles, interface and values. IBM Plex Mono remains for compact labels and tabular details. Both are self-hosted by Next.js. Barlow is an open-source alternative for this concept; BMW's proprietary BMW Type Next font was not copied.
@@ -24,6 +24,6 @@ BMW branding belongs to its respective owner. This local workspace is an indepen
 
 ## Product-planning adaptation
 
-The exact financial dashboard is preserved in commit `33bc645`. The current implementation retains its shell geometry, fonts, motion field, colors, borders and primitives. The content is now the shared product-planning API: requirements, sources, evidence, pipeline, reviews, markets and audit.
+The exact financial dashboard is preserved in commit `33bc645`. The current implementation retains its shell geometry, fonts, motion field, colors and primitives. Main surface outlines are transparent; dividers and state borders stay visible. The content is now the shared product-planning API: requirements, sources, evidence, pipeline, reviews, markets and audit.
 
 New surfaces use the same square geometry and muted typography. Supporting and conflicting evidence stay visible; priority scores always carry an evidence grade. Decision forms preserve the selected version and score. Mobile uses the existing accessible sheet navigation and a full-width detail drawer. See [README.md](README.md) for runtime, verification and remaining API boundaries.

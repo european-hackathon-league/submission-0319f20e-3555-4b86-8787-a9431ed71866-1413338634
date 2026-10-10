@@ -26,8 +26,8 @@ EHL_API_URL=http://127.0.0.1:8000 bun dev
 
 | Screen | Behavior |
 | --- | --- |
-| Overview | Original animated BMW hero, portfolio counts, recorded priorities with evidence grades, source coverage, loves/pains and review links. Persistent G60/US source-concentration disclosure. |
-| Requirements | Search, multi-filter, sort, pinned title, pagination, saved browser views, density, CSV/JSON and approved-snapshot ReqIF export. |
+| Overview | Focused evidence-to-decision story: live evidence, finding and requirement counts; one highest-priority proposal with its separate evidence grade; source-link coverage. Persistent G60/US source-concentration disclosure. |
+| Requirements | Ranked list and search up front. Filters, saved views, density, exports and creation remain under **Filters and tools**. |
 | Requirement detail | Statement, measurable criteria, explicit target basis, assumptions, paged supporting/conflicting evidence, exact sheet/row/page, original downloads, score contributions and unsaved weight simulation. |
 | Decisions and versions | PM edits create a new scored version. Approval/rejection/postponement/challenge require rationale and exact version/score IDs. Lead PMs can save reweighted scores. Approved/current comparison, historical snapshots and audit history. |
 | Needs review | Persisted reasons, before/after changes, priorities and keyboard navigation (`j`, `k`, `o`/Enter). |
@@ -38,6 +38,8 @@ EHL_API_URL=http://127.0.0.1:8000 bun dev
 | Audit and settings | Filtered event timeline, event/hash inspection, JSON export, declared actor roles, theme/density and API/MCP links. |
 
 Filters, selected requirement/tab, immutable version/score, selected evidence, and workflow selection use shareable URLs. Stable-key links such as `/g60/us/requirements/REQ-G60-US-003/trace` work. Global search uses ⌘K/Ctrl+K. The register uses a semantic paginated table; paged API reads are collected without silently truncating records. TanStack Query manages server state. Input contracts are generated in `lib/generated-api.ts`; `lib/types.ts` describes additional response shapes from the current API.
+
+The sidebar keeps Overview, Requirements and Evidence visible. Pipeline, imports, reviews, markets, audit and settings remain available under **More tools**. A reviewer can be selected within the requirement drawer before recording a decision. See [the three-minute demo guide](DEMO.md).
 
 ## Reference checkpoint
 
@@ -59,6 +61,7 @@ bun run typecheck
 bun run lint
 bun test lib/*.test.ts
 bun run build
+node scripts/demo-preflight.mjs http://127.0.0.1:3003
 # This creates synthetic verification records; use a dedicated local database.
 node scripts/verify-integration.mjs http://127.0.0.1:3003
 ```
