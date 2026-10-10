@@ -26,6 +26,10 @@ Metrics use one database snapshot for the selected scope. Source-link coverage c
 4. Approval updates the approved pointers and resolves open review items. Proposed edits, changed weights, and new evidence preserve the previously approved version and score until another explicit approval. Rejecting a revision preserves the last approved baseline; postponement retains an open review item; a challenge creates one.
 5. A new evidence batch creates revisions only for affected topics. The review includes the full comparison against the last approval, even after several unapproved updates. Explicit PM content edits and added supporting findings remain protected. Repeated imports/analysis are idempotent. Older or incomplete analyses cannot overwrite a newer decision basis.
 
+When the OpenAI model and prompt contract stay the same, unchanged supporting/conflicting evidence and classifications retain the existing wording, targets and score. Model paraphrases, regrouping, or judgment variation alone do not reopen unrelated PM decisions; the analysis audit records why a proposal was retained. New evidence, changed classifications, and changed model/prompt contracts still pass through change assessment.
+
+Actor denials from the database (AI/system decisions, inactive actors, or insufficient PM roles) return HTTP 403 and preserve the prior data and audit history. Version/score concurrency conflicts return HTTP 409.
+
 Every decision, content version, priority calculation, and relevant source/detail access is audited. Original evidence, findings, requirement versions, scores, decisions and audit events are append-only at the SQLite layer. Writes are transactional and foreign keys are enabled. SQLite upgrades preserve the initial source-only database.
 
 ## Scoring and uncertainty
