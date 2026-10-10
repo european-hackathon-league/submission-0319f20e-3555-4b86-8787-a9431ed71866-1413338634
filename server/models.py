@@ -1,11 +1,39 @@
 """Validated commands shared by HTTP and MCP clients."""
 
+import json
+import re
+from datetime import date, datetime
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 Factor = Annotated[float, Field(ge=0, le=5, allow_inf_nan=False)]
+MAX_IMPORT_BYTES = 25 * 1024 * 1024
+MAX_IMPORT_TEXT = 5_000_000
+
+
+def json_size(value) -> int:
+    """Reject non-JSON values, nonfinite numbers, and invalid Unicode early."""
+    try:
+        return len(json.dumps(value, ensure_ascii=False, allow_nan=False).encode("utf-8"))
+    except (TypeError, ValueError, UnicodeError, RecursionError) as exc:
+        raise ValueError("Source locations and metadata must contain valid JSON") from exc
+
+
+def observed_date(value: str | None) -> str | None:
+    if value is None:
+        return None
+    try:
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+            date.fromisoformat(value)
+        elif re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?", value):
+            datetime.fromisoformat(value)
+        else:
+            raise ValueError
+    except ValueError as exc:
+        raise ValueError("observed_at must be an ISO date or timestamp") from exc
+    return value
 
 
 def normalize_market(value: str) -> str:
@@ -38,13 +66,22 @@ class EvidenceRecord(Scope):
     metadata: dict = Field(default_factory=dict)
     observed_at: str | None = None
 
+    _validate_observed_at = field_validator("observed_at")(observed_date)
+
+    @field_validator("location", "metadata")
+    @classmethod
+    def bounded_json(cls, value):
+        if json_size(value) > 128 * 1024:
+            raise ValueError("Source locations and metadata must be at most 128 KiB")
+        return value
+
 
 class RecordsImport(Scope):
     title: Text = Field(max_length=200)
     kind: Literal["feedback", "study", "sales", "document", "other", "web"] = "feedback"
     reference: Text = Field(max_length=2000)
     records: list[EvidenceRecord] = Field(min_length=1, max_length=30_000)
-    actor: Text = "PM"
+    actor: Text = Field(default="PM", max_length=200)
     metadata: dict = Field(default_factory=dict)
 
     @model_validator(mode="before")
@@ -52,26 +89,49 @@ class RecordsImport(Scope):
     def inherit_record_scope(cls, value):
         if isinstance(value, dict):
             value = dict(value)
+            records = value.get("records")
+            if not isinstance(records, list):
+                return value
+            if len(records) > 30_000:
+                raise ValueError("Import exceeds the 30,000 record limit")
             value["records"] = [
                 {"vehicle": value.get("vehicle", "G60"), "market": value.get("market", "US"), **record}
-                if isinstance(record, dict) else record for record in value.get("records", [])
+                if isinstance(record, dict) else record for record in records
             ]
         return value
 
+    @model_validator(mode="after")
+    def bounded_import(self):
+        if sum(len(record.content) for record in self.records) > MAX_IMPORT_TEXT:
+            raise ValueError("Import exceeds the extracted text limit")
+        if json_size(self.metadata) > 128 * 1024:
+            raise ValueError("Source metadata must be at most 128 KiB")
+        if json_size(self.model_dump()) > MAX_IMPORT_BYTES:
+            raise ValueError("Import exceeds the 25 MiB limit")
+        return self
+
 
 class LocalImport(Scope):
-    path: Text
-    title: Text | None = None
+    path: Text = Field(max_length=4096, pattern=r"^[^\x00]+$")
+    title: Text | None = Field(default=None, max_length=200)
     kind: Literal["feedback", "study", "sales", "document", "other"] = "document"
-    actor: Text = "PM"
+    actor: Text = Field(default="PM", max_length=200)
 
 
 class WebImport(Scope):
     url: Text = Field(max_length=2000)
     title: Text = Field(max_length=200)
-    content: Text = Field(max_length=500_000)
+    # Preserve the selected snapshot exactly, including leading/trailing spaces.
+    content: Annotated[str, StringConstraints(strip_whitespace=False)] = Field(min_length=1, max_length=500_000)
     observed_at: str | None = None
-    actor: Text = "PM"
+    actor: Text = Field(default="PM", max_length=200)
+
+    _validate_observed_at = field_validator("observed_at")(observed_date)
+
+    @model_validator(mode="after")
+    def serializable_snapshot(self):
+        json_size(self.model_dump())
+        return self
 
 
 class AnalysisRequest(Scope):
