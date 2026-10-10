@@ -2,13 +2,14 @@
 
 Scope: make the shared database ready for enterprise use by BMW product managers: enforced human decision gates, named people and roles, tamper-evident history, one-query traceability, and reproducible data snapshots that the team can share and restore. Follows the root [implementation plan](../IMPLEMENTATION_PLAN.md); G60 / US first, vehicle and market on every record.
 
-## Starting point (on `main`, 01ac607)
+## Starting point (on `main`, 6c963af)
 
 Milestone 1 of the backend stream ([backend progress](../notes/backend-progress.md)) is already merged:
 
 - `database/schema.sql` + `database/workflow.sql`: `sources → imports → evidence → analysis_runs → findings → finding_evidence → requirements → requirement_versions → requirement_findings → scores → decisions → review_items`, plus `audit_events`.
 - `database/store.py`: atomic `init_database()` (`BEGIN IMMEDIATE`, rollback on failure, `PRAGMA user_version = 2`), `transaction()`, `audit()` written in the same transaction as the change, JSON `CHECK`s, foreign keys on.
 - Append-only triggers on every history table, including `INSERT OR REPLACE`; tests in `tests/test_database.py`.
+- Milestone 2 (6c963af): `server/importers.py` parses the BMW spreadsheets, PDFs and other formats into records with exact locations ([importer contract](../notes/importer-contract.md)).
 
 The pipeline chain the judges score (**source → evidence → finding → requirement version → score → decision → audit**) therefore already exists. This plan does **not** redesign it. It closes the gaps between "stores history" and "an enterprise system a PM organisation can trust", and adds the snapshot and Compose operations.
 
@@ -20,7 +21,7 @@ The pipeline chain the judges score (**source → evidence → finding → requi
 | Approval gate is application-only | `requirements.approved_version_id` can be set without a decision. | Trigger: approved version must have a human `approve` decision by a PM role. AI can propose, never approve. |
 | Audit is append-only but not tamper-evident | "Reconstructable history" is stronger when it can be verified. | Hash chain on `audit_events` (`prev_hash`, `event_hash`) plus `verify` command. |
 | No access events | Challenge defines the audit trail as including access events. | `access.*` audit actions for requirement/evidence views (API writes them; DB indexes them). |
-| Vehicle / market are free text | Typos split scopes; no catalogue for the PM workspace selector. | `vehicles` and `markets` reference tables, seeded; validation triggers on scope columns. |
+| Vehicle / market are free text | Typos split scopes; no catalogue for the PM workspace selector. | `vehicles` and `markets` reference tables, seeded; unknown codes registered as `discovered` for PM confirmation, never rejected. |
 | No human-readable requirement IDs | Deliverable requires a "unique identifier" PMs can cite. | `requirements.key` (`REQ-G60-US-001`), unique, assigned on creation. |
 | Traceability requires hand-written joins | Every consumer (API, MCP, UI, export) re-derives the chain. | Read-only SQL views: requirement list, full trace, audit timeline, cross-market topic view. |
 | Ad-hoc schema upgrades in `init_database()` | Every new table/column edits the same function; risky with append-only data. | Numbered migrations from `user_version` 3 onward, applied in the existing atomic transaction. |
@@ -49,10 +50,12 @@ All new objects arrive as numbered migrations. Existing tables only gain columns
 | Table | Columns | Notes |
 | --- | --- | --- |
 | `actors` | `id` (text key used in existing `actor` columns, e.g. `pm:jakob`, `ai:openai:<model>`, `system:importer`), `kind` (`human`/`ai`/`system`), `display_name`, `role` (`lead_pm`, `pm`, `analyst`, `engineering`, `viewer`, `ai`, `system`), `active`, `created_at` | Seeded with team members' PM personas, the importer, and the AI provider identities. Legacy value `'PM'` is seeded as a human `pm` so existing rows stay valid. |
-| `vehicles` | `code` (`G60`, `G68`, `G70`, `F70`), `series`, `body`, `notes` | From `notes/source-inventory.json`. |
-| `markets` | `code` (`US`, `EU`, `CN`, `GLOBAL`), `name` | `GLOBAL` for sources that span markets. |
+| `vehicles` | `code` (`G60`, `G68`, `G70`, `F70`), `series`, `body`, `status` (`seeded` / `discovered` / `confirmed`) | From `notes/source-inventory.json`. |
+| `markets` | `code` (`US`, `CN`, `EU`, `DE`, `GB`, `ROW`, as `normalize_market()` emits), `name`, `parent_code` (`DE`, `GB` → `EU`), `status` | Region roll-up for Europe views. |
 
-Triggers (`BEFORE INSERT`) on tables with `actor`, `vehicle`, or `market` columns reject unknown codes. This uses triggers rather than foreign keys because SQLite cannot add an FK to an existing table without rebuilding it, and rebuilding append-only tables is not allowed.
+`BEFORE INSERT` triggers on tables with an `actor` column reject unknown actors. This uses triggers rather than foreign keys because SQLite cannot add an FK to an existing table without rebuilding it, and rebuilding append-only tables is not allowed. Unknown vehicle and market codes are **not** rejected, because the importer accepts any `[FG]\d{2}` code and rejecting one would drop real evidence. The import transaction registers them as `discovered`, and `verify` lists them for a PM to confirm.
+
+All IDs, codes, key formats and view columns are fixed in the [database interface contract](../notes/database-contract.md).
 
 ### Decision gates (migration 0004)
 
@@ -142,14 +145,14 @@ docker compose --profile inspect up -d inspect
 | **Backend stream** (Jakob; milestones 2–6 in `notes/backend-progress.md`) | `database/workflow.sql`, `database/store.py` (except the agreed hook), importer, analysis, scoring, `server/` |
 | MCP / UI | Consume the views through the API; no direct DB access |
 
-Interface contract to agree **before** parallel work: actor ID format, vehicle/market codes, requirement key format, and the view column lists above. After that, API, MCP and UI build against the views while migrations land.
+Interface contract to agree **before** parallel work: [notes/database-contract.md](../notes/database-contract.md) (actor IDs, vehicle/market codes, requirement keys, view columns). After that, API, MCP and UI build against the views while migrations land.
 
 ## Sequence and checks
 
 | # | Milestone (one commit each) | Done when | Effort |
 | --- | --- | --- | --- |
 | 0 | Restore `data/` from Drive; verify SHA-256 against inventory | All 8 inputs match | 15 min, human |
-| 1 | Migration runner + 0003 reference/people + seed | v2 DB upgrades cleanly; existing tests green; unknown actor/market rejected | 1–1.5 h |
+| 1 | Migration runner + 0003 reference/people + seed | v2 DB upgrades cleanly; existing tests green; unknown actor rejected; unknown market registered as `discovered` | 1–1.5 h |
 | 2 | 0004 decision gates + requirement keys | Tests: AI approve fails; approval without decision fails; PM approve succeeds and is audited | 1 h |
 | 3 | 0005 audit hash chain + access events + `verify` | Tampering with a copied DB is detected at the exact sequence | 45 min |
 | 4 | 0006 views | A single query traces one G60/US requirement to sheet + row | 45 min |
