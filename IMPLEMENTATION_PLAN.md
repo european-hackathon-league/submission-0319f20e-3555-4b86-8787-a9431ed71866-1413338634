@@ -127,3 +127,11 @@ changes. Existing lower-level API/MCP operations remain available. No external
 messages are sent and no production engineering approvals are implied.
 
 Implementation details and the executable verification commands are in [PM planning workflows](notes/pm-workflows.md).
+
+## Platform extension (planned)
+
+The [platform build plan](PLATFORM_BUILD_PLAN.md) adds public signal monitoring with
+sentiment over time, a cross-market balancer, request intake and triage, data-derived
+prioritization, full BMW data coverage and the agent runtime substrate (registry, tasks,
+runs, threads). It is written to be executed by an orchestrating coding agent that builds
+eight pods in parallel worktrees. The multi-agent harness UI follows in the next phase.
