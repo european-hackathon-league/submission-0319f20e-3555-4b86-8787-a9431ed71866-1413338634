@@ -222,7 +222,7 @@ textarea {
   margin-top: 10px;
 }
 .pm-panel {
-  border: 1px solid transparent;
+  border: 0;
   background: var(--card);
   padding: 24px;
   min-width: 0;
@@ -263,7 +263,7 @@ textarea {
   flex-direction: column;
   gap: 6px;
   font-size: 12px;
-  border: 1px solid transparent;
+  border: 0;
   padding: 13px;
   background: var(--popover);
   box-shadow: 0 6px 20px #0001;
@@ -277,19 +277,15 @@ textarea {
 .priority-shortlist {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin-top: 20px;
-  border-top: 1px solid var(--border);
+  gap: 16px;
+  margin-top: 24px;
 }
 .priority-shortlist > div {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
-  padding: 16px 13px 0;
-  border-right: 1px solid var(--border);
-}
-.priority-shortlist > div:last-child {
-  border: 0;
+  padding: 16px 0 0;
 }
 .priority-shortlist .text-link {
   font-size: 11px;
@@ -416,7 +412,7 @@ textarea {
   gap: 10px;
   align-items: flex-start;
   background: var(--muted);
-  border: 1px solid var(--border);
+  border: 0;
   padding: 12px 14px;
   font-size: 11px;
   line-height: 1.7;
@@ -607,7 +603,7 @@ textarea {
   padding: 6px 8px;
 }
 .pm-table-wrap {
-  border: 1px solid transparent;
+  border: 0;
   background: var(--card);
   overflow: auto;
 }
@@ -936,16 +932,13 @@ textarea {
   color: var(--foreground);
 }
 .criteria-list {
-  border: 1px solid var(--border);
+  display: grid;
+  gap: 8px;
 }
 .criteria-list > div {
   display: flex;
   gap: 17px;
   padding: 16px;
-  border-bottom: 1px solid var(--border);
-}
-.criteria-list > div:last-child {
-  border-bottom: 0;
 }
 .criterion-number {
   font:
@@ -1017,7 +1010,7 @@ textarea {
 }
 .finding-row {
   padding: 12px;
-  border: 1px solid var(--border);
+  border: 0;
   font-size: 11px;
 }
 .finding-row summary {
@@ -1036,7 +1029,7 @@ textarea {
   padding: 12px 0;
 }
 .evidence-card {
-  border: 1px solid transparent;
+  border: 0;
   background: var(--card);
   padding: 18px;
   font-size: 11px;
@@ -1216,7 +1209,7 @@ summary {
   font-weight: 500;
 }
 .simulation {
-  border: 1px solid transparent;
+  border: 0;
   padding: 20px;
   background: var(--card);
 }
@@ -1267,7 +1260,7 @@ summary {
 .version-comparison > section {
   padding: 16px;
   background: var(--card);
-  border: 1px solid transparent;
+  border: 0;
 }
 .version-comparison h3 {
   font-size: 14px;
@@ -1312,7 +1305,7 @@ summary {
   gap: 20px;
   padding: 24px;
   background: var(--card);
-  border: 1px solid transparent;
+  border: 0;
 }
 .review-inbox article.focused {
   border-left: 2px solid var(--primary);
@@ -1380,15 +1373,15 @@ summary {
   color: var(--muted-foreground);
 }
 .evidence-explorer-list {
-  background: var(--card);
-  border: 1px solid transparent;
+  display: grid;
+  gap: 12px;
 }
 .evidence-explorer-list > article {
   padding: 23px;
   display: flex;
   gap: 18px;
   align-items: flex-start;
-  border-bottom: 1px solid var(--border);
+  background: var(--card);
   content-visibility: auto;
   contain-intrinsic-size: auto 165px;
 }
@@ -1564,17 +1557,12 @@ summary {
 .pipeline-stage-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 0;
-  border: 1px solid transparent;
-  background: var(--card);
+  gap: 12px;
 }
 .pipeline-stage {
   padding: 20px 17px;
-  border-right: 1px solid var(--border);
+  background: var(--card);
   min-width: 0;
-}
-.pipeline-stage:last-child {
-  border-right: 0;
 }
 .stage-top {
   display: flex;
@@ -2209,7 +2197,7 @@ summary {
   margin-bottom: 10px;
 }
 .criterion-editor {
-  border: 1px solid var(--border);
+  border: 0;
   padding: 16px;
   display: grid;
   gap: 12px;
