@@ -146,3 +146,75 @@ def test_existing_requirements_receive_keys_on_upgrade(tmp_path, monkeypatch):
     with connect() as connection:
         keys = dict(connection.execute("SELECT id, key FROM requirements"))
     assert keys == {"req1": "REQ-G60-US-001", "req2": "REQ-G60-US-002", "req3": "REQ-G60-US-003"}
+
+
+def _events(count):
+    for index in range(count):
+        with transaction() as connection:
+            audit(connection, "test", str(index), "test.created", "PM", f"event {index}")
+
+
+def test_audit_chain_links_every_event(db):
+    from database.integrity import verify_audit_chain
+
+    _events(3)
+    with connect() as connection:
+        rows = connection.execute("SELECT prev_hash, event_hash FROM audit_events ORDER BY sequence").fetchall()
+        assert all(rows[index]["prev_hash"] == rows[index - 1]["event_hash"] for index in range(1, 3))
+        result = verify_audit_chain(connection)
+    assert result["ok"] and result["events"] == 3 and result["head"]["event_hash"] == rows[-1]["event_hash"]
+
+
+def test_direct_audit_insert_is_rejected(db):
+    _events(1)
+    with pytest.raises(sqlite3.IntegrityError, match="hash chain"), transaction() as connection:
+        connection.execute("INSERT INTO audit_events (id,entity_type,entity_id,action,actor,rationale,metadata,"
+                           "created_at) VALUES ('x','t','t','forged','PM','bypass','{}','t')")
+
+
+@pytest.mark.parametrize("tamper,reason", [
+    ("UPDATE audit_events SET rationale = 'rewritten' WHERE sequence = 2", "event content changed"),
+    ("DELETE FROM audit_events WHERE sequence = 2", "previous event changed or removed"),
+])
+def test_tampering_with_a_copy_is_detected_at_the_exact_sequence(db, tmp_path, tamper, reason):
+    from database.integrity import verify
+
+    _events(4)
+    assert verify(db)["ok"]
+    copy = tmp_path / "tampered.db"
+    with sqlite3.connect(db) as live, sqlite3.connect(copy) as target:
+        live.backup(target)
+    with sqlite3.connect(copy) as connection:
+        connection.execute("DROP TRIGGER immutable_audit_events_update")
+        connection.execute("DROP TRIGGER immutable_audit_events_delete")
+        connection.execute(tamper)
+    result = verify(copy)
+    assert not result["ok"]
+    expected = 2 if "UPDATE" in tamper else 3
+    assert result["audit_chain"] == {"ok": False, "events": result["audit_chain"]["events"],
+                                     "broken_at": expected, "reason": reason}
+    assert any("missing triggers" in error for error in result["errors"])
+
+
+def test_upgrade_seals_existing_history(tmp_path, monkeypatch):
+    from database.integrity import verify
+    from tests.test_migrations import _v2_database
+
+    path = tmp_path / "app.db"
+    _v2_database(path)
+    monkeypatch.setenv("DB_PATH", str(path))
+    monkeypatch.setenv("MIGRATION_SNAPSHOTS", "0")
+    init_database()
+    _events(1)
+    result = verify(path)
+    assert result["ok"], result["errors"]
+    assert result["warnings"] == ["discovered vehicles awaiting PM confirmation: G99",
+                                  "discovered markets awaiting PM confirmation: XX"]
+    with connect() as connection:
+        genesis = connection.execute("SELECT * FROM audit_events WHERE action = 'audit.chain.started'").fetchone()
+    assert genesis["sequence"] == 2 and genesis["actor"] == "system:migration"
+
+    with sqlite3.connect(path) as connection:
+        connection.execute("DROP TRIGGER immutable_audit_events_update")
+        connection.execute("UPDATE audit_events SET rationale = 'rewritten' WHERE sequence = 1")
+    assert verify(path)["audit_chain"]["reason"] == "sealed pre-chain history changed"
