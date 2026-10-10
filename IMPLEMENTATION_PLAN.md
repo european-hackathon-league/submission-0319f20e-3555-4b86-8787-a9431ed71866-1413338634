@@ -63,3 +63,7 @@ The PM workspace consists of vehicle and market selection, a priority list, the 
 4. **Evaluate and refine:** measure evidence quality, decision time, and change-detection accuracy; improve the interface around those results.
 
 The first milestone is one requirement completing both workflows end to end.
+
+## Research background
+
+The [internal research review](research/RESEARCH.md) provides the papers, methods, and evaluation principles behind this plan. It also records broader research options; the implementation scope is defined by this plan.

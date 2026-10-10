@@ -5,6 +5,7 @@ BMW — AI for Product Decision Making, EHL Munich, 10–11 October 2026.
 ## Implementation
 
 - [High-level implementation plan: components, connections, and workflows](IMPLEMENTATION_PLAN.md)
+- [Internal research: papers, existing approaches, and evaluation metrics](research/RESEARCH.md)
 
 ## Challenge and guidance
 
