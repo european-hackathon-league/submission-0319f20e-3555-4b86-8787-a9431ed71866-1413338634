@@ -69,6 +69,8 @@ docker compose stop api && docker compose run --rm --no-deps api python -m datab
 
 Policy: snapshot before risky work (`pre-import`, `pre-analysis`). Append-only tables mean a wrong import cannot be deleted, so the snapshot is the undo. The `golden` snapshot is the frozen demo dataset; commit its manifest to `database/snapshot-manifests/golden.manifest.json` so every teammate can verify they hold the same file (`verify FILE` checks the SHA-256). Demo runs use a restored golden copy via `DB_PATH=/app/database/local/demo.db`, so rehearsals never touch it.
 
+The committed golden manifest identifies the 10 October backend integration snapshot: real G60/US inputs plus isolated reference and live-AI verification scopes. Synthetic PM approvals demonstrate the workflow; they are not product decisions for the real G60 requirements. Its `.db` file stays in the ignored snapshots directory and is not distributed by a Git clone.
+
 Originals preserved by the importer live in `database/local/originals/` (content-addressed, immutable, not part of a snapshot). Source downloads need them after a restore, so keep that directory alongside shared snapshots; `rebuild` recreates it from `data/`.
 
 ## Inspecting a snapshot
