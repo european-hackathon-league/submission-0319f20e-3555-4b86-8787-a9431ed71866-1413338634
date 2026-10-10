@@ -84,7 +84,9 @@ The root API build context still needs its separate credential exclusion follow-
 
 ## Host acceptance
 
-A loopback MCP Apps host can exercise both widgets without a public tunnel. Host
+The [local smoke host](../mcp_server/ui/smoke-host/README.md) exercises both widgets
+without a public tunnel. From `mcp_server/ui`, use `npm run smoke:host` against
+the isolated synthetic MCP endpoint on port 18001. Host
 rendering depends on MCP Apps support; preserve the text fallback in every client.
 Host-specific Claude acceptance is separate from local protocol/browser tests.
 

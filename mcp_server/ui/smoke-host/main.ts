@@ -120,6 +120,10 @@ async function loadApp() {
     bridge.oncalltool = (params) => forwardTool(params.name, params.arguments);
     bridge.onlistresources = (params) => client.listResources(params);
     bridge.onreadresource = (params) => client.readResource(params);
+    bridge.onupdatemodelcontext = async (params) => {
+      log("ui/update-model-context", params);
+      return {};
+    };
     bridge.onloggingmessage = (params) => log("app:log", params);
     bridge.onerror = (error) => log("bridge:error", error.message);
     bridge.onsizechange = ({ height }) => {

@@ -32,7 +32,9 @@ main `edfef95` and MCP implementation `a5b911c`, then follow their descendants.
    commit/documentation so teammates can consume it.
 5. `codex/mcp-evidence` is already published. Preserve its history: use reviewed
    normal merges for incoming integration commits, and normal pushes. Never rebase,
-   amend or reset published commits; never force-push or push/merge to main.
+   amend or reset published commits; never force-push. Routine monitoring does
+   not push/merge to main. A direct user instruction may authorize a specific
+   tested integration, as it did for the MCP Apps delivery on 10 October.
    On a genuinely clean integration checkout, use `git pull --ff-only`.
 6. The user authorized reconciling MCP implementations while preserving Jakob's
    operational tools. If competing semantics, API schemas or Compose changes need
@@ -59,9 +61,10 @@ health/log checks when its daemon is available without disturbing another stack.
 
 Never commit private BMW inputs, live databases, cache contents or credentials.
 Monitoring must not consume Exa credits or change billing. Latest implementation
-verification: [525 passing tests and one earlier live Exa search](VERIFICATION.md).
-Live `/contents` and live-source import remain untested; Docker runtime validation
-needs a running daemon. Git monitoring never invokes these provider checks.
+verification: [624 Python tests, 27 widget tests and Docker/browser acceptance](VERIFICATION.md).
+The current widget stream is `codex/mcp-apps` in the managed `bmw-mcp-apps` worktree.
+Live Exa `/contents` and live-source import remain untested; Docker is now available.
+Git monitoring never invokes these provider checks.
 
 Frequent fetches and small pushes reduce stale integration work; they cannot
 eliminate conflicts or guarantee another teammate's agent is also fetching.
