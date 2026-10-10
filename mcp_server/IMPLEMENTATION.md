@@ -107,3 +107,22 @@ Remaining owner dependencies / limitations:
 
 Read-only reviews established the published contracts. No private BMW input was
 sent to Exa, and the adapter never writes directly to Troy's database.
+
+## MCP Apps implementation handoff
+
+The guide's resource URI, MIME type and SDK metadata support were reviewed against
+the installed MCP SDK and official MCP Apps specification. Before implementing:
+
+- Match each existing tool's arguments: edits use `expected_version_id`; scoring
+  uses `expected_version_id` and should supply `expected_score_id`; decisions use
+  `version_id` and `score_id`. Unsupported arguments are rejected.
+- Save factor/weight changes, reload their resulting version and score, and let the
+  PM review them before approval. A decision call does not save slider previews.
+- Package the built HTML into a rebuilt image and verify MCP protocol readiness;
+  the current Compose MCP service has no healthcheck.
+- For any public tunnel test, use a separate synthetic-only database. The server
+  has no authentication, so using sample queries against the ordinary database
+  does not isolate its other records. No tunnel was opened during this review.
+- Host support determines widget rendering; it is not limited to Claude. Widgets
+  provide an interactive PM interface, not a new analysis provider or autonomous
+  agent controller.
