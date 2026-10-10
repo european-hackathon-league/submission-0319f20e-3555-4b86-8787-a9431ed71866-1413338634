@@ -45,8 +45,11 @@ def verify_audit_chain(connection: sqlite3.Connection) -> dict:
     return {"ok": True, "events": len(rows), "head": head}
 
 
-def verify(path: Path) -> dict:
-    """All checks for one database file. `ok` is false if any check fails; `warnings` never fail."""
+def verify(path: Path, require_latest: bool = True) -> dict:
+    """All checks for one database file. `ok` is false if any check fails; `warnings` never fail.
+
+    With require_latest=False an older schema passes (it migrates on the next start); a newer one never does.
+    """
     if not path.is_file():
         return {"ok": False, "path": str(path), "errors": [f"Database does not exist: {path}"], "warnings": []}
     errors, warnings = [], []
@@ -58,15 +61,16 @@ def verify(path: Path) -> dict:
         if foreign:
             errors.append(f"foreign_key_check: {len(foreign)} broken references, first in table {foreign[0][0]}")
         version = connection.execute("PRAGMA user_version").fetchone()[0]
-        if version != latest_version():
+        if version > latest_version() or (require_latest and version != latest_version()):
             errors.append(f"user_version is {version}, code expects {latest_version()}")
         triggers = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'trigger'")}
+        expected = GOVERNANCE_TRIGGERS if version >= latest_version() else ()
         missing = [f"immutable_{table}_{action}" for table in HISTORY_TABLES for action in ("update", "delete")
                    if f"immutable_{table}_{action}" not in triggers]
-        missing += [name for name in GOVERNANCE_TRIGGERS if name not in triggers]
+        missing += [name for name in expected if name not in triggers]
         if missing:
             errors.append("missing triggers: " + ", ".join(missing))
-        chain = {"ok": False, "reason": "audit chain not installed"}
+        chain = {"ok": version < latest_version(), "reason": "audit chain not installed"}
         if "audit_events_chain" in triggers:
             chain = verify_audit_chain(connection)
             if not chain["ok"]:
