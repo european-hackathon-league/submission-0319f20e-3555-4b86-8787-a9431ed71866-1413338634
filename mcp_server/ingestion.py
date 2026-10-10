@@ -14,7 +14,7 @@ def import_candidate(cache: FileCache, backend: BackendClient, candidate_id: str
         raise EvidenceError("SELECTION_REQUIRED", "Explicit selection, caller identity, and a selection rationale are required.")
     candidate = next((copy.deepcopy(c) for c in cache.candidates() if c.get("candidate_id") == candidate_id), None)
     if candidate is None:
-        raise EvidenceError("CANDIDATE_NOT_FOUND", "Select a candidate returned by fetch_web_source in this local cache.")
+        raise EvidenceError("CANDIDATE_NOT_FOUND", "Select a candidate returned by fetch_market_evidence in this local cache.")
     if (candidate.get("content_status") != "fetched" or not isinstance(candidate.get("content"), str)
             or not candidate["content"].strip() or candidate.get("review_status") != "unreviewed"
             or candidate.get("persisted") is not False):

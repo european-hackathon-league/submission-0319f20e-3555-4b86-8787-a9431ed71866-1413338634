@@ -1,7 +1,7 @@
 # BMW evidence MCP
 
-Five operational tools connect public research to the source registry for **G60 / US**
-(defaults, not hardcoded scope). The adapter writes only through FastAPI. It never
+Three new research tools join Jakob's 26 operational workflow tools for **G60 / US**
+(defaults, not hardcoded scope). The table below shows the research path and its source reads. The adapter writes only through FastAPI. It never
 opens the application database or creates its own audit events.
 
 | Tool | Operation | Effect |
@@ -9,14 +9,17 @@ opens the application database or creates its own audit events.
 | `list_sources(vehicle?, market?)` | `GET /sources` | Read persisted sources, including web provenance |
 | `get_source(source_id)` | `GET /sources/{id}` | Read one persisted source |
 | `search_market_evidence(...)` | Exa `POST /search` | Return unreviewed, unpersisted leads |
-| `fetch_web_source(...)` | Exa `POST /contents` | Return a bounded public-text snapshot |
+| `fetch_market_evidence(...)` | Exa `POST /contents` | Return a bounded public-text snapshot |
 | `import_web_candidate(candidate_id, actor, rationale, selection_confirmed)` | `POST /imports/records`, then `GET /sources/{id}` | Explicitly select and persist a fetched snapshot; verify source provenance |
 
 The published import contract was inspected at `f5cd4e3`. The older `18275d7`
 source API could not preserve web provenance. This adapter requires the import API
 for `import_web_candidate`; a missing route is an MCP error, never simulated success.
-No finding, requirement, score, PM decision, or audit-query tool is registered.
-Pure backend modules and database tables are not operational HTTP contracts.
+At integration base `71d3266`, all 26 upstream tools have matching persisted backend
+routes and remain registered. See [workflow contracts](../notes/mcp-api.md) for
+analysis, findings, requirements, scoring, PM decisions, trace, reviews and audit.
+The combined server advertises 29 tools; research never invokes workflow decisions
+automatically. Unknown tool arguments are rejected before requests are executed.
 
 ## Setup
 
@@ -126,9 +129,11 @@ rewritten. URL identity and snapshot identity have separate hashes.
 
 Actor identity is currently supplied by the caller, not authenticated. Import is
 not PM approval, evidence verification, requirement approval, or a full decision
-trail. Future workflow needs explicit evidence strength, conflicts, uncertainty,
-assumptions, market applicability and explained priority; new evidence must be able
-to reopen/rescore requirement versions while preserving decisions across two years.
+trail. The preserved workflow provides versioned proposals, scoring, explicit decisions
+and cumulative updates. Real PM evaluation still needs evidence strength, conflicts,
+uncertainty, future assumptions, market applicability and explained priority across
+the two-year decision horizon. Caller-supplied identities are not authenticated.
+Some upstream detail reads write audit events attributed to PM.
 See [implementation and owner checklist](IMPLEMENTATION.md).
 
 ## Demo and verification
@@ -162,7 +167,7 @@ Full validation:
 
 ```sh
 uv run python -m pytest -q mcp_server/tests tests
-uv run ruff check mcp_server
+uv run ruff check mcp_server tests/test_mcp.py
 docker compose config --quiet
 ```
 

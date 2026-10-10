@@ -6,6 +6,7 @@ from functools import lru_cache
 from typing import Annotated, Literal
 
 from mcp.server import MCPServer
+from mcp.types import ToolAnnotations
 from pydantic import Field
 
 from mcp_server.backend_client import BackendClient
@@ -24,7 +25,7 @@ def exa() -> ExaClient:
 
 
 def register_research_tools(mcp: MCPServer) -> None:
-    @mcp.tool()
+    @mcp.tool(annotations=ToolAnnotations(read_only_hint=True, open_world_hint=True))
     def search_market_evidence(
         query: Annotated[str, Field(min_length=1, max_length=240, description="Public product/market topic; no private records.")],
         public_data_confirmed: Annotated[Literal[True], Field(description="Confirm all supplied values are public/nonpersonal.")],
@@ -48,8 +49,8 @@ def register_research_tools(mcp: MCPServer) -> None:
         return exa().search(request)
 
 
-    @mcp.tool()
-    def fetch_web_source(
+    @mcp.tool(annotations=ToolAnnotations(read_only_hint=True, open_world_hint=True))
+    def fetch_market_evidence(
         identifier: Annotated[str, Field(min_length=1, max_length=2048)],
         query: Annotated[str, Field(min_length=1, max_length=240)],
         public_data_confirmed: Literal[True],
@@ -67,7 +68,7 @@ def register_research_tools(mcp: MCPServer) -> None:
                                         vehicle=vehicle, market=market, cache_only=cache_only))
 
 
-    @mcp.tool()
+    @mcp.tool(annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False, idempotent_hint=True))
     def import_web_candidate(
         candidate_id: str,
         actor: Annotated[str, Field(min_length=1, max_length=200)],

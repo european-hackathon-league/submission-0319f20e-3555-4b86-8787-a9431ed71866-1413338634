@@ -1,63 +1,77 @@
 # MCP evidence workstream
 
-Base inspected: `origin/main` at `18275d7`, 10 October 2026. The starting local
-checkout was empty; no staged work, unstaged draft, or MCP topic branch existed.
-Troy's foundation and Jakob's parser, analysis, and workflow persistence commits
-are included in this base. Read-only backend, MCP/Exa, and database/Docker reviews
-confirmed the contracts below before implementation.
+## Integration record and ownership
 
-## Ownership and implementation plan
+The initial workspace was an empty Git repository: no staged changes, unstaged
+MCP draft or local topic branch. It was connected to the requested repository.
+Three independent agents reviewed backend contracts, MCP/Exa, and database/Docker
+before implementation. Editing agents used separate worktrees and topic branches.
 
-- Alex / lead: `mcp_server/` runtime, environment example, documentation.
-- Backend test agent: `mcp_server/tests/test_backend_client.py` and
-  `mcp_server/tests/test_roundtrip.py`, in `codex/mcp-contract-tests` worktree.
-- Exa test agent: `mcp_server/tests/test_exa_client.py` and
-  `mcp_server/tests/test_cache.py`, in `codex/mcp-exa-tests` worktree.
-- Jakob retains `server/` (the actual backend directory) and API contracts.
-- Troy retains `database/`, Compose, and shared deployment configuration.
+- Initial base `18275d7`: Troy's foundation plus Jakob's parser, analysis and
+  persistence modules, but only basic source HTTP routes. Web ingestion was blocked.
+- Import milestone `f5cd4e3`: inspected new strict `POST /imports/records` and
+  source/evidence reads; safely preserved draft work and rebased. This unblocked
+  full Exa provenance ingestion through the backend. `POST /imports/web` alone
+  was insufficient because its command does not accept Exa metadata.
+- Workflow milestone `71d3266`: incoming edits overlapped `mcp_server/main.py`
+  and `mcp_server/requirements.txt`. Integration stopped; the user explicitly
+  approved combining both implementations while preserving Jakob's tools.
+  The lead preserved all 26 upstream tools, added three research tools through
+  `research_tools.py`, and verified every workflow tool has a real backend route.
+  Both sides required the identical HTTPX dependency. No competing behavior was
+  discarded; research retains its bounded/sanitized backend client for ingestion.
 
-1. Harden the two existing MCP source reads against the real FastAPI contracts.
-2. Add public-only, bounded Exa search and content retrieval via the official API.
-   Normalize provenance, deduplicate URLs, cache requests, sanitize errors.
-3. Keep results explicitly unreviewed and unpersisted until selected-source
-   ingestion preserves the complete provenance envelope through the backend.
-4. Verify provider mocks, real MCP/HTTP/temporary SQLite roundtrip, Docker
-   configuration, and a live Exa smoke only if a key is configured.
-5. Document setup, stable tool contracts, offline demo, and remaining dependencies.
-   Fetch and inspect remote changes at integration and before commit/push.
+Assigned ownership:
 
-## API-contract checklist for Jakob and Troy
+- Alex / lead: `mcp_server/` runtime and documentation; final integration.
+- MCP/Exa test agent: `mcp_server/tests/test_exa_client.py`, `test_cache.py`.
+- Backend test agent: `mcp_server/tests/test_backend_client.py`, `test_roundtrip.py`.
+- Lead owns the one-line `tests/test_mcp.py` advertised-tool assertion update as
+  part of the user-approved MCP reconciliation; existing workflow tests remain.
+- Jakob retains backend routes and schemas in `server/`; Troy retains database,
+  Docker and Compose. No shared API schema, database or deployment file was edited.
 
-Confirmed at the inspected base: `GET /health`, `GET /sources` with optional
-vehicle/market, `GET /sources/{id}`, `POST /sources`. SourceCreate accepts only
-title, kind, reference, vehicle, market. Responses add id and created_at. Unknown
-input fields are ignored; richer database metadata is omitted from responses.
-The source-created event currently attributes every caller to `PM`.
+During simultaneous preservation, Git's repository-wide stash stack caused the
+agents to restore duplicate test copies into the lead checkout. The lead's draft
+was recovered from its exact Git object; duplicates were preserved separately.
+Subsequent preservation used commits/explicit identities. No work was lost.
 
-Pending owner agreement (these are proposals, not operational endpoints):
+## Implementation and API checklist
 
-- [ ] Jakob: define an atomic selected-web-source ingestion route and strict
-  schema: provider, original/scoped query, result ID, request metadata, title,
-  original/canonical URL, nullable publication date, retrieval timestamp,
-  supporting excerpt/content, precise hash semantics, vehicle, market,
-  applicability/uncertainty, caller identity, selection rationale, idempotency key.
-- [ ] Jakob: return durable source/evidence identifiers, duplicate status, and
-  a real audit event identifier; expose the saved provenance on source reads.
-- [ ] Jakob + Troy: agree URL identity versus content revisions, transactional
-  ingestion and audit creation, repeat-request semantics, immutable history.
-- [ ] Jakob: expose persisted finding, requirement/version, scoring, challenge,
-  review decision, and audit operations before corresponding MCP tools exist.
-  Require identified PM review and expected-version checks. New evidence must
-  reopen/rescore requirements without erasing earlier decisions over two years.
-- [ ] Jakob: carry evidence strength, uncertainty, future assumptions, explicit
-  market applicability, conflict links, and explainable priority rationale.
-- [ ] Jakob: paginate source reads; reconcile server Docker dependencies before
-  activating parser/analysis routes.
-- [ ] Troy: agree Exa environment passthrough and a persistent public-response
-  cache mount for Compose. Current Compose passes API_BASE_URL only.
-- [ ] Troy: run the stack when the Docker daemon is available. The initial
-  `docker compose config --quiet` passes; the daemon socket is absent here.
+- [x] Inspect repository state, latest pushes, real routes and ownership.
+- [x] Retain working API-backed source tools and all incoming workflow tools.
+- [x] Add public-only bounded Exa search/fetch, exact provenance, URL deduplication,
+  local caching, explicit cache-only replay, safe errors and no provider fallback.
+- [x] Add explicit selection through `POST /imports/records`, full provenance in
+  source AND record metadata, `document_context` classification, source readback,
+  durable source/import IDs, and backend-owned deduplication/history.
+- [x] Preserve all existing findings/requirements/scoring/review/audit tools only
+  after confirming their real routes. Research never approves a claim or decision.
+- [x] Keep publication date, retrieval time and observed_at distinct. Label scope
+  applicability and uncertainties honestly; exact snapshots never overwrite history.
+- [x] Test provider failures/cache safeguards and real MCP→HTTP→temporary SQLite
+  reads/imports, including actor/rationale, metadata, duplicates and actual history.
+- [x] Document environment, contracts, credential-free demo and limits.
 
-No shared schema or Compose file is changed in this workstream. Review agents
-validated existing contracts; pending API extensions still require owner agreement.
-Database tables and pure Python parsers alone do not make a complete pipeline.
+Remaining owner dependencies / limitations:
+
+- [ ] Jakob: actor identities are self-asserted, and several detail-read audits
+  still use `PM`; production attribution/authentication remains incomplete.
+- [ ] Jakob + Alex: source imports return source/import IDs, but not evidence IDs
+  or an audit event ID. These must be obtained through existing evidence/audit
+  reads; the research tool does not invent them.
+- [ ] Jakob: source listing is unpaginated; add bounded pagination.
+- [ ] Jakob + Alex: optional `expected_score_id` exists in the backend scoring
+  contract but is not exposed by the preserved upstream scoring MCP tool.
+- [ ] Troy: agree Exa environment passthrough and a persistent public-cache mount
+  for Compose; current MCP service passes only API_BASE_URL.
+- [ ] Troy: run Compose with health/log/persistence checks once its Docker daemon
+  is available. `docker compose config --quiet` passes; the daemon is absent here.
+- [ ] Alex: run one live Exa smoke when EXA_API_KEY is configured; no key was present.
+- [ ] Team: validate actual BMW evidence, conflicts, uncertainty, future assumptions,
+  market applicability and explained priorities through real PM review. Existing
+  deterministic workflow tests are not proof of substantive research quality or
+  production readiness across the two-year decision lifecycle.
+
+Read-only reviews established the published contracts. No private BMW input was
+sent to Exa, and the adapter never writes directly to Troy's database.
