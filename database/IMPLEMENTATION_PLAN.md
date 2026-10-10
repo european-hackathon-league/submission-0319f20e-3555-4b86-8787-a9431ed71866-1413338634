@@ -162,7 +162,7 @@ Status 10 Oct: milestones 1–6 done on `codex/database` and merged with the bac
 | 4 | ✅ 0006 views | A single query traces one G60/US requirement to sheet + row | 45 min |
 | 5 | ✅ CLI: snapshot/manifest/restore/verify/export/rebuild (analysis replay pending persisted runs) | Round-trip snapshot → restore → verify gives identical counts and chain head | 1 h |
 | 6 | ✅ Compose: `inspect` profile, `.env.example`, README | `docker compose up --build`, `ps` healthy, logs clean; Datasette shows the trace | 30 min |
-| 7 | ⏳ Golden snapshot + committed manifest (blocked on backend milestone 4) | After the first end-to-end requirement exists | 10 min |
+| 7 | ✅ Golden snapshot + committed manifest | `database/snapshot-manifests/golden.manifest.json` identifies the verified schema-7 integration snapshot after reference and live GPT-6.1 Sol initial/update workflows. It includes real G60/US inputs and clearly labeled synthetic verification scopes. | Done |
 | — | Stretch: `postgres` profile loading a snapshot | Only if 0–7 are done | cut first |
 
 Checks before every commit: `uv run pytest`, `uv run ruff check`, and for milestones 5–6 `docker compose up --build -d` + `docker compose ps` + `docker compose logs api`. Do not stop a stack another worker is using.
