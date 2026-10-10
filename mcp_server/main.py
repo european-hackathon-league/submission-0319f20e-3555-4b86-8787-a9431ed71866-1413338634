@@ -182,6 +182,15 @@ async def import_web_source(
 
 
 @mcp.tool()
+async def fetch_web_source(
+    url: str, title: str, vehicle: str = "G60", market: str = "US", observed_at: str | None = None, actor: str = "PM",
+) -> dict:
+    """Fetch one explicitly selected public research page and import its located, immutable snapshot."""
+    return await api_request("POST", "/imports/web-fetch", payload=_present(
+        url=url, title=title, vehicle=vehicle, market=market, observed_at=observed_at, actor=actor))
+
+
+@mcp.tool()
 async def list_evidence(
     vehicle: str | None = None, market: str | None = None, source_id: str | None = None,
     q: str | None = None, limit: int = 100, offset: int = 0,
@@ -321,10 +330,11 @@ async def edit_requirement(
 @mcp.tool()
 async def score_requirement(
     requirement_id: str, expected_version_id: str, actor: str, rationale: str, weights: ScoringWeights | None = None,
+    expected_score_id: str | None = None,
 ) -> dict:
     """Recalculate a current proposal's priority with explicit rubric weights, recording the rationale."""
     return await api_request("POST", f"/requirements/{_id(requirement_id)}/scores", payload=_present(
-        expected_version_id=expected_version_id, actor=actor, rationale=rationale,
+        expected_version_id=expected_version_id, expected_score_id=expected_score_id, actor=actor, rationale=rationale,
         weights=weights.model_dump() if weights is not None else None))
 
 

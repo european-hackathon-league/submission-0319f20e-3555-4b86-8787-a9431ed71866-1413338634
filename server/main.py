@@ -2,6 +2,8 @@ from contextlib import asynccontextmanager
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import Field, model_validator
 
 from database.store import create_source, get_source, init_database, list_sources, ping_database
@@ -45,6 +47,17 @@ app.include_router(pipeline_router)
 app.include_router(requirements_router)
 app.include_router(web_fetch_router)
 app.router.route_class = ImportRoute
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request, exc):
+    # Invalid input itself may contain NaN or broken Unicode, which cannot be
+    # echoed in a JSON response. Return the actionable validation locations.
+    return JSONResponse(status_code=422, content={"detail": [
+        {"loc": error["loc"], "type": error["type"],
+         "msg": str(error["msg"]).encode("utf-8", "replace").decode("utf-8")}
+        for error in exc.errors()
+    ]})
 
 
 @app.get("/health")

@@ -44,7 +44,7 @@ def text_result(result):
 async def test_every_pipeline_operation_is_discoverable():
     tools = {tool.name: tool for tool in await adapter.mcp.list_tools()}
     assert set(tools) == {
-        "health", "list_sources", "get_source", "import_local_file", "import_records", "import_web_source",
+        "health", "list_sources", "get_source", "import_local_file", "import_records", "import_web_source", "fetch_web_source",
         "list_evidence", "get_evidence", "analyze_evidence", "get_analysis", "list_findings", "get_finding",
         "generate_requirements", "run_pipeline", "assess_updates", "list_requirements", "get_requirement",
         "get_requirement_versions", "trace_requirement", "create_requirement", "edit_requirement",
@@ -283,3 +283,12 @@ async def test_streamable_http_protocol_reports_success_and_errors(upstream):
             assert unsupported["result"]["isError"] is True
             assert "Unsupported arguments" in unsupported["result"]["content"][0]["text"]
             assert len(requests) == request_count
+
+
+async def test_fetch_source_and_score_guard_reach_api(upstream):
+    requests, _ = upstream
+    await adapter.fetch_web_source("https://example.org/research", "Research")
+    assert requests[-1].url.path == "/imports/web-fetch"
+    assert body(requests[-1])["url"] == "https://example.org/research"
+    await adapter.score_requirement("r", "v", "PM", "Changed rubric", expected_score_id="s")
+    assert body(requests[-1])["expected_score_id"] == "s"
