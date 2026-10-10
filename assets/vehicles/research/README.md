@@ -21,6 +21,16 @@ An accurate, detailed **BMW i5 M60 xDrive (G60)** model, with a usable interior 
 
 An authorized request was posted in the [BMW hackathon channel](https://discord.com/channels/1553151744047976549/1553306479019429939) at **22:45 Europe/Berlin on 2026-10-10**. It asks for a G60/i5 M60 US pack with an interior, and explicit terms for conversion, simplification, public demos/screenshots, private team handoff, repository redistribution, deployed browser delivery, attribution and logos. At 22:55 Maxi (BMW) replied that BMW has no 3D assets, and pointed to the configurator's image-based 360° exterior and interior views as material teams can get creative with for visualizations. That reply answers none of the conversion, redistribution, attribution or logo questions, so the CC BY 4.0 Sketchfab model remains the 3D source. Organizer permission to publish the feedback datasets (22:07) is not permission for configurator assets.
 
+## BMW-shared Sketchfab collection
+
+At 23:36 ThomasFremuthBMW posted the [ddiaz-design “BMW base models” collection](https://sketchfab.com/ddiaz-design/collections/bmw-base-models-c707bb093b9c433180439b9c96b618d5) as “another source”. Its public API listing, checked 2026-10-10, has 105 downloadable models: 98 under CC BY-NC-SA and 7 under CC BY. Sharing a link is not a BMW licence; each model's own licence applies.
+
+- **No G60 / i5.** The closest is the [2025 BMW M5 Sedan](https://sketchfab.com/3d-models/4ab34c43bada482b8e467be97ebaeba3) (G90, the M version of the G60 body): 389,102 triangles, published 2025-03-03, CC BY-NC-SA. Its description says it is “Based on a CSR2 3d model”, a mobile game, so the creator's right to license it is doubtful.
+- **Licence fit.** NonCommercial allows a hackathon demo, but ShareAlike would put any optimized derivative under CC BY-NC-SA, and NonCommercial blocks later commercial use of the demo. Neither applies to the current CC BY 4.0 model.
+- **Other derivatives.** The collection has no 1 Series or 7 Series successor-generation models; the only CC BY entries are older or tuned-body-kit cars (for example the 2018 M140i).
+
+The CC BY 4.0 Nazh Design i5 M60 remains the selected asset. The M5 Sedan is a fallback only if the team accepts the NC-SA terms and the provenance risk.
+
 ## Official reference separation
 
 The separately recorded official facts are product context, never customer feedback or generated requirements. Every fact records source URL, market and model year. The current US product page identifies MY2027, so its specifications must not silently populate the MY2024 reference vehicle. The PressClub US launch release explicitly concerns MY2024.

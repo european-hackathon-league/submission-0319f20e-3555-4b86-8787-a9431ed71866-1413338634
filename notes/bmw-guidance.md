@@ -185,3 +185,9 @@ Hi BMW team, could you provide a permitted 3D asset pack for the G60 / i5 M60 xD
 ## 22:55 — Maxi (BMW)
 
 We do not have 3D assets but the configurator on the BMW website has 360 exterior and interior views (image based, not 3D) which you get creative with for visualizations: [Konfigurator](https://configure.bmw.de/de_DE/configure/I20/41CF/FSACX,P0C4F,S01GQ,S0230,S0248,S02VB,S02VD,S0322,S0413,S0428,S0494,S04T2,S04U9,S04V1,S0548,S0552,S05AC,S05AQ,S05AS,S05AT,S05AV,S05DM,S0654,S0688,S06AE,S06AF,S06AK,S06C4,S06NX,S06PA,S06U3,S0851,S0879,S08R3,S08R9,S08TF,S08WC/SE000001)
+
+## 23:36 — ThomasFremuthBMW
+
+[Sketchfab collection: BMW base models by ddiaz-design](https://sketchfab.com/ddiaz-design/collections/bmw-base-models-c707bb093b9c433180439b9c96b618d5)
+
+Another source
