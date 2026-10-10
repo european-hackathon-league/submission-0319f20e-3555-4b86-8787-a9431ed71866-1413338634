@@ -1,0 +1,13 @@
+# This image needs only MCP Python sources and widget build inputs.
+**
+!mcp_server/
+!mcp_server/*.py
+!mcp_server/requirements.txt
+!mcp_server/ui/
+!mcp_server/ui/package.json
+!mcp_server/ui/package-lock.json
+!mcp_server/ui/tsconfig.json
+!mcp_server/ui/build.mjs
+!mcp_server/ui/*.html
+!mcp_server/ui/src/
+!mcp_server/ui/src/**

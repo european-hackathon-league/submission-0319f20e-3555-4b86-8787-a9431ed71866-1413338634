@@ -62,7 +62,11 @@ configuration passes `API_BASE_URL` and `API_TIMEOUT_SECONDS`, but **does not pa
 cache**. Source reads and cached/imported evidence still work without Exa. Troy owns
 Compose changes; agree environment passthrough and a cache volume before relying
 on live research or durable cache inside Compose. A host `.env` alone does not pass
-its key into the container. No shared Compose/Docker/schema files were modified.
+its key into the container. The MCP Dockerfile now builds two interactive MCP Apps
+resources; Compose and the API/database schemas remain unchanged. See
+[widget setup](../notes/mcp-apps-widgets.md). Local Python/stdio runs need
+`npm ci && npm run build` in `mcp_server/ui` first. Missing builds return an
+actionable resource error while ordinary tools remain usable.
 
 ## Exa free tier and billing
 

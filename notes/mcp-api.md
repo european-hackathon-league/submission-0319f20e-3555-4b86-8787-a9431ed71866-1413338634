@@ -69,3 +69,16 @@ errors, and a Streamable HTTP initialization/discovery/call/error round trip:
 ```sh
 uv run --frozen pytest tests/test_mcp.py -q
 ```
+
+## Interactive MCP Apps
+
+`get_requirement` and `trace_requirement` now advertise self-contained scoring and
+trace resources through `_meta.ui.resourceUri`. Their tool schemas and JSON results
+remain unchanged. The widgets use host-mediated MCP calls for all reads and writes.
+Save slider changes and review the saved version/score before deciding; stale writes
+reload without an automatic retry. Approved snapshots stay visible separately.
+
+For local Python/stdio use, run `npm ci && npm run build` in `mcp_server/ui` first
+(Node 22.12+). Compose builds the widgets in the MCP image; use
+`docker compose up -d --build` after changing them. See the
+[MCP Apps guide](mcp-apps-widgets.md) for contracts, testing and host setup.
