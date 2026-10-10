@@ -2,6 +2,8 @@
 
 Status: **proposed**, 10 October 2026. This plans component 6 of the [implementation plan](../IMPLEMENTATION_PLAN.md), the PM workspace, and the 3D layer from the [archived demo proposal](winning-demo-proposal.md). Nothing here changes the backend chain or the [database contract](database-contract.md); the UI only reads the contract's views through the API and writes decisions through it.
 
+The wider vision, agents doing the PM work across all inputs with humans as the overview layer, is in the [Product Management Factory](pm-factory.md).
+
 ## Positioning
 
 Other teams will show a chatbot that writes a requirement list. We show **the system a BMW product-management organisation would actually run for two years**: a governed register of requirements where every number opens its evidence, every decision has an owner, and the database itself refuses an AI approval.
