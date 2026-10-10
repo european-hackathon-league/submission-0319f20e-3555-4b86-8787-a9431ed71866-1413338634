@@ -200,6 +200,8 @@ Mapping `topic → zone` is a deterministic reference table (`topic_zones`, seed
 
 ### Build order for the twin
 
+Step-by-step build, model sourcing and stack: [3D twin implementation plan](3d-twin-plan.md).
+
 2D first, then 3D, both on the same zone data:
 
 1. `topic_zones` table + `GET /zones` roll-up.
