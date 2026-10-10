@@ -97,3 +97,30 @@ The [internal research review](research/RESEARCH.md) provides the papers, method
 The [BMW demo proposal](notes/winning-demo-proposal.md) preserves additional presentation and 3D ideas for later review.
 
 The [PM workspace and 3D Requirement Twin plan](notes/pm-workspace-and-3d-twin.md) designs component 6, enterprise integration, and the 3D layer on top of the database views.
+
+
+## BMW PM workflow extension (in progress)
+
+BMW's supplied [process diagram](materials/images/product-management-process.png) defines
+situation analysis → structure and context → requirement definition → prioritization →
+documentation and tracking. The [mentor guidance](notes/bmw-guidance.md) limits the
+challenge to market research and product planning (steps 1–2), with requirements
+revisited over approximately two years. This extension follows those activities;
+its completion record is a PM planning artifact, not an engineering release gate.
+
+Deliver in separately reviewed, verified commits:
+
+1. **Durable agent workflow (implemented and reviewed):** scoped initial/update runs, source inventory, AI or
+   explicitly labeled reference analysis, requirement generation and deterministic
+   scoring, persistent checkpoints and retry, mandatory human decision gate.
+2. **Decision preparation:** source-linked briefs with conflicts, missing dates,
+   PM-assumed targets, explicit next review actions, frozen completed decision
+   snapshots, and the same operations exposed through MCP.
+3. **Working PM cockpit and evaluation:** a same-origin `/pm/` browser workspace
+   for import, run, trace, edit, decide and document; isolated Compose HTTP/MCP
+   verification and browser checks for the initial and changed-evidence journeys.
+
+Agents prepare proposals. Human PMs approve/reject exact requirement versions and
+scores. Approved versions and earlier completed briefs remain intact when evidence
+changes. Existing lower-level API/MCP operations remain available. No external
+messages are sent and no production engineering approvals are implied.

@@ -2,7 +2,7 @@
 
 import hashlib
 import os
-from contextlib import closing
+from contextlib import closing, nullcontext
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import ValidationError
@@ -154,8 +154,8 @@ def pm_ownership(connection, requirement_id):
     return fields, pinned_findings
 
 
-def generate_requirements(command: GenerateRequest, require_cumulative=False):
-    with transaction() as connection:
+def generate_requirements(command: GenerateRequest, require_cumulative=False, connection=None):
+    with (transaction() if connection is None else nullcontext(connection)) as connection:
         run = run_detail(connection, command.run_id)
         if require_cumulative:
             current_evidence = {row[0] for row in connection.execute(

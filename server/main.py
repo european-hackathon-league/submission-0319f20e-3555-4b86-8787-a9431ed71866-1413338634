@@ -17,6 +17,7 @@ from server.models import Scope, json_size
 from server.pipeline import router as pipeline_router
 from server.requirements import router as requirements_router
 from server.web_fetch import router as web_fetch_router
+from server.workflows import router as workflows_router
 
 
 class SourceCreate(Scope):
@@ -60,6 +61,7 @@ app.include_router(pipeline_router)
 app.include_router(requirements_router)
 app.include_router(web_fetch_router)
 app.include_router(evaluation_router)
+app.include_router(workflows_router)
 app.router.route_class = ImportRoute
 
 
