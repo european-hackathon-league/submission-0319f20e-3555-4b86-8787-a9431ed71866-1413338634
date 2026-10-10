@@ -6,11 +6,15 @@ services:
     environment:
       DB_PATH: ${DB_PATH:-/app/database/local/app.db}
       SNAPSHOT_DIR: ${SNAPSHOT_DIR:-/app/database/snapshots}
+      DATA_DIR: /app/data
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
     ports:
       - "127.0.0.1:${API_PORT:-8000}:8000"
     volumes:
       - ./database/local:/app/database/local
       - ./database/snapshots:/app/database/snapshots
+      - ./data:/app/data:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
       interval: 5s
