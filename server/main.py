@@ -2,22 +2,26 @@ from contextlib import asynccontextmanager
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from database.store import create_source, get_source, init_database, list_sources, ping_database
+from server.evidence import router as evidence_router
+from server.models import Scope
 
 
-class SourceCreate(BaseModel):
+class SourceCreate(Scope):
     title: str = Field(min_length=1, max_length=200)
-    kind: Literal["feedback", "study", "sales", "document", "other"]
-    reference: str = Field(min_length=1, max_length=500)
-    vehicle: str = Field(default="G60", min_length=1, max_length=50)
-    market: str = Field(default="US", min_length=1, max_length=50)
+    kind: Literal["feedback", "study", "sales", "document", "other", "web"]
+    reference: str = Field(min_length=1, max_length=2000)
 
 
 class Source(SourceCreate):
     id: str
     created_at: str
+    metadata: dict = Field(default_factory=dict)
+    content_hash: str | None = None
+    observed_at: str | None = None
+    original_path: str | None = None
 
 
 @asynccontextmanager
@@ -26,7 +30,8 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="BMW Product Evidence API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="BMW Product Evidence API", version="0.2.0", lifespan=lifespan)
+app.include_router(evidence_router)
 
 
 @app.get("/health")
