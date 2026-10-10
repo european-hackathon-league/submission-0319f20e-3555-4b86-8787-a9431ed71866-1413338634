@@ -2,17 +2,23 @@ from contextlib import asynccontextmanager
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from database.store import create_source, get_source, init_database, list_sources, ping_database
+from server.evidence import ImportRoute, scope_filters
 from server.evidence import router as evidence_router
-from server.models import Scope
+from server.models import Scope, json_size
 
 
 class SourceCreate(Scope):
     title: str = Field(min_length=1, max_length=200)
     kind: Literal["feedback", "study", "sales", "document", "other", "web"]
     reference: str = Field(min_length=1, max_length=2000)
+
+    @model_validator(mode="after")
+    def serializable_source(self):
+        json_size(self.model_dump())
+        return self
 
 
 class Source(SourceCreate):
@@ -32,6 +38,7 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="BMW Product Evidence API", version="0.2.0", lifespan=lifespan)
 app.include_router(evidence_router)
+app.router.route_class = ImportRoute
 
 
 @app.get("/health")
@@ -45,6 +52,7 @@ def sources(
     vehicle: str | None = Query(default=None),
     market: str | None = Query(default=None),
 ) -> list[dict]:
+    vehicle, market = scope_filters(vehicle, market)
     return list_sources(vehicle=vehicle, market=market)
 
 
