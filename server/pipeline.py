@@ -183,6 +183,21 @@ def generate_requirements(command: GenerateRequest, require_cumulative=False):
                 requirement = dict(existing)
                 previous = version_detail(connection, requirement["current_version_id"])
                 previous_signature = evidence_signature(connection, previous["finding_ids"])
+                previous_evidence = {e["id"] for e in evidence_for_findings(connection, previous["finding_ids"])}
+                # Coverage and freshness apply to noops too: retaining old links
+                # is not proof that this analysis actually considered them.
+                if not previous_evidence.issubset(set(run["evidence_ids"])):
+                    raise HTTPException(409, "Analysis omits evidence in an existing requirement; run cumulative analysis for this scope")
+                latest_applied = connection.execute(
+                    "SELECT max(a.created_at) FROM analysis_runs a JOIN findings f ON f.run_id=a.id "
+                    "JOIN requirement_findings rf ON rf.finding_id=f.id WHERE rf.version_id=?",
+                    (previous["id"],),
+                ).fetchone()[0]
+                if run["created_at"] < latest_applied:
+                    raise HTTPException(409, "A newer analysis has already been applied; reload before generating")
+                analyzed = set(run["result"].get("analyzed_evidence_ids", []))
+                if not previous_evidence.issubset(analyzed):
+                    raise HTTPException(409, "Analysis did not analyze all evidence in an existing requirement; increase AI coverage before generating")
                 preserved, pinned_findings = pm_ownership(connection, requirement["id"])
                 for key in preserved:
                     content[key] = previous[key]
@@ -192,19 +207,30 @@ def generate_requirements(command: GenerateRequest, require_cumulative=False):
                 required_sources = {sid for criterion in content["acceptance_criteria"]
                                     if criterion["basis"] == "source" for sid in criterion["source_ids"]}
                 supplied_sources = {e["source_id"] for e in evidence_for_findings(connection, finding_ids, "supports")}
+                retained_findings = set(pinned_findings)
                 for fid in previous["finding_ids"]:
                     if required_sources - supplied_sources:
                         sources = {e["source_id"] for e in evidence_for_findings(connection, [fid], "supports")}
                         if sources & (required_sources - supplied_sources):
                             finding_ids.append(fid)
+                            retained_findings.add(fid)
                             supplied_sources.update(sources)
+                # Keep explicit PM links, but do not let their historical
+                # interpretations hide a newly classified/conflicting record.
+                retained_evidence = {e["id"] for e in evidence_for_findings(connection, list(retained_findings))}
+                prior_by_interpretation = {encode(evidence_signature(connection, [fid])[0]): fid
+                                           for fid in previous["finding_ids"]}
+                for finding in findings:
+                    cited = set(finding["evidence_ids"]) | set(finding["conflicting_evidence_ids"])
+                    if finding["id"] not in finding_ids and cited & retained_evidence:
+                        signature = encode(evidence_signature(connection, [finding["id"]])[0])
+                        finding_ids.append(prior_by_interpretation.get(signature, finding["id"]))
+                finding_ids = sorted(set(finding_ids))
                 proposed_signature = evidence_signature(connection, finding_ids)
                 same_content = content == {key: previous[key] for key in CONTENT_FIELDS}
-                prior_evidence = {e["id"] for e in evidence_for_findings(connection, previous["finding_ids"])}
                 stable_evidence = (
                     run["provider"] == "openai"
                     and same_analysis_contract(connection, previous["id"], run)
-                    and prior_evidence.issubset(set(run["result"].get("analyzed_evidence_ids", [])))
                     and evidence_roles(connection, previous["finding_ids"]) == evidence_roles(connection, finding_ids)
                 )
                 if (previous_signature == proposed_signature and same_content) or stable_evidence:
@@ -212,25 +238,11 @@ def generate_requirements(command: GenerateRequest, require_cumulative=False):
                     if stable_evidence and not (previous_signature == proposed_signature and same_content):
                         unchanged_reasons[requirement["id"]] = (
                             "Supporting/conflicting evidence, classifications, model and prompt are unchanged; "
-                            "retained the reviewed wording, targets and score instead of model variation."
+                            "retained the existing wording, targets and score instead of model variation."
                         )
                     result = requirement_detail(connection, requirement["id"])
                 else:
-                    # A scoped historical analysis must not remove newer evidence from an existing decision.
-                    previous_evidence = {e["id"] for e in evidence_for_findings(connection, previous["finding_ids"])}
                     proposed_evidence = {e["id"] for e in evidence_for_findings(connection, finding_ids)}
-                    if not previous_evidence.issubset(set(run["evidence_ids"])):
-                        raise HTTPException(409, "Analysis omits evidence in an existing requirement; run cumulative analysis for this scope")
-                    latest_applied = connection.execute(
-                        "SELECT max(a.created_at) FROM analysis_runs a JOIN findings f ON f.run_id=a.id "
-                        "JOIN requirement_findings rf ON rf.finding_id=f.id WHERE rf.version_id=?",
-                        (previous["id"],),
-                    ).fetchone()[0]
-                    if run["created_at"] < latest_applied:
-                        raise HTTPException(409, "A newer analysis has already been applied; reload before generating")
-                    analyzed = set(run["result"].get("analyzed_evidence_ids", []))
-                    if not previous_evidence.issubset(analyzed):
-                        raise HTTPException(409, "Analysis did not analyze all evidence in an existing requirement; increase AI coverage before generating")
                     version = new_version(connection, requirement, content, finding_ids, actor,
                                           f"New evidence assessed by analysis {run['id']}")
                     changes = {"added_evidence_ids": sorted(proposed_evidence - previous_evidence),
