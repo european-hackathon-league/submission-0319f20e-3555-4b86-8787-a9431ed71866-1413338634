@@ -9,6 +9,7 @@ from server.evidence import router as evidence_router
 from server.models import Scope
 from server.pipeline import router as pipeline_router
 from server.requirements import router as requirements_router
+from server.web_fetch import router as web_fetch_router
 
 
 class SourceCreate(Scope):
@@ -36,6 +37,7 @@ app = FastAPI(title="BMW Product Evidence API", version="0.2.0", lifespan=lifesp
 app.include_router(evidence_router)
 app.include_router(pipeline_router)
 app.include_router(requirements_router)
+app.include_router(web_fetch_router)
 
 
 @app.get("/health")
