@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from database import store
+from database.migrate import latest_version
 from database.store import audit, connect, init_database, list_sources, transaction
 
 
@@ -75,7 +76,7 @@ def test_concurrent_initialization_is_idempotent(tmp_path, monkeypatch):
     with ThreadPoolExecutor(max_workers=4) as executor:
         list(executor.map(lambda _: init_database(), range(8)))
     with connect() as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == latest_version()
         assert len(list(connection.execute("PRAGMA table_info(sources)"))) == 11
 
 

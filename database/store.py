@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
+from database.migrate import apply_migrations
+
 DEFAULT_DB_PATH = Path(__file__).resolve().parent / "local" / "app.db"
 SCHEMA_PATH = Path(__file__).resolve().parent / "schema.sql"
 
@@ -63,7 +65,9 @@ def init_database() -> None:
                     connection.execute(f"CREATE TRIGGER IF NOT EXISTS immutable_{table}_{action.lower()} "
                                        f"BEFORE {action} ON {table} BEGIN "
                                        f"SELECT RAISE(ABORT, '{table} is append-only'); END")
-            connection.execute("PRAGMA user_version = 2")
+            if connection.execute("PRAGMA user_version").fetchone()[0] < 2:
+                connection.execute("PRAGMA user_version = 2")
+            apply_migrations(connection)
             connection.commit()
         except BaseException:
             connection.rollback()
