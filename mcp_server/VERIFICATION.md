@@ -2,13 +2,14 @@
 
 Initial MCP integration base: `origin/main` at `edfef95`. The subsequent database
 integration includes Troy's `40068e3`, reviewed from that base. All upstream workflow
-tools were retained;
+tools were retained. The latest integration also includes `703159f` and its actor
+denial handling and MCP Apps implementation guide.
 Exa candidate retrieval uses `fetch_market_evidence` to preserve the existing
 backend fetch-and-import `fetch_web_source` contract. No unresolved Git conflicts.
 
 | Check | Result |
 | --- | --- |
-| `uv run python -m pytest -q mcp_server/tests tests` | 487 passed after database integration |
+| `uv run python -m pytest -q mcp_server/tests tests` | 525 passed after actor-denial integration |
 | `uv run ruff check mcp_server tests/test_mcp.py` | Passed |
 | `docker compose config --quiet` | Passed |
 | Real Streamable HTTP MCP client → MCP server → FastAPI → temporary SQLite | Passed |
@@ -60,6 +61,20 @@ can exit 0 with no imports when required input files are missing. Existing backe
 routes do not clear approval pointers or call rebuild. These findings are recorded
 in the [owner checklist](IMPLEMENTATION.md); no competing database behavior was
 edited in the MCP workstream.
+
+## MCP Apps guide and actor-denial integration
+
+Reviewed `40068e3..703159f`: Troy's `77d9280` adds an
+[MCP Apps implementation guide](../notes/mcp-apps-widgets.md) for a scoring/decision
+panel and trace explorer in Claude. It contains a plan and examples; executable
+widgets, UI resources and a Claude connection test are still outstanding.
+
+Jakob's actor-denial handler returns HTTP 403 only for the three known database
+permission denials. Other integrity failures remain server errors. Regression
+tests verify rollback, unchanged approved state and audit integrity, and rejection
+through MCP. The Exa import client already maps a backend 403 to an access-denied
+error; no tool schema or success response changed. The combined 525-test suite,
+Ruff and Compose configuration checks pass. No live provider request ran.
 
 ## Live search smoke
 

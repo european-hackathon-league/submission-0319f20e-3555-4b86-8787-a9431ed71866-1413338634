@@ -59,7 +59,7 @@ health/log checks when its daemon is available without disturbing another stack.
 
 Never commit private BMW inputs, live databases, cache contents or credentials.
 Monitoring must not consume Exa credits or change billing. Latest implementation
-verification: [487 passing tests and one earlier live Exa search](VERIFICATION.md).
+verification: [525 passing tests and one earlier live Exa search](VERIFICATION.md).
 Live `/contents` and live-source import remain untested; Docker runtime validation
 needs a running daemon. Git monitoring never invokes these provider checks.
 

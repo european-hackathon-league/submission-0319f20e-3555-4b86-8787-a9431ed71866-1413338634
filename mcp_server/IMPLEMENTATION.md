@@ -35,6 +35,12 @@ before implementation. Editing agents used separate worktrees and topic branches
   operational MCP tool contracts remain unchanged; actor attribution is still
   caller-supplied. See [verification record](VERIFICATION.md).
 
+- Integration `703159f`: retained Jakob's HTTP 403 handling for database actor
+  denials and Troy's [MCP Apps guide](../notes/mcp-apps-widgets.md). The combined
+  525-test suite, Ruff and Compose configuration checks pass without merge conflicts.
+  The guide proposes two interactive Claude widgets; it does not implement them.
+  The user explicitly authorized merging this tested MCP work into `main`.
+
 Assigned ownership:
 
 - Alex / lead: `mcp_server/` runtime and documentation; final integration.
@@ -90,6 +96,10 @@ Remaining owner dependencies / limitations:
 - [x] Alex: one bounded live Exa search passed on 10 October 2026; provider-reported
   cost $0.007. See [verification record](VERIFICATION.md). Live `/contents` and
   live-source import remain untested; the search lead is unreviewed and unpersisted.
+- [ ] Alex: implement and validate the scoring/decision and trace widgets from
+  the MCP Apps guide in a separately scoped implementation stream. These provide
+  a PM interface in an MCP host; autonomous scouting and a Claude analysis provider
+  remain separate work.
 - [ ] Team: validate actual BMW evidence, conflicts, uncertainty, future assumptions,
   market applicability and explained priorities through real PM review. Existing
   deterministic workflow tests are not proof of substantive research quality or
