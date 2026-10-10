@@ -54,4 +54,6 @@ The rubric explicitly rewards honesty: surface missing evidence, conflicting sig
 - Preserve what customers love as well as identifying problems. The data-source image explicitly includes positive attributes that must not be lost.
 - Use the annual report for market/sales context (regions, series, EV adoption) and product/R&D strategy (ConnectedDrive, My BMW App, Neue Klasse). This does not override the explicit exclusions on engineering and detailed business cases.
 - Product management combines customer, brand, competition, market/sales, and engineering perspectives. The illustrative process is situation analysis → structure/context → requirement definition → prioritization → documentation/tracking.
-- BMW requested that every Google Drive input file be added to `.gitignore`.
+- At 13:30 BMW asked teams to keep the Google Drive input files out of their repositories via `.gitignore`. At 22:07 Bene_BMW answered a question about uploading the raw data (feedback workbooks, customer studies, sales volumes, option-list PDFs) to a public repository: “Ja, die Daten sind freigegeben.” This repository still ignores them, per `AGENTS.md`, until the team decides otherwise.
+- The pitch is 3 minutes, followed by 3 minutes of Q&A.
+- BMW has no 3D vehicle assets. Maxi (BMW) pointed to the image-based 360° exterior and interior views in the BMW configurator as material teams can get creative with for visualizations; this is not a 3D model or an explicit redistribution licence.

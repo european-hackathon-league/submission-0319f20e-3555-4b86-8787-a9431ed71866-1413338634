@@ -1,6 +1,6 @@
 # BMW team guidance
 
-BMW team posts from 10 October 2026, in chronological order. Times are Europe/Berlin. Text is preserved in full; attached files are linked below.
+BMW team posts from 10 October 2026, in chronological order, plus the participant questions they answer. Times are Europe/Berlin. Text is preserved in full; attached files are linked below. Posts from 17:17 onward were pasted from the channel without message links, so their times are to the minute.
 
 ## 10:37:32 — ThomasFremuthBMW
 
@@ -157,3 +157,31 @@ Attachment: [automotive-development-process.png](../materials/images/automotive-
 [Source](https://discord.com/channels/1553151744047976549/1553306479019429939/1558488512263626896)
 
 Just for context 🙂 The question of the automotive product development came up several times. Maybe this helps some of you. But keep in mind, the scope is rather step 1 & 2 (edited) Saturday, October 10, 2026 at 16:40
+
+## 17:17 — Abbi (participant question)
+
+How long is the pitch? some said 3 mins, some said 5 mins and how long is the Q&A
+
+## 17:41 — Bene_BMW
+
+3 mins
+
+## 17:54 — Bene_BMW
+
++ 3mins FAQ
+
+## 21:48 — Piyush (participant question)
+
+Dürfen wir die Rohdaten (Feedback-Excel, Kundenstudien, Sales Volumes, Optionslisten-PDFs) in ein öffentliches Repo hochladen?
+
+## 22:07 — Bene_BMW
+
+Ja, die Daten sind freigegeben.
+
+## 22:45 — wixxer (participant question)
+
+Hi BMW team, could you provide a permitted 3D asset pack for the G60 / i5 M60 xDrive (US, ideally MY2024), including a simplified interior if available? We would use it in our hackathon Requirement Twin to link vehicle hotspots to customer requirements and source traces. Please confirm whether we may simplify/convert it to GLB, display it in the demo and screenshots, share it privately with teammates, and redistribute the optimized asset in our Git repository or deployed web demo, plus any required attribution or logo restrictions. We will not extract assets from the configurator or reuse BMW website imagery without permission. Thank you!
+
+## 22:55 — Maxi (BMW)
+
+We do not have 3D assets but the configurator on the BMW website has 360 exterior and interior views (image based, not 3D) which you get creative with for visualizations: [Konfigurator](https://configure.bmw.de/de_DE/configure/I20/41CF/FSACX,P0C4F,S01GQ,S0230,S0248,S02VB,S02VD,S0322,S0413,S0428,S0494,S04T2,S04U9,S04V1,S0548,S0552,S05AC,S05AQ,S05AS,S05AT,S05AV,S05DM,S0654,S0688,S06AE,S06AF,S06AK,S06C4,S06NX,S06PA,S06U3,S0851,S0879,S08R3,S08R9,S08TF,S08WC/SE000001)

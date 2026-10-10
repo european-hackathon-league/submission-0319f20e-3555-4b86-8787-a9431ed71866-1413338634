@@ -19,7 +19,7 @@ An accurate, detailed **BMW i5 M60 xDrive (G60)** model, with a usable interior 
 
 ## BMW-provided asset request
 
-An authorized request was posted in the [BMW hackathon channel](https://discord.com/channels/1553151744047976549/1553306479019429939) at **22:45 Europe/Berlin on 2026-10-10**. It asks for a G60/i5 M60 US pack with an interior, and explicit terms for conversion, simplification, public demos/screenshots, private team handoff, repository redistribution, deployed browser delivery, attribution and logos. No permission for a 3D pack has yet been recorded. Earlier organizer discussion about feedback datasets is not permission for configurator assets.
+An authorized request was posted in the [BMW hackathon channel](https://discord.com/channels/1553151744047976549/1553306479019429939) at **22:45 Europe/Berlin on 2026-10-10**. It asks for a G60/i5 M60 US pack with an interior, and explicit terms for conversion, simplification, public demos/screenshots, private team handoff, repository redistribution, deployed browser delivery, attribution and logos. At 22:55 Maxi (BMW) replied that BMW has no 3D assets, and pointed to the configurator's image-based 360° exterior and interior views as material teams can get creative with for visualizations. That reply answers none of the conversion, redistribution, attribution or logo questions, so the CC BY 4.0 Sketchfab model remains the 3D source. Organizer permission to publish the feedback datasets (22:07) is not permission for configurator assets.
 
 ## Official reference separation
 
