@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BMW Evidence — MCP Apps smoke host</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header>
+      <p class="eyebrow">BMW Evidence · Local synthetic fixture</p>
+      <h1>MCP Apps smoke host</h1>
+      <p>Live MCP connection on loopback. App actions write to the local fixture database.</p>
+      <form id="load-form">
+        <label>App<select id="app-select"><option value="scoring">Scoring & decision</option><option value="trace">Trace explorer</option></select></label>
+        <label class="requirement">Requirement ID<input id="requirement-id" required value="835d5e51-55b3-49e7-b3a1-35975aedfcc7" autocomplete="off" /></label>
+        <button id="load-app" type="submit">Load app</button>
+      </form>
+      <p id="status" role="status">Connecting to MCP…</p>
+    </header>
+    <main id="app-container" aria-label="MCP App"></main>
+    <details class="events" open>
+      <summary>Host events</summary>
+      <pre id="event-log" aria-label="Host event log"></pre>
+    </details>
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>
