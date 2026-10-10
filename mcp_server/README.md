@@ -62,6 +62,28 @@ Compose changes; agree environment passthrough and a cache volume before relying
 on live research or durable cache inside Compose. A host `.env` alone does not pass
 its key into the container. No shared Compose/Docker/schema files were modified.
 
+## Exa free tier and billing
+
+The implemented search and contents endpoints work on Exa's Free tier. As checked
+on 10 October 2026, a first team receives $10 in credits each month and a one-time
+$10 bonus after onboarding; no payment method is required. The monthly grant
+resets rather than accumulating. Our `auto` search is $0.007 per request (up to
+10 results); a separate one-page text fetch is $0.001. Thus 100 uncached searches
+plus 100 one-page fetches use approximately $0.80 of credits. Cached replay makes
+no provider request. We do not use Exa's paid historical Snapshot feature.
+
+Create an API key in the Exa dashboard and provide it through `EXA_API_KEY` using
+the setup above. Staying on Free requires no purchase. Paid use is prepaid;
+auto-recharge is optional. Exhausted credits/key budgets return HTTP 402, which
+this adapter reports explicitly while imported/cached evidence remains usable.
+The app does not purchase credits or change billing settings.
+
+Verify current terms before adding payment:
+[Exa pricing](https://exa.ai/docs/admin/pricing) and
+[billing and limits](https://exa.ai/docs/admin/billing).
+See [team push coordination](TEAM_SYNC.md) for the recurring Git checks and
+small tested milestone policy shared with other implementation agents.
+
 ## Research and provenance contract
 
 Search arguments: `query` (1–240 characters), required `public_data_confirmed: true`,
