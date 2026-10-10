@@ -25,6 +25,15 @@ Out of scope: regulatory/homologation requirements, technical component specific
 
 The automotive lifecycle diagram is context: the challenge focuses on its steps 1 and 2, market research/needs analysis and product planning. Its later engineering, testing, homologation, manufacturing, and launch stages do not expand the challenge scope.
 
+The in-scope steps, transcribed from ThomasBMW's [16:35 image](https://discord.com/channels/1553151744047976549/1553306479019429939/1558488186504613972):
+
+| Step | Key activities | Deliverables | Gate |
+| --- | --- | --- | --- |
+| 1. Market research & needs analysis | Market research, customer insights, competitor analysis, regulatory outlook, technology trends | Market opportunity report, customer needs document, target segments | G0 Project Approval |
+| 2. Product planning | Product vision, segment & positioning, feature prioritization, business case, financial targets | Product plan, project charter, financial targets, ROI / business case | G1 Concept Freeze |
+
+Step 13 (market feedback & continuous improvement: customer feedback, field data, warranty monitoring, next-generation planning) is where predecessor feedback, such as the provided workbooks, re-enters step 1 for the successor. Financial targets and business cases appear in step 2 but remain out of scope beyond rough effort in prioritization.
+
 ## Deliverables
 
 - A concept and demonstrable AI prototype for deriving and prioritizing requirements with human review.
