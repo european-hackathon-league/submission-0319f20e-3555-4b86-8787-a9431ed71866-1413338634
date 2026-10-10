@@ -53,6 +53,8 @@ See [backend API and decisions](server/README.md), [MCP tools](notes/mcp-api.md)
 
 - [High-level implementation plan: components, connections, and workflows](IMPLEMENTATION_PLAN.md)
 - [Internal research: papers, existing approaches, and evaluation metrics](research/RESEARCH.md)
+- [PM workspace and 3D Requirement Twin: enterprise UI, integration, and north star](notes/pm-workspace-and-3d-twin.md)
+- [Product Management Factory: agents do the PM work, humans oversee and decide](notes/pm-factory.md)
 
 ## Challenge and guidance
 

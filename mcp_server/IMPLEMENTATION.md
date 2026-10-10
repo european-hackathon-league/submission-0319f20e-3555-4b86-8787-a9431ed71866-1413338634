@@ -28,6 +28,13 @@ before implementation. Editing agents used separate worktrees and topic branches
   exposes 30 tools (27 upstream plus 3 research tools), with no registration collision.
   This reconciliation follows the user's existing instruction to combine both versions.
 
+- Database integration `40068e3`: reviewed Troy's migrations, actor discovery,
+  decision gates, audit chain, read views, snapshot/CLI tools and opt-in inspection
+  profile. A normal merge preserves both published histories. All 487 combined
+  tests, Ruff and Compose configuration validation pass. Existing research and
+  operational MCP tool contracts remain unchanged; actor attribution is still
+  caller-supplied. See [verification record](VERIFICATION.md).
+
 Assigned ownership:
 
 - Alex / lead: `mcp_server/` runtime and documentation; final integration.
@@ -73,6 +80,13 @@ Remaining owner dependencies / limitations:
   for Compose; current MCP service passes API_BASE_URL and API_TIMEOUT_SECONDS.
 - [ ] Troy: run Compose with health/log/persistence checks once its Docker daemon
   is available. `docker compose config --quiet` passes; the daemon is absent here.
+- [ ] Troy: exclude local credential files such as `.env` from Docker build context;
+  the current `.dockerignore` does not exclude them. No image build ran here.
+- [ ] Troy: prevent direct SQL from clearing both approval pointers while leaving
+  an approved status; current integrity verification accepts that state. Existing
+  backend routes do not clear these pointers, and MCP lifecycle tests pass.
+- [ ] Troy: make `database.cli rebuild` fail when required input files are missing;
+  it currently exits successfully with zero imports when verification passes.
 - [x] Alex: one bounded live Exa search passed on 10 October 2026; provider-reported
   cost $0.007. See [verification record](VERIFICATION.md). Live `/contents` and
   live-source import remain untested; the search lead is unreviewed and unpersisted.

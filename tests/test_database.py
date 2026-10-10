@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from database import store
+from database.migrate import latest_version
 from database.store import audit, connect, init_database, list_sources, transaction
 
 
@@ -75,7 +76,7 @@ def test_concurrent_initialization_is_idempotent(tmp_path, monkeypatch):
     with ThreadPoolExecutor(max_workers=4) as executor:
         list(executor.map(lambda _: init_database(), range(8)))
     with connect() as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == latest_version()
         assert len(list(connection.execute("PRAGMA table_info(sources)"))) == 11
 
 
@@ -132,7 +133,8 @@ def history_records(db):
             "INSERT INTO analysis_runs VALUES ('run','G60','US','provider','model','v1','hash','[]','[]','{}','now')",
             "INSERT INTO findings VALUES ('finding','run','G60','US','topic','need','Customer need',1,'now')",
             "INSERT INTO finding_evidence VALUES ('finding','evidence','supports')",
-            "INSERT INTO requirements VALUES ('requirement','G60','US','topic',NULL,NULL,NULL,'proposed','now','now')",
+            "INSERT INTO requirements (id,vehicle,market,topic,status,created_at,updated_at) "
+            "VALUES ('requirement','G60','US','topic','proposed','now','now')",
             "INSERT INTO requirement_versions VALUES "
             "('version','requirement',1,'Title','Statement','Need','[]','[]','{}','PM','Draft','now')",
             "INSERT INTO requirement_findings VALUES ('version','finding')",

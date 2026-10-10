@@ -68,6 +68,8 @@ The essential connection is:
 
 This connection supports explaining a recommendation, identifying affected decisions when evidence changes, and reconstructing previous decisions.
 
+The [database implementation plan](database/IMPLEMENTATION_PLAN.md) covers people and roles, database-enforced decision gates, tamper-evident audit, traceability views, and shareable snapshots.
+
 ## Workflows
 
 1. **Initial analysis:** import the BMW data → extract findings → build requirements → calculate priorities → PM reviews and approves.
@@ -93,3 +95,5 @@ The first milestone—one requirement completing both workflows end to end—is 
 The [internal research review](research/RESEARCH.md) provides the papers, methods, and evaluation principles behind this plan. It also records broader research options; the implementation scope is defined by this plan.
 
 The [BMW demo proposal](notes/winning-demo-proposal.md) preserves additional presentation and 3D ideas for later review.
+
+The [PM workspace and 3D Requirement Twin plan](notes/pm-workspace-and-3d-twin.md) designs component 6, enterprise integration, and the 3D layer on top of the database views.
