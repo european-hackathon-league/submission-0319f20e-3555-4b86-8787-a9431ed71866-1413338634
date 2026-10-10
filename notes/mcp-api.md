@@ -15,10 +15,11 @@ a scope or an unsupported source subset cannot silently change the requested wor
 
 ## Initial workflow
 
-1. `import_local_file`, `import_records`, or `import_web_source` import evidence.
+1. `import_local_file`, `import_records`, `import_web_source`, or `fetch_web_source` import evidence.
    Local paths refer to the API's configured input directory, not the AI client's
    filesystem. Web import requires supplied page text, URL, and optional observed
-   date; it does not fetch arbitrary URLs. Each record preserves its original
+   date; `fetch_web_source` retrieves one explicitly selected public HTML/text URL.
+   Each record preserves its original
    location. Records that omit vehicle/market inherit the import's scope.
 2. `run_pipeline` analyzes imported evidence, builds requirements, and calculates
    priorities. Use `analyze_evidence` followed by `generate_requirements` to inspect
@@ -44,7 +45,9 @@ Approved versions remain available while revisions are reviewed.
 `edit_requirement` takes `expected_version_id`, actor, and rationale. Omitted
 fields remain unchanged; explicit empty lists are sent to the API for normal
 validation. Edits create proposals and recalculate priority without implicit
-approval. `score_requirement` accepts custom weights plus the same version lock.
+approval. `score_requirement` accepts custom weights plus the same version lock
+and optional `expected_score_id` to guard concurrent reweighting. Identical weights
+reuse the current recorded score.
 `create_requirement` supports manually authored, evidence-linked proposals with
 explicit acceptance criteria, assumptions, and factor judgments.
 

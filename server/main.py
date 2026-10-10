@@ -1,15 +1,21 @@
+import os
 from contextlib import asynccontextmanager
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import Field, model_validator
 
 from database.store import create_source, get_source, init_database, list_sources, ping_database
+from server.evaluation import router as evaluation_router
 from server.evidence import ImportRoute, scope_filters
 from server.evidence import router as evidence_router
 from server.models import Scope, json_size
 from server.pipeline import router as pipeline_router
 from server.requirements import router as requirements_router
+from server.web_fetch import router as web_fetch_router
 
 
 class SourceCreate(Scope):
@@ -39,10 +45,33 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="BMW Product Evidence API", version="0.2.0", lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[origin.strip() for origin in os.getenv(
+        "CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173"
+    ).split(",") if origin.strip()],
+    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
+    allow_headers=["Content-Type"],
+    allow_credentials=False,
+)
 app.include_router(evidence_router)
-app.router.route_class = ImportRoute
 app.include_router(pipeline_router)
 app.include_router(requirements_router)
+app.include_router(web_fetch_router)
+app.include_router(evaluation_router)
+app.router.route_class = ImportRoute
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request, exc):
+    # Invalid input itself may contain NaN or broken Unicode, which cannot be
+    # echoed in a JSON response. Return the actionable validation locations.
+    return JSONResponse(status_code=422, content={"detail": [
+        {"loc": [part.encode("utf-8", "backslashreplace").decode("utf-8")
+                 if isinstance(part, str) else part for part in error["loc"]], "type": error["type"],
+         "msg": str(error["msg"]).encode("utf-8", "replace").decode("utf-8")}
+        for error in exc.errors()
+    ]})
 
 
 @app.get("/health")

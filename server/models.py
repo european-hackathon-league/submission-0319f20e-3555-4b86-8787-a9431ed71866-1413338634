@@ -44,6 +44,11 @@ def normalize_market(value: str) -> str:
 class Command(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, allow_inf_nan=False)
 
+    @model_validator(mode="after")
+    def serializable_command(self):
+        json_size(self.model_dump())
+        return self
+
 
 class Scope(Command):
     vehicle: Text = Field(default="G60", max_length=50)

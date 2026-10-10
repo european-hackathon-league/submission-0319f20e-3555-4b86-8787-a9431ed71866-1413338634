@@ -11,11 +11,43 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
-The FastAPI server is at [http://localhost:8000/docs](http://localhost:8000/docs), with a health check at `/health`. The MCP server uses Streamable HTTP at `http://localhost:8001/mcp` and exposes `list_sources` and `get_source`. The `POST /sources` endpoint adds a source record; this is a small foundation for the import workflow, not a BMW data importer yet.
+The FastAPI server is at [http://localhost:8000/docs](http://localhost:8000/docs), with a health check at `/health`. The MCP server uses Streamable HTTP at `http://localhost:8001/mcp`. Both interfaces use the same validation, persistence, scoring, and PM decision rules.
+
+The backend implements BMW's PM process: **situation analysis → structure and context → requirement definition → prioritization → documentation and tracking**. It imports original evidence, generates linked findings and requirements, records PM decisions, and proposes reviewed revisions when evidence changes. The backend supplies the PM workspace API; a graphical frontend is a separate component.
+
+Import the real G60/US feedback and run the initial workflow:
+
+```sh
+curl -X POST http://localhost:8000/imports/local -H 'Content-Type: application/json' \
+  -d '{"path":"BMW-Data/G60_feedback_hackathon.xlsx","kind":"feedback","vehicle":"G60","market":"US"}'
+curl -X POST http://localhost:8000/pipeline/run -H 'Content-Type: application/json' \
+  -d '{"vehicle":"G60","market":"US","provider":"deterministic"}'
+curl 'http://localhost:8000/workspace?vehicle=G60&market=US'
+```
+
+`deterministic` is an explicitly labeled reference provider: it requires no credentials and preserves source links, positive attributes, assumptions, and explainable scoring. For AI analysis, set `OPENAI_API_KEY` and `OPENAI_MODEL` in `.env`, recreate the API service, and send `"provider":"openai"`. AI uses bounded Responses requests and validates citations and structured output before persisting them. Missing credentials or invalid output produce an error, with no silent provider fallback. Returned `analyzed_evidence_ids` and warnings disclose coverage; incomplete coverage cannot silently remove evidence from an existing requirement. Batch bounds and client timeouts are configurable in `.env`.
 
 SQLite lives in `database/local/app.db` and persists on the host. Run `docker compose exec api python -m database.snapshot` to save a consistent copy in `database/snapshots/`. See [database/README.md](database/README.md) for restore steps. The BMW input files in `data/` are separate and are never copied into the images.
 
 Stop the services with `docker compose down`.
+
+## Verify the complete backend
+
+```sh
+uv sync --locked
+uv run pytest -q
+uv run ruff check server database mcp_server scripts tests
+uv run python scripts/evaluate_pipeline.py
+uv run python scripts/verify_backend.py --real-data
+```
+
+The live verifier calls the running HTTP API and MCP protocol, using a unique synthetic vehicle scope for PM edits and decisions. It checks original downloads, deduplication, analysis, priorities, approval, stale requests, cumulative updates, unchanged evidence, traceability, and audit history. `--real-data` additionally imports the local G60/US feedback, studies, sales, and equipment PDF, runs their pipeline, and verifies source links while preserving existing approvals. Original inputs remain unchanged; verification records remain in the local database. Omit `--real-data` on a clone without BMW's ignored files. Use `--api-url` and `--mcp-url` for custom host ports.
+
+The evaluation script uses an isolated temporary database and original-file archive. Eight authored update scenarios cover new supporting/conflicting evidence, unrelated themes, duplicate imports, replay with an open review, and market isolation. It reports complete confusion counts for newly raised PM review alerts against two approved baseline requirements, even when predictions are wrong; failed labels or missing source coverage produce a nonzero exit status. Topic/sentiment labels are supplied to the deterministic provider, so this evaluates workflow behavior rather than AI extraction accuracy. The small fixture supplies no statistical confidence estimate or real PM productivity measurement. Live OpenAI verification requires configured credentials.
+
+For local development without Docker, run `uv run uvicorn server.main:app --host 127.0.0.1 --port 8000` and, in another terminal, `API_BASE_URL=http://127.0.0.1:8000 uv run python -m mcp_server.main`. Local processes read environment variables; Compose reads `.env` for its settings.
+
+See [backend API and decisions](server/README.md), [MCP tools](notes/mcp-api.md), [import formats](notes/importer-contract.md), and [analysis providers](notes/analysis-engine.md).
 
 ## Implementation
 
