@@ -32,7 +32,6 @@ function trace(options: { number?: number; requirement?: string; offset?: number
 }
 function mounted(request: (name: string, args: Record<string, unknown>) => Promise<unknown>, openLink?: (url: string) => Promise<unknown>) {
   const root = document.createElement("main");
-  root.className = "trace-app";
   document.body.append(root);
   const explorer = new TraceExplorer(root, request, openLink);
   explorer.setConnected();
@@ -43,12 +42,15 @@ function getButton(root: HTMLElement, name: string): HTMLButtonElement {
   if (!result) throw new Error(`Missing button ${name}`);
   return result;
 }
-function expand(root: HTMLElement, title: string): HTMLDetailsElement {
-  const node = [...root.querySelectorAll("details")].find((item) => item.querySelector(":scope > summary")?.textContent?.startsWith(title));
-  if (!node) throw new Error(`Missing details ${title}`);
-  node.open = true;
-  node.dispatchEvent(new Event("toggle"));
-  return node;
+function step(root: HTMLElement, name: string): void {
+  const node = [...root.querySelectorAll<HTMLButtonElement>(".tx-step")].find((item) => item.firstElementChild?.textContent === name);
+  if (!node) throw new Error(`Missing step ${name}`);
+  node.click();
+}
+function openRow(root: HTMLElement, title: string): void {
+  const node = [...root.querySelectorAll<HTMLButtonElement>(".row-button")].find((item) => item.querySelector(".row-title")?.textContent?.startsWith(title));
+  if (!node) throw new Error(`Missing row ${title}`);
+  node.click();
 }
 async function ready(root: HTMLElement) {
   await vi.waitFor(() => expect(root.querySelector<HTMLSelectElement>("#trace-version")?.disabled).toBe(false));
@@ -69,17 +71,21 @@ describe("trace explorer", () => {
     expect(request).toHaveBeenCalledWith("trace_requirement", { requirement_id: "req-2", version_id: "req-2-v2", limit: 12, offset: 0 });
   });
 
-  it("keeps repeated evidence occurrences independently expanded across rerenders", async () => {
-    const request = vi.fn(async () => [version(1)]);
+  it("drills from a finding to its exact evidence and keeps that place across rerenders", async () => {
+    const request = vi.fn(async (name: string) => name === "get_requirement_versions" ? [version(1)] : source());
     const { root, explorer } = mounted(request);
-    const data = trace({ total: 1 });
-    data.findings.push({ ...data.findings[0], id: "finding-2" });
-    explorer.receive(data); await ready(root);
-    const first = root.querySelector<HTMLDetailsElement>("details.trace-evidence")!;
-    first.open = true;
-    first.dispatchEvent(new Event("toggle"));
+    explorer.receive(trace({ total: 1 })); await ready(root);
+    step(root, "Findings");
+    openRow(root, "Climate control needs clearer entry points.");
+    expect(root.textContent).toContain("Supporting evidence on this page");
+    openRow(root, "Customer feedback");
+    expect(root.querySelector("blockquote")?.textContent).toBe("Exact customer quote 0");
     explorer.setConnected();
-    expect([...root.querySelectorAll<HTMLDetailsElement>("details.trace-evidence")].map((node) => node.open)).toEqual([true, false]);
+    expect(root.querySelector("blockquote")?.textContent).toBe("Exact customer quote 0");
+    expect(root.querySelector(".tx-pane-title")?.textContent).toBe("Supports · exact evidence");
+    getButton(root, "Finding").click();
+    expect(root.querySelector("blockquote")).toBeNull();
+    expect(root.querySelector(".tx-pane-title")?.textContent).toBe("Finding");
   });
 
   it("unlocks audit reads when the host cancels a pending request", async () => {
@@ -87,7 +93,7 @@ describe("trace explorer", () => {
       ? Promise.resolve([version(1)]) : new Promise(() => {}));
     const { root, explorer } = mounted(request);
     explorer.receive(trace()); await ready(root);
-    getButton(root, "Load audit history").click();
+    step(root, "Audit");
     expect(getButton(root, "Loading history…").disabled).toBe(true);
     explorer.receiveError(new Error("Host request cancelled"));
     expect(getButton(root, "Load audit history").disabled).toBe(false);
@@ -103,6 +109,7 @@ describe("trace explorer", () => {
     const select = root.querySelector<HTMLSelectElement>("#trace-version")!;
     expect([...select.options].map((option) => option.value)).toEqual(["req-1-v2", "req-1-v1"]);
     expect(select.value).toBe("req-1-v1");
+    step(root, "Evidence");
     getButton(root, "Next evidence").click();
     await vi.waitFor(() => expect(root.textContent).toContain("Evidence 13–13 of 13"));
     expect(request).toHaveBeenCalledWith("trace_requirement", { requirement_id: "req-1", version_id: "req-1-v1", limit: 12, offset: 12 });
@@ -120,12 +127,14 @@ describe("trace explorer", () => {
       : new Promise((resolve) => { resolvePage = resolve; }));
     const { root, explorer } = mounted(request);
     explorer.receive(trace()); await ready(root);
+    step(root, "Evidence");
     getButton(root, "Next evidence").click();
     explorer.receive(trace({ requirement: "req-2", number: 2 })); await ready(root);
     resolvePage(trace({ offset: 12 }));
     await Promise.resolve();
     expect(root.querySelector("h1")?.textContent).toBe("REQ-G60-US-002");
     expect(root.querySelector<HTMLSelectElement>("#trace-version")?.value).toBe("req-2-v2");
+    step(root, "Evidence");
     expect(root.textContent).toContain("Evidence 1–12 of 13");
   });
 
@@ -133,6 +142,7 @@ describe("trace explorer", () => {
     const request = vi.fn(async (name: string) => name === "get_requirement_versions" ? [version(1), version(2)] : trace({ number: 2, offset: 12 }));
     const { root, explorer } = mounted(request);
     explorer.receive(trace()); await ready(root);
+    step(root, "Evidence");
     getButton(root, "Next evidence").click();
     await vi.waitFor(() => expect(root.querySelector('[role="alert"]')?.textContent).toContain("does not match the selected version"));
     expect(root.querySelector<HTMLSelectElement>("#trace-version")?.value).toBe("req-1-v1");
@@ -144,7 +154,8 @@ describe("trace explorer", () => {
     const request = vi.fn(async (name: string) => name === "get_requirement_versions" ? [version(1)] : source("javascript:alert(1)"));
     const { root, explorer } = mounted(request);
     explorer.receive(trace({ total: 1, content: quote, reference: "javascript:alert(1)" })); await ready(root);
-    expand(root, "Supports ·");
+    step(root, "Evidence");
+    openRow(root, "Customer feedback");
     expect(root.querySelector("blockquote")?.textContent).toBe(quote);
     expect(root.querySelector("img")).toBeNull();
     expect(root.textContent).toContain("G60 US");
@@ -152,7 +163,6 @@ describe("trace explorer", () => {
     expect(root.textContent).toContain("2026-09-01");
     expect(root.textContent).toContain("2026-10-01T08:00:00Z");
     expect(root.textContent).toContain("Applicability to the requested market is unverified.");
-    expand(root, "Source ·");
     await vi.waitFor(() => expect(request).toHaveBeenCalledWith("get_source", { source_id: "source-1" }));
     expect(root.querySelector("a")).toBeNull();
     expect(root.textContent).toContain("javascript:alert(1)");
@@ -168,7 +178,7 @@ describe("trace explorer", () => {
     });
     const { root, explorer } = mounted(request, openLink);
     explorer.receive(trace({ total: 1 })); await ready(root);
-    expand(root, "Supports ·"); expand(root, "Source ·");
+    step(root, "Evidence"); openRow(root, "Customer feedback");
     await vi.waitFor(() => expect(root.querySelector('[role="alert"]')?.textContent).toContain("Access denied"));
     denied = false;
     getButton(root, "Retry source").click();
@@ -187,23 +197,26 @@ describe("trace explorer", () => {
     const { root, explorer } = mounted(request);
     explorer.receive(trace()); await ready(root);
     expect(request.mock.calls.map(([name]) => name)).toEqual(["get_requirement_versions"]);
-    expand(root, "Requirement audit history");
+    step(root, "Audit");
     await vi.waitFor(() => expect(getButton(root, "Load more history").disabled).toBe(false));
     expect(request).toHaveBeenCalledWith("list_audit", { entity_id: "req-1", after: 0, limit: 10 });
     getButton(root, "Load more history").click();
     await vi.waitFor(() => expect(getButton(root, "Check for newer events").disabled).toBe(false));
     expect(request).toHaveBeenLastCalledWith("list_audit", { entity_id: "req-1", after: 41, limit: 10 });
+    openRow(root, "32 · requirement.scored");
     expect(root.textContent).toContain("score-approved");
   });
 
   it("labels the latest version score separately from the exact approved decision score", async () => {
     const { root, explorer } = mounted(async () => [version(1), version(2)]);
     explorer.receive(trace()); await ready(root);
-    expect(root.textContent).toContain("The approved baseline is tied to a different score");
-    expect(root.textContent).toContain("score-approved");
-    expect(root.textContent).toContain("score-latest");
     expect(root.textContent).toContain("Version 2");
     expect(root.textContent).toContain("Version 1");
+    step(root, "Score");
+    expect(root.textContent).toContain("The approved baseline is tied to a different score");
+    expect(root.textContent).toContain("score-latest");
+    step(root, "Decisions");
+    expect(root.textContent).toContain("score-approved");
   });
 
   it("handles empty pages, malformed host data and connection ordering", async () => {
@@ -213,6 +226,7 @@ describe("trace explorer", () => {
     explorer.receive(trace({ total: 0 }));
     expect(request).not.toHaveBeenCalled();
     explorer.setConnected(); await ready(root);
+    step(root, "Evidence");
     expect(getButton(root, "Next evidence").disabled).toBe(true);
     expect(root.textContent).toContain("No evidence on this page");
     explorer.receive({ requirement: { id: "broken" } });

@@ -1,4 +1,4 @@
-# Allow only runtime Python and the two widget build entry points.
+# Allow only runtime Python and the two widget build entry points and their brand assets.
 **
 !mcp_server/
 mcp_server/**
@@ -19,3 +19,4 @@ mcp_server/ui/src/**
 mcp_server/ui/src/shared/**
 !mcp_server/ui/src/shared/*.ts
 !mcp_server/ui/src/shared/*.css
+!mcp_server/ui/src/shared/*.svg

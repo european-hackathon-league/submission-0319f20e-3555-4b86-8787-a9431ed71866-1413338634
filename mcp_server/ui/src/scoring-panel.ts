@@ -1,6 +1,8 @@
-import { App, applyDocumentTheme, applyHostStyleVariables, type McpUiHostContext } from "@modelcontextprotocol/ext-apps";
+import { App, applyDocumentTheme, type McpUiHostContext } from "@modelcontextprotocol/ext-apps";
 import { callTool, unpack } from "./shared/api";
-import "./shared/styles.css";
+import { keepWithNext, Pager, splittable } from "./shared/fit";
+import { createShell, el, grade, status as statusChip } from "./shared/shell";
+import "./scoring-panel.css";
 
 const FACTORS = [
   ["customer_impact", "Customer impact"],
@@ -16,6 +18,7 @@ type RecordValue = Record<string, unknown>;
 type Score = { id: string; version_id: string; total: number; weights: Values; evidence_grade: string; explanation: RecordValue };
 type Version = { id: string; version: number; title: string; statement: string; customer_need: string; acceptance_criteria: RecordValue[]; assumptions: string[]; factors: Values; score: Score | null };
 type Requirement = { id: string; key: string; vehicle: string; market: string; status: string; current_version: Version; approved_version: RecordValue | null; approved_version_id: string | null; approved_score_id: string | null; needs_review: boolean; reviews: RecordValue[] };
+type Tab = "brief" | "priority" | "decide" | "signoff";
 const DEFAULT_WEIGHTS: Values = { customer_impact: .35, market_relevance: .25, strategic_fit: .2, differentiation: .1, feasibility: .1 };
 
 function record(value: unknown): RecordValue {
@@ -58,15 +61,19 @@ function parseRequirement(value: unknown): Requirement {
     needs_review: input.needs_review === true, reviews: records(input.reviews),
   };
 }
-function element<K extends keyof HTMLElementTagNameMap>(tag: K, className = "", text = ""): HTMLElementTagNameMap[K] {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text) node.textContent = text;
-  return node;
-}
 function same(a: Values, b: Values): boolean { return FACTORS.every(([key]) => Math.abs(a[key] - b[key]) < 1e-9); }
 function errorText(error: unknown): string { return error instanceof Error ? error.message : "The host could not complete the request."; }
 function weightSum(weights: Values): number { return FACTORS.reduce((sum, [key]) => sum + weights[key], 0); }
+function field(label: string, control: HTMLElement): HTMLLabelElement {
+  const node = el("label", "field");
+  node.append(el("span", "", label), control);
+  return node;
+}
+function pane(name: string): HTMLElement {
+  const node = el("div", `bmw-pane sp-pane-${name}`);
+  node.id = `pane-${name}`;
+  return node;
+}
 
 /** The only writes are explicit button actions; after every write the user reviews a fresh read. */
 export function mountScoringPanel(app: App, root: HTMLElement) {
@@ -79,114 +86,149 @@ export function mountScoringPanel(app: App, root: HTMLElement) {
   let message = "Waiting for the requirement from your host…";
   let failure = "";
   let requestEpoch = 0;
-  root.replaceChildren();
-  const style = element("style");
-  style.textContent = `
-    .scoring-header{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:18px}.scoring-header h1{margin:7px 0 10px}
-    .scoring-layout{display:grid;grid-template-columns:minmax(0,1fr) 225px;gap:16px}.scoring-stack{display:grid;gap:16px}.scoring-details{display:grid;gap:12px}
-    .scoring-score{font-size:3.5rem;letter-spacing:-.065em;line-height:1.15;font-weight:650}.scoring-score small{font-size:1rem;letter-spacing:0;color:var(--color-text-secondary)}
-    .scoring-summary{background:var(--color-background-secondary);display:flex;flex-direction:column;gap:14px;align-self:start}.scoring-saved{font-size:.88rem}
-    .scoring-table{display:grid;gap:17px;margin:20px 0}.scoring-row{display:grid;grid-template-columns:minmax(100px,1fr) minmax(75px,1fr) 45px minmax(65px,.8fr) 42px;gap:10px;align-items:center}
-    .scoring-row input{width:100%}.scoring-row output{font-variant-numeric:tabular-nums;text-align:right;font-size:.85rem}.scoring-column{font-size:.75rem;color:var(--color-text-secondary)}
-    .scoring-controls{display:grid;gap:12px}.scoring-inputs{display:grid;grid-template-columns:1fr 1fr;gap:14px}.scoring-label{display:grid;gap:6px;font-size:.85rem;font-weight:600}.scoring-label input,.scoring-label select{width:100%}
-    .scoring-ids{display:grid;gap:7px;margin-top:12px}.scoring-ids div{display:grid;gap:3px}.scoring-message{margin:14px 0;font-size:.88rem}.scoring-criteria{padding-left:20px;display:grid;gap:7px;margin:8px 0 0}
-    .scoring-statusline{display:flex;gap:7px;flex-wrap:wrap}.scoring-weight-warning{color:var(--color-text-danger)}.scoring-footnote{font-size:.78rem}.scoring-actions{margin-top:14px}
-    @media(max-width:650px){.scoring-layout{grid-template-columns:1fr}.scoring-summary{grid-row:1;display:grid;grid-template-columns:1fr 1fr;gap:9px 20px}.scoring-header{gap:8px}.scoring-row{grid-template-columns:minmax(90px,1fr) minmax(65px,1fr) 32px minmax(60px,.8fr) 36px;gap:7px}.scoring-row label{font-size:.8rem}}
-    @media(max-width:380px){.scoring-inputs{grid-template-columns:1fr}.scoring-row{grid-template-columns:minmax(80px,1fr) minmax(42px,.7fr) 28px minmax(40px,.7fr) 33px;gap:4px}}
-  `;
-  root.append(style);
-  const header = element("header", "scoring-header");
-  const heading = element("div");
-  const key = element("p", "eyebrow", "BMW · Product evidence");
-  const title = element("h1", "", "Scoring & decision");
-  const badges = element("div", "scoring-statusline");
-  heading.append(key, title, badges);
-  const refresh = element("button", "", "Reload");
-  refresh.type = "button";
-  refresh.dataset.action = "reload";
-  header.append(heading, refresh);
-  const status = element("p", "scoring-message muted");
-  status.setAttribute("role", "status");
-  status.setAttribute("aria-live", "polite");
-  const error = element("p", "error");
+  let tab: Tab = "priority";
+  let briefPage = 0;
+
+  const shell = createShell(root, { reloadLabel: "Reload requirement", eyebrow: "BMW · Product evidence", title: "Scoring & decision" });
+  root.classList.add("sp-stage");
+  const refresh = shell.reload;
+
+  // Header metric: the saved priority, or a clearly labelled unsaved preview.
+  const priorityHeading = el("p", "bmw-metric-label", "Saved priority");
+  const total = el("div", "bmw-metric-value"); total.id = "priority-score";
+  shell.metric.append(priorityHeading, total);
+
+  // Main panel: tabbed brief, priority factors and decision panes.
+  const main = el("section", "bmw-panel sp-main");
+  const mainHead = el("div", "bmw-panel-head");
+  const tabs = el("div", "bmw-tabs"); tabs.setAttribute("role", "tablist"); tabs.setAttribute("aria-label", "Requirement review");
+  const versionLabel = el("span", "bmw-label");
+  mainHead.append(tabs, versionLabel);
+  const tabButtons = new Map<Tab, HTMLButtonElement>();
+  for (const [name, label] of [["brief", "Brief"], ["priority", "Priority"], ["decide", "Decide"], ["signoff", "Sign-off"]] as const) {
+    const button = el("button", "bmw-tab", label);
+    button.type = "button"; button.id = `tab-${name}`;
+    button.setAttribute("role", "tab"); button.setAttribute("aria-controls", `pane-${name}`);
+    button.addEventListener("click", () => { tab = name; layout(); });
+    tabButtons.set(name, button); tabs.append(button);
+  }
+  const error = el("p", "bmw-alert");
   error.setAttribute("role", "alert");
-  const layout = element("div", "scoring-layout");
-  const stack = element("div", "scoring-stack");
-  const details = element("section", "card scoring-details");
-  const statement = element("p");
-  const need = element("p", "muted");
-  const criteria = element("ul", "scoring-criteria");
-  const criterionWrap = element("details");
-  criterionWrap.append(element("summary", "", "Acceptance criteria & assumptions"), criteria);
-  details.append(statement, need, criterionWrap);
-  const factors = element("section", "card");
-  factors.append(element("h2", "", "Priority factors"), element("p", "muted scoring-footnote", "Adjust judgments from 0–5 and allocate a total weight of 100%."));
-  const table = element("div", "scoring-table");
-  const columns = element("div", "scoring-row scoring-column");
-  columns.append(element("span", "", "Factor"), element("span", "", "Rating"), element("span"), element("span", "", "Weight"), element("span"));
+  const statusLine = el("p", "bmw-status sp-status");
+  statusLine.setAttribute("role", "status");
+  statusLine.setAttribute("aria-live", "polite");
+
+  // Brief pane: paged, never scrolled.
+  const briefPane = pane("brief");
+  const briefPager = new Pager("requirement brief", (page) => { briefPage = page; });
+  const briefFoot = el("div", "bmw-footer");
+  const briefCaption = el("span", "bmw-label", "Requirement brief");
+  briefFoot.append(briefCaption, briefPager.controls);
+  briefPane.append(briefPager.viewport, briefFoot);
+
+  // Priority pane: five factor judgments and their weights.
+  const priorityPane = pane("priority");
+  const table = el("div", "sp-table");
+  const columns = el("div", "sp-row sp-columns");
+  columns.append(el("span", "", "Factor"), el("span", "", "Rating 0–5"), el("span"), el("span", "", "Weight"), el("span"));
   table.append(columns);
   const inputs = new Map<FactorKey, { factor: HTMLInputElement; weight: HTMLInputElement; factorOut: HTMLOutputElement; weightOut: HTMLOutputElement }>();
   for (const [factorKey, labelText] of FACTORS) {
-    const row = element("div", "scoring-row");
-    const label = element("label", "", labelText);
-    const factor = element("input");
+    const row = el("div", "sp-row");
+    const label = el("label", "", labelText);
+    const factor = el("input");
     factor.type = "range"; factor.min = "0"; factor.max = "5"; factor.step = ".1"; factor.id = `factor-${factorKey}`;
     factor.setAttribute("aria-label", `${labelText} factor`); label.htmlFor = factor.id;
-    const factorOut = element("output"); factorOut.htmlFor = factor.id;
-    const weight = element("input");
+    const factorOut = el("output"); factorOut.htmlFor = factor.id;
+    const weight = el("input");
     weight.type = "range"; weight.min = "0"; weight.max = "1"; weight.step = ".01"; weight.id = `weight-${factorKey}`;
     weight.setAttribute("aria-label", `${labelText} weight`);
-    const weightOut = element("output"); weightOut.htmlFor = weight.id;
+    const weightOut = el("output"); weightOut.htmlFor = weight.id;
     factor.addEventListener("input", () => { draftFactors[factorKey] = Number(factor.value); update(); });
     weight.addEventListener("input", () => { draftWeights[factorKey] = Number(weight.value); update(); });
     inputs.set(factorKey, { factor, weight, factorOut, weightOut });
     row.append(label, factor, factorOut, weight, weightOut); table.append(row);
   }
-  const weightMessage = element("p", "scoring-footnote");
+  const weightMessage = el("p", "sp-hint");
   weightMessage.id = "weight-total";
   weightMessage.setAttribute("aria-live", "polite");
-  const saves = element("div", "toolbar scoring-actions");
-  const saveFactors = element("button", "", "Save factors"); saveFactors.type = "button"; saveFactors.dataset.action = "save-factors";
-  const saveWeights = element("button", "", "Save weights"); saveWeights.type = "button"; saveWeights.dataset.action = "save-weights";
-  const discard = element("button", "", "Discard preview"); discard.type = "button"; discard.dataset.action = "discard";
-  saves.append(saveFactors, saveWeights, discard);
-  factors.append(table, weightMessage, saves);
-  const governance = element("section", "card scoring-controls");
-  governance.append(element("h2", "", "PM review"), element("p", "muted scoring-footnote", "Your name and rationale are recorded for each save or decision. Check spelling: a new name registers a new human actor."));
-  const formFields = element("div", "scoring-inputs");
-  const actorLabel = element("label", "scoring-label", "Your name / actor ID");
-  const actor = element("input"); actor.id = "actor"; actor.autocomplete = "name"; actor.placeholder = "e.g. Alex Muller"; actor.maxLength = 200;
-  actorLabel.append(actor);
-  const actionLabel = element("label", "scoring-label", "Decision");
-  const action = element("select"); action.id = "decision-action";
+  const saves = el("div", "bmw-footer-actions");
+  const discard = el("button", "btn btn-link", "Discard"); discard.type = "button"; discard.dataset.action = "discard";
+  const saveFactors = el("button", "btn", "Save factors"); saveFactors.type = "button"; saveFactors.dataset.action = "save-factors";
+  const saveWeights = el("button", "btn", "Save weights"); saveWeights.type = "button"; saveWeights.dataset.action = "save-weights";
+  saves.append(discard, saveFactors, saveWeights);
+  const priorityFoot = el("div", "bmw-footer");
+  priorityFoot.append(weightMessage, saves);
+  priorityPane.append(table, priorityFoot);
+
+  // Decide pane: the exact saved version and score, its baseline, and the explicit decision.
+  const decidePane = pane("decide");
+  const action = el("select"); action.id = "decision-action";
   for (const [value, label] of [["approve", "Approve"], ["reject", "Reject"], ["postpone", "Postpone"], ["challenge", "Challenge"]]) {
-    const option = element("option", "", label); option.value = value; action.append(option);
+    const option = el("option", "", label); option.value = value; action.append(option);
   }
-  actionLabel.append(action); formFields.append(actorLabel, actionLabel);
-  const rationaleLabel = element("label", "scoring-label", "Rationale");
-  const rationale = element("textarea"); rationale.id = "rationale"; rationale.placeholder = "Explain this change or decision…"; rationale.maxLength = 10000;
-  rationaleLabel.append(rationale);
-  const validation = element("p", "muted scoring-footnote"); validation.id = "write-validation"; validation.setAttribute("aria-live", "polite");
-  const reviewedLabel = element("label", "toolbar scoring-footnote");
-  const reviewed = element("input"); reviewed.type = "checkbox"; reviewed.id = "reviewed-saved-state";
+  const facts = el("dl", "kv sp-facts");
+  const saved = el("dd"), approved = el("dd"), reviewStatus = el("dd"), gradeText = el("dd");
+  facts.append(el("dt", "", "Applies to"), saved, el("dt", "", "Baseline"), approved, el("dt", "", "Review"), reviewStatus, el("dt", "", "Evidence"), gradeText);
+  const decideTop = el("div", "sp-decide-top");
+  decideTop.append(field("Decision", action), facts);
+  const reviewedLabel = el("label", "sp-check");
+  const reviewed = el("input"); reviewed.type = "checkbox"; reviewed.id = "reviewed-saved-state";
   reviewedLabel.append(reviewed, document.createTextNode("I reviewed the saved version and score shown above."));
-  const decide = element("button", "primary", "Record approval"); decide.type = "button"; decide.dataset.action = "decide";
+  const validation = el("p", "sp-hint"); validation.id = "write-validation"; validation.setAttribute("aria-live", "polite");
+  const decide = el("button", "btn btn-primary", "Record approval"); decide.type = "button"; decide.dataset.action = "decide";
   decide.setAttribute("aria-describedby", "write-validation");
-  governance.append(formFields, rationaleLabel, validation, reviewedLabel, decide);
-  const summary = element("aside", "card scoring-summary");
-  const priorityHeading = element("p", "eyebrow", "Saved priority");
-  const total = element("div", "scoring-score"); total.id = "priority-score";
-  const saved = element("p", "scoring-saved muted");
-  const grade = element("p", "scoring-footnote muted");
-  const approved = element("p", "scoring-footnote");
-  const reviewStatus = element("p", "scoring-footnote");
-  const limitations = element("p", "scoring-footnote muted");
-  const ids = element("details");
-  ids.append(element("summary", "scoring-footnote", "Version & score IDs"));
-  const idList = element("div", "scoring-ids"); ids.append(idList);
-  summary.append(priorityHeading, total, saved, grade, approved, reviewStatus, limitations, ids);
-  stack.append(details, factors, governance); layout.append(stack, summary);
-  root.append(header, error, status, layout);
+  const decideFoot = el("div", "bmw-footer");
+  decideFoot.append(validation, decide);
+  decidePane.append(decideTop, reviewedLabel, decideFoot);
+
+  // Sign-off column: every save and decision records this human name and rationale.
+  const signoff = el("section", "bmw-panel sp-signoff");
+  const signoffHead = el("div", "bmw-panel-head");
+  signoffHead.append(el("span", "bmw-label brand", "PM sign-off"));
+  const signoffPane = pane("signoff");
+  const actor = el("input"); actor.type = "text"; actor.id = "actor"; actor.autocomplete = "name"; actor.placeholder = "e.g. Alex Muller"; actor.maxLength = 200;
+  const rationale = el("textarea"); rationale.id = "rationale"; rationale.placeholder = "Explain this change or decision…"; rationale.maxLength = 10000;
+  const rationaleField = field("Rationale", rationale); rationaleField.classList.add("sp-rationale");
+  signoffPane.append(field("Your name / actor ID", actor), rationaleField, el("p", "sp-note", "Recorded with each save or decision. Check spelling: a new name registers a new human actor."));
+  signoff.append(signoffHead, signoffPane);
+
+  // The square frame has room to keep the brief in its own panel beside the controls.
+  const briefPanel = el("section", "bmw-panel sp-brief");
+  const briefHead = el("div", "bmw-panel-head");
+  briefHead.append(el("span", "bmw-label brand", "Requirement brief"));
+  briefPanel.append(briefHead);
+
+  const panes = el("div", "sp-panes");
+  panes.append(briefPane, priorityPane, decidePane);
+  const mainFoot = el("div", "sp-main-foot");
+  mainFoot.append(error, statusLine);
+  main.append(mainHead, panes, mainFoot);
+
+  function layout() {
+    const square = shell.mode === "square" && !shell.compact;
+    const compact = shell.compact;
+    if (square && tab === "brief") tab = "priority";
+    if (!compact && tab === "signoff") tab = "decide";
+    if (square) briefPanel.append(briefPane); else panes.prepend(briefPane);
+    if (compact) panes.append(signoffPane); else signoff.append(signoffPane);
+    briefCaption.hidden = square;
+    tabButtons.get("brief")!.hidden = square;
+    tabButtons.get("signoff")!.hidden = !compact;
+    shell.body.replaceChildren(...(compact ? [main] : square ? [briefPanel, main, signoff] : [main, signoff]));
+    for (const [name, button] of tabButtons) {
+      const selected = name === tab;
+      button.setAttribute("aria-selected", String(selected));
+      button.tabIndex = selected ? 0 : -1;
+    }
+    briefPane.hidden = !square && tab !== "brief";
+    priorityPane.hidden = tab !== "priority";
+    decidePane.hidden = tab !== "decide";
+    signoffPane.hidden = compact && tab !== "signoff";
+    if (!briefPane.hidden) briefPager.refit();
+  }
+  shell.onLayoutChange(layout);
+  layout();
 
   function dirtyFactors() { return !!current && !same(draftFactors, current.current_version.factors); }
   function dirtyWeights() { return !!current && !same(draftWeights, current.current_version.score?.weights ?? DEFAULT_WEIGHTS); }
@@ -203,57 +245,78 @@ export function mountScoringPanel(app: App, root: HTMLElement) {
     const validWeights = Math.abs(weightSum(draftWeights) - 1) <= 1e-6;
     const hasIds = !!current?.current_version.id && !!current.current_version.score?.id;
     const guard = humanError();
-    layout.hidden = !current;
     refresh.disabled = busy || !current;
-    status.textContent = busy ? "Working… Please wait for the saved state." : message;
-    error.textContent = failure; error.hidden = !failure;
+    statusLine.textContent = busy ? "Working… Please wait for the saved state." : message;
+    statusLine.title = statusLine.textContent;
+    error.textContent = failure; error.hidden = !failure; error.title = failure;
     root.setAttribute("aria-busy", String(busy));
     for (const [factorKey, control] of inputs) {
       control.factor.value = String(draftFactors[factorKey]); control.weight.value = String(draftWeights[factorKey]);
       control.factor.disabled = busy || !current || requiresReload; control.weight.disabled = busy || !current || requiresReload;
+      control.factor.style.setProperty("--fill", `${draftFactors[factorKey] / 5 * 100}%`); control.weight.style.setProperty("--fill", `${draftWeights[factorKey] * 100}%`);
       control.factorOut.value = draftFactors[factorKey].toFixed(1); control.weightOut.value = `${Math.round(draftWeights[factorKey] * 100)}%`;
     }
     weightMessage.textContent = `Weight total: ${(weightSum(draftWeights) * 100).toFixed(0)}%${validWeights ? " · ready" : " · must equal 100% before saving or deciding"}`;
-    weightMessage.className = `scoring-footnote${validWeights ? "" : " scoring-weight-warning"}`;
+    weightMessage.classList.toggle("sp-warning", !validWeights);
     const writeBlocked = busy || requiresReload || !hasIds || !!guard || !validWeights;
     saveFactors.disabled = writeBlocked || !dirtyFactors(); saveWeights.disabled = writeBlocked || !dirtyWeights() || dirtyFactors();
-    saveWeights.title = dirtyFactors() ? "Save changed factors first; your weight preview will be retained." : "Save weights for the current version and score.";
+    saveFactors.classList.toggle("btn-primary", !saveFactors.disabled);
+    saveWeights.classList.toggle("btn-primary", !saveWeights.disabled);
+    saveFactors.title = guard && dirtyFactors() ? guard : "Save factors as a new requirement version.";
+    saveWeights.title = dirtyFactors() ? "Save changed factors first; your weight preview will be retained." : guard && dirtyWeights() ? guard : "Save weights for the current version and score.";
     discard.disabled = busy || !dirty || requiresReload;
     actor.disabled = busy; rationale.disabled = busy; action.disabled = busy;
     decide.disabled = writeBlocked || dirty || (awaitingDecisionReview && !reviewed.checked);
     reviewedLabel.hidden = !awaitingDecisionReview; reviewed.disabled = busy || dirty || requiresReload;
     decide.textContent = `Record ${action.value === "approve" ? "approval" : action.value === "reject" ? "rejection" : action.value === "postpone" ? "postponement" : "challenge"}`;
-    validation.textContent = requiresReload ? "Reload the current state before making another change." : !hasIds ? "A saved version and score are required." : !validWeights ? "Weights must total 100%." : dirty ? "Save your preview, then review the saved state before recording a decision." : guard || (awaitingDecisionReview && !reviewed.checked ? "Review the freshly saved state and tick the confirmation below." : "This decision applies to the exact saved version and score shown above.");
+    validation.textContent = requiresReload ? "Reload the current state before making another change." : !hasIds ? "A saved version and score are required." : !validWeights ? "Weights must total 100%." : dirty ? "Save your preview, then review the saved state before recording a decision." : guard || (awaitingDecisionReview && !reviewed.checked ? "Review the freshly saved state and tick the confirmation." : "This decision applies to the exact saved version and score shown.");
+    validation.title = validation.textContent;
     priorityHeading.textContent = dirty ? "Preview · unsaved" : "Saved priority";
+    shell.metric.classList.toggle("is-preview", dirty);
     const preview = FACTORS.reduce((sum, [factorKey]) => sum + draftFactors[factorKey] * draftWeights[factorKey] * 20, 0);
-    total.replaceChildren(document.createTextNode(validWeights && current?.current_version.score ? (dirty ? preview : current.current_version.score.total).toFixed(1) : "—"), element("small", "", " / 100"));
-    saved.textContent = current?.current_version.score ? `Saved: ${current.current_version.score.total.toFixed(1)} / 100 · version ${current.current_version.version}` : "No saved score is available.";
+    const score = current?.current_version.score;
+    total.replaceChildren(document.createTextNode(validWeights && score ? (dirty ? preview : score.total).toFixed(1) : "—"), el("small", "", "/ 100"));
+    if (score) total.append(grade(score.evidence_grade));
+    saved.textContent = score ? `Saved: ${score.total.toFixed(1)} / 100 · version ${current!.current_version.version}` : "No saved score is available.";
+  }
+  function briefItems(parsed: Requirement): HTMLElement[] {
+    const version = parsed.current_version;
+    const chips = el("div", "chips");
+    chips.append(statusChip(parsed.status));
+    if (parsed.status !== "needs_review") chips.append(el("span", `status${parsed.needs_review ? " status-needs_review" : ""}`, parsed.needs_review ? "Needs review" : "No open review"));
+    const items: HTMLElement[] = [chips, splittable(el("p", "prose", version.statement))];
+    if (version.customer_need) items.push(keepWithNext(el("p", "bmw-label", "Customer need")), splittable(el("p", "bullet", version.customer_need)));
+    if (version.acceptance_criteria.length) items.push(keepWithNext(el("p", "bmw-label", "Acceptance criteria")));
+    for (const criterion of version.acceptance_criteria) items.push(splittable(el("p", "bullet", `${valueText(criterion.metric)}: ${valueText(criterion.target)} ${valueText(criterion.unit)} · ${valueText(criterion.basis)}`.trim())));
+    if (version.assumptions.length) items.push(keepWithNext(el("p", "bmw-label", "Assumptions")));
+    for (const assumption of version.assumptions) items.push(splittable(el("p", "bullet muted", `Assumption: ${assumption}`)));
+    const limits = version.score?.explanation.limitations;
+    items.push(splittable(el("p", "bmw-note", Array.isArray(limits) ? limits.map(valueText).join(" ") : "Priority reflects recorded judgments; evidence grade is separate.")));
+    const ids = el("dl", "kv ids");
+    for (const [label, value] of [["Current version", version.id], ["Current score", version.score?.id ?? "Missing"], ["Approved version", parsed.approved_version_id ?? "None"], ["Approved score", parsed.approved_score_id ?? "None"]]) ids.append(el("dt", "", label), el("dd", "", value));
+    items.push(keepWithNext(el("p", "bmw-label", "Version & score IDs")), ids);
+    return items;
   }
   function load(value: unknown, retainWeights?: Values) {
     const parsed = parseRequirement(value);
+    const sameRequirement = current?.id === parsed.id;
     current = parsed;
     requiresReload = false;
     draftFactors = { ...parsed.current_version.factors };
     draftWeights = { ...(retainWeights ?? parsed.current_version.score?.weights ?? DEFAULT_WEIGHTS) };
-    key.textContent = `${parsed.key} · ${parsed.vehicle} / ${parsed.market}`;
-    title.textContent = parsed.current_version.title || "Untitled requirement";
-    badges.replaceChildren(element("span", "badge", parsed.status.replaceAll("_", " ")), element("span", "badge info", parsed.needs_review ? "Needs review" : "No open review"));
-    statement.textContent = parsed.current_version.statement;
-    need.textContent = parsed.current_version.customer_need;
-    criteria.replaceChildren();
-    for (const criterion of parsed.current_version.acceptance_criteria) criteria.append(element("li", "", `${valueText(criterion.metric)}: ${valueText(criterion.target)} ${valueText(criterion.unit)} · ${valueText(criterion.basis)}`.trim()));
-    for (const assumption of parsed.current_version.assumptions) criteria.append(element("li", "muted", `Assumption: ${assumption}`));
-    grade.textContent = parsed.current_version.score ? `Evidence grade ${parsed.current_version.score.evidence_grade || "—"} · separate from priority` : "No evidence grade available.";
+    shell.eyebrow.textContent = `${parsed.key} · Scoring & decision`;
+    shell.title.textContent = parsed.current_version.title || "Untitled requirement";
+    shell.setSubtitle(parsed.current_version.customer_need || parsed.current_version.statement);
+    shell.setScope([parsed.vehicle, parsed.market].filter(Boolean).join(" / "));
+    versionLabel.textContent = `Version ${parsed.current_version.version}`;
+    briefPager.set(briefItems(parsed), sameRequirement ? briefPage : 0);
+    const score = parsed.current_version.score;
+    gradeText.textContent = score ? `Grade ${score.evidence_grade || "—"} · separate from priority` : "No evidence grade available.";
     const approvedScore = parsed.approved_version?.score && typeof parsed.approved_version.score === "object" ? record(parsed.approved_version.score) : null;
     approved.textContent = parsed.approved_version ? `Approved baseline: version ${valueText(parsed.approved_version.version)} · ${valueText(approvedScore?.total) || "—"} / 100` : "No approved baseline yet.";
     const open = parsed.reviews.filter((item) => item.status === "open");
     reviewStatus.textContent = parsed.needs_review ? `Needs review${open.length ? `: ${open.map((item) => valueText(item.reason)).filter(Boolean).join("; ")}` : "."}` : "No open review items.";
-    const limits = parsed.current_version.score?.explanation.limitations;
-    limitations.textContent = Array.isArray(limits) ? limits.map(valueText).join(" ") : "Priority reflects recorded judgments; evidence grade is separate.";
-    idList.replaceChildren();
-    for (const [label, value] of [["Current version", parsed.current_version.id], ["Current score", parsed.current_version.score?.id ?? "Missing"], ["Approved version", parsed.approved_version_id ?? "None"], ["Approved score", parsed.approved_score_id ?? "None"]]) {
-      const row = element("div"); row.append(element("span", "muted scoring-footnote", label), element("code", "", value)); idList.append(row);
-    }
+    reviewStatus.classList.toggle("sp-attention", parsed.needs_review);
     update();
   }
   async function reload() {
@@ -303,6 +366,8 @@ export function mountScoringPanel(app: App, root: HTMLElement) {
       // These reads never retry the write. We deliberately do not chain a decision after a save.
       load(await callTool<unknown>(app, "get_requirement", { requirement_id: requirementId }), retainedWeights);
       awaitingDecisionReview = kind !== "decision"; reviewed.checked = false;
+      // After a save, the next step is reviewing the fresh state in the decision pane.
+      if (kind !== "decision") tab = "decide";
       message = kind === "decision" ? `Decision recorded: ${selectedAction}, by ${identity}.${contextWarning}` : `${kind === "factors" ? "Factors" : "Weights"} saved. Review the new version and score${retainedWeights ? "; your weight preview is still unsaved" : ""} before deciding.`;
     } catch (cause) {
       const detail = errorText(cause);
@@ -321,7 +386,7 @@ export function mountScoringPanel(app: App, root: HTMLElement) {
         requiresReload = true;
         failure = recorded ? `The ${kind === "decision" ? "decision" : "change"} was recorded, but the latest state could not be loaded. ${detail} Reload before another write.${contextWarning}` : `The result of this write is unknown. ${detail} Reload and inspect the saved state before trying again.`;
       }
-    } finally { if (epoch === requestEpoch) { busy = false; update(); } }
+    } finally { if (epoch === requestEpoch) { busy = false; layout(); update(); } }
   }
   actor.addEventListener("input", update); rationale.addEventListener("input", update); action.addEventListener("change", update); reviewed.addEventListener("change", update);
   refresh.addEventListener("click", () => void reload());
@@ -336,18 +401,20 @@ export function mountScoringPanel(app: App, root: HTMLElement) {
     update();
   };
   function hostTheme(context: McpUiHostContext) {
+    // The host picks light or dark; BMW tokens replace host style variables so widgets match the workspace.
     if (context.theme) applyDocumentTheme(context.theme);
-    if (context.styles?.variables) applyHostStyleVariables(context.styles.variables);
+    shell.hostContext(context);
   }
   app.onhostcontextchanged = hostTheme;
   update();
   return {
     async connect() {
-      try { await app.connect(); const context = app.getHostContext(); if (context) hostTheme(context); }
+      try { await app.connect(); const context = app.getHostContext(); if (context) hostTheme(context); shell.attach(app); }
       catch (cause) { requiresReload = true; failure = `Could not connect to the MCP host. ${errorText(cause)}`; update(); }
     },
   };
 }
 
 const root = document.getElementById("app");
-if (root) void mountScoringPanel(new App({ name: "BMW scoring and decision", version: "0.1.0" }), root).connect();
+// The shell reports a fixed frame height, so the SDK's content-height auto-resize is disabled.
+if (root) void mountScoringPanel(new App({ name: "BMW scoring and decision", version: "0.1.0" }, {}, { autoResize: false }), root).connect();

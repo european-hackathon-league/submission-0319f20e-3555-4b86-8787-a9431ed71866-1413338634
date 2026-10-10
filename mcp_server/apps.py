@@ -23,7 +23,7 @@ def _html(filename: str) -> str:
 
 
 def register_app_resources(mcp) -> None:
-    metadata = {"ui": {"prefersBorder": True, "csp": {"connectDomains": [], "resourceDomains": []}}}
+    metadata = {"ui": {"prefersBorder": False, "csp": {"connectDomains": [], "resourceDomains": []}}}
 
     @mcp.resource(SCORING_UI, name="Scoring and decision panel", mime_type=APP_MIME, meta=metadata)
     def scoring_panel_view() -> str:
