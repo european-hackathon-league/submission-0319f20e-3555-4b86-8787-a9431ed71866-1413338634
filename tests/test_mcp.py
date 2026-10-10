@@ -50,6 +50,8 @@ async def test_every_pipeline_operation_is_discoverable():
         "get_requirement_versions", "trace_requirement", "create_requirement", "edit_requirement",
         "score_requirement", "decide_requirement", "list_reviews", "list_audit", "get_workspace",
         "search_market_evidence", "fetch_market_evidence", "import_web_candidate",
+        "list_actors", "create_pm_workflow", "list_pm_workflows", "get_pm_workflow",
+        "run_pm_workflow", "complete_pm_workflow", "get_pm_workflow_brief",
     }
     # Clients can discover required optimistic-lock tokens and nested target/factor schemas.
     assert set(tools["decide_requirement"].input_schema["required"]) == {
@@ -90,6 +92,8 @@ async def test_unsupported_arguments_never_execute_api_commands(upstream, name, 
     ("get_requirement_versions", {"requirement_id": "req1"}, "/requirements/req1/versions", {}, []),
     ("trace_requirement", {"requirement_id": "req1", "version_id": "v1", "limit": 10, "offset": 5}, "/requirements/req1/trace",
      {"version_id": "v1", "limit": "10", "offset": "5"}, {}),
+    ("trace_requirement", {"requirement_id": "req1", "version_id": "v1", "score_id": "s1"},
+     "/requirements/req1/trace", {"version_id": "v1", "score_id": "s1", "limit": "100", "offset": "0"}, {}),
     ("list_reviews", {"vehicle": "G60", "market": "US", "status": "resolved"}, "/reviews",
      {"vehicle": "G60", "market": "US", "status": "resolved"}, []),
     ("list_audit", {"entity_id": "req1", "after": 15, "limit": 4}, "/audit",

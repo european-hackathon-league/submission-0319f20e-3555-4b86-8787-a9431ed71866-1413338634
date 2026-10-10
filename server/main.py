@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from pydantic import Field, model_validator
 
 from database.store import create_source, get_source, init_database, list_sources, ping_database
+from server.decision_briefs import router as decision_briefs_router
 from server.evaluation import router as evaluation_router
 from server.evidence import ImportRoute, scope_filters
 from server.evidence import router as evidence_router
@@ -62,6 +63,7 @@ app.include_router(requirements_router)
 app.include_router(web_fetch_router)
 app.include_router(evaluation_router)
 app.include_router(workflows_router)
+app.include_router(decision_briefs_router)
 app.router.route_class = ImportRoute
 
 

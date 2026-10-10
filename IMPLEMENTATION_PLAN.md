@@ -113,7 +113,7 @@ Deliver in separately reviewed, verified commits:
 1. **Durable agent workflow (implemented and reviewed):** scoped initial/update runs, source inventory, AI or
    explicitly labeled reference analysis, requirement generation and deterministic
    scoring, persistent checkpoints and retry, mandatory human decision gate.
-2. **Decision preparation:** source-linked briefs with conflicts, missing dates,
+2. **Decision preparation (implemented and reviewed):** source-linked briefs with conflicts, missing dates,
    PM-assumed targets, explicit next review actions, frozen completed decision
    snapshots, and the same operations exposed through MCP.
 3. **Working PM cockpit and evaluation:** a same-origin `/pm/` browser workspace
@@ -124,3 +124,5 @@ Agents prepare proposals. Human PMs approve/reject exact requirement versions an
 scores. Approved versions and earlier completed briefs remain intact when evidence
 changes. Existing lower-level API/MCP operations remain available. No external
 messages are sent and no production engineering approvals are implied.
+
+Implementation details and the executable verification commands are in [PM planning workflows](notes/pm-workflows.md).
