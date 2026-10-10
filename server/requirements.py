@@ -1,12 +1,12 @@
 """Versioned requirements, explainable priorities, PM decisions, and review history."""
 
-import re
 from contextlib import closing
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Query
 
 from database.store import audit, connect, decode, encode, new_id, now, transaction
+from server.grounding import target_supported
 from server.models import (
     DecisionRequest,
     RequirementContent,
@@ -113,13 +113,8 @@ def validate_targets(connection, content, finding_ids):
         if criterion["basis"] == "source" and not set(criterion["source_ids"]).issubset(sources):
             raise HTTPException(422, "Acceptance target source references must belong to the linked evidence")
         if criterion["basis"] == "source":
-            target = re.sub(r"\s+", " ", str(criterion["target"])).strip().casefold()
-            sentences = [sentence for record in supporting if record["source_id"] in criterion["source_ids"]
-                         for sentence in re.split(r"[!?\n]|(?<!\d)\.(?!\d)", record["content"])]
-            if not any(re.search(r"(?<!\w)" + re.escape(target) + r"(?!\w)",
-                                 re.sub(r"\s+", " ", sentence).strip().casefold())
-                       and re.search(r"\b(target|goal|shall|must|require\w*|want\w*|wish\w*|need\w*|should)\b", sentence, re.I)
-                       for sentence in sentences):
+            source_texts = [record["content"] for record in supporting if record["source_id"] in criterion["source_ids"]]
+            if not target_supported(str(criterion["target"]), source_texts):
                 raise HTTPException(422, "Source-based target must be quoted in a linked explicit desired outcome; use PM assumption otherwise")
 
 
