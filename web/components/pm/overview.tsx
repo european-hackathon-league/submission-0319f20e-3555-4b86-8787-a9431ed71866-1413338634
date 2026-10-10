@@ -104,6 +104,12 @@ export function Overview() {
           </strong>{" "}
           current requirements link to source records. Links show provenance;
           priority and evidence quality still need separate PM review.
+          {scope.vehicle === "G60" && scope.market === "US" && (
+            <span className="source-concentration-note">
+              In the supplied G60 / US inventory, 72.7% of unique feedback IDs
+              come from Source B. Sample counts are not market prevalence.
+            </span>
+          )}
         </p>
         <Link href={`${base}/evidence`}>Explore evidence <ArrowUpRight size={13} /></Link>
       </div>

@@ -21,7 +21,6 @@ import {
   Car,
   Command,
   CircleHelp,
-  Info,
   ChevronRight,
   Layers3,
   Bot,
@@ -247,7 +246,7 @@ export function WorkspaceApp({
       <SidebarProvider
         style={{ "--sidebar-width": "15rem" } as React.CSSProperties}
       >
-        <Sidebar collapsible="icon">
+        <Sidebar collapsible="icon" className="workspace-sidebar">
           <SidebarHeader>
             <Link
               href={base}
@@ -363,7 +362,6 @@ export function WorkspaceApp({
           <header className="workspace-header">
             <div className="flex items-center gap-4">
               <SidebarTrigger />
-              <span className="header-separator" />
               <span className="header-page">{title}</span>
             </div>
             <div className="header-controls">
@@ -392,18 +390,6 @@ export function WorkspaceApp({
               <AppearanceToggle />
             </div>
           </header>
-          {section !== "agents" && scope.vehicle === "G60" && scope.market === "US" && (
-            <div className="scope-limitation">
-              <Info size={14} />
-              <span>
-                Supplied G60 / US inventory: 72.7% of unique feedback IDs come
-                from Source B. Sample counts are not market prevalence.
-              </span>
-              <Link href={`${base}/evidence`}>
-                Inspect evidence <ArrowUpRight size={12} />
-              </Link>
-            </div>
-          )}
           <div
             id="workspace-content"
             tabIndex={-1}

@@ -26,7 +26,7 @@ EHL_API_URL=http://127.0.0.1:8000 bun dev
 
 | Screen | Behavior |
 | --- | --- |
-| Overview | Focused evidence-to-decision story: live evidence, finding and requirement counts; one highest-priority proposal with its separate evidence grade; source-link coverage. Persistent G60/US source-concentration disclosure. |
+| Overview | Focused evidence-to-decision story: live evidence, finding and requirement counts; one highest-priority proposal with its separate evidence grade; source-link coverage and the G60/US source-concentration disclosure. |
 | Requirements | Ranked list and search up front. Filters, saved views, density, exports and creation remain under **Filters and tools**. |
 | Requirement detail | Statement, measurable criteria, explicit target basis, assumptions, paged supporting/conflicting evidence, exact sheet/row/page, original downloads, score contributions and unsaved weight simulation. |
 | Decisions and versions | PM edits create a new scored version. Approval/rejection/postponement/challenge require rationale and exact version/score IDs. Lead PMs can save reweighted scores. Approved/current comparison, historical snapshots and audit history. |
