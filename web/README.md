@@ -40,7 +40,7 @@ EHL_API_URL=http://127.0.0.1:8000 bun dev
 
 Filters, selected requirement/tab, immutable version/score, selected evidence, and workflow selection use shareable URLs. Stable-key links such as `/g60/us/requirements/REQ-G60-US-003/trace` work. Global search uses ⌘K/Ctrl+K. The register uses a semantic paginated table; paged API reads are collected without silently truncating records. TanStack Query manages server state. Input contracts are generated in `lib/generated-api.ts`; `lib/types.ts` describes additional response shapes from the current API.
 
-The sidebar keeps Overview, Requirements, Evidence and Vehicle studio visible. Pipeline, imports, reviews, markets, audit and settings remain available under **More tools**. A reviewer can be selected within the requirement drawer before recording a decision. See [the three-minute demo guide](DEMO.md).
+The sidebar shows Overview, a collapsible Software group for requirements, evidence and the other PM tools, Multi-agentic system, and Vehicle Studio. Multi-agentic system currently opens an empty page. The reviewer selector sits at the bottom of the sidebar; a reviewer can also be selected within the requirement drawer before recording a decision. See [the three-minute demo guide](DEMO.md).
 
 ## Vehicle studio assets and data
 

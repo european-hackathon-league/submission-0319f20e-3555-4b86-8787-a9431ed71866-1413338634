@@ -16,6 +16,7 @@ export default async function Page({
   if (
     ![
       "overview",
+      "agents",
       "requirements",
       "reviews",
       "evidence",
