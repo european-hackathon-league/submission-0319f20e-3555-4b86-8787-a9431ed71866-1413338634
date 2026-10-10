@@ -1,6 +1,7 @@
 import json
 import os
 import sqlite3
+import time
 from contextlib import closing, contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -41,7 +42,7 @@ def _execute_schema(connection: sqlite3.Connection, path: Path) -> None:
 
 def init_database() -> None:
     with closing(connect()) as connection:
-        connection.execute("PRAGMA journal_mode = WAL")
+        _enable_wal(connection)
         connection.execute("BEGIN IMMEDIATE")
         try:
             _execute_schema(connection, SCHEMA_PATH)
@@ -68,6 +69,22 @@ def init_database() -> None:
         except BaseException:
             connection.rollback()
             raise
+
+
+def _enable_wal(connection) -> None:
+    # SQLite's journal-mode transition can report BUSY immediately despite the
+    # connection busy timeout when multiple processes create a database at once.
+    deadline = time.monotonic() + 10
+    while True:
+        try:
+            connection.execute("PRAGMA journal_mode = WAL")
+            return
+        except sqlite3.OperationalError as exc:
+            code = getattr(exc, "sqlite_errorcode", 0) & 255
+            if (code not in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED)
+                    and str(exc) not in ("database is locked", "database table is locked")) or time.monotonic() >= deadline:
+                raise
+            time.sleep(0.025)
 
 
 def now() -> str:
