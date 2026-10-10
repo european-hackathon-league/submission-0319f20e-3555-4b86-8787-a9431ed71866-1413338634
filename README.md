@@ -1,5 +1,7 @@
 # ehl-final
 
+<p align="center"><img src="assets/ouuu-shii.webp" alt="Ouuu shii" width="360"></p>
+
 BMW — AI for Product Decision Making, EHL Munich, 10–11 October 2026.
 
 ## Run the backend
