@@ -6,6 +6,16 @@ and tracking. [Mentor guidance](bmw-guidance.md) places this challenge in **mark
 planning**, with a requirement set revisited over approximately two years. Completing a run documents
 PM planning decisions; it does not approve engineering, homologation, costs or production readiness.
 
+## Browser cockpit
+
+Open `http://localhost:8000/pm/` after `docker compose up --build -d` (use your API port).
+The cockpit ships in the API image, with no extra service or frontend build. Start in G60/US,
+choose a declared active human actor, import a local BMW file or upload, and select reference
+or live AI analysis. Manual demo inputs are explicitly labeled as simulated. The priority
+register includes the decision brief, exact evidence, approved baseline comparison, PM editing,
+and decision actions. Saved workflows survive refresh; completed views use their frozen
+record. The export downloads a Markdown planning brief.
+
 ## What agents do and where PMs decide
 
 1. Import BMW spreadsheets/PDFs or explicitly selected source records using the existing import API.
@@ -77,3 +87,23 @@ PM edit/approval, frozen brief/export, changed evidence, preserved approval and 
 update completion, audit and historical JSON/Markdown stability. Tests cover failure/retry, idempotency
 collisions, evidence changes during analysis, cross-scope isolation, stale revisions/scores, interrupted
 leases and current decisions after manual requirements are added.
+
+
+## Verified implementation milestones — 10 October 2026
+
+- Three features independently reviewed and fixed by GPT-6.1 Sol subagents.
+- **557 Python tests passed**, including database migrations and existing MCP App contracts; Ruff passed.
+- Isolated Compose API healthy and MCP reachable; original running stack untouched.
+- Real BMW reference import: **5,218 evidence records, 4,229 customer records, 11 G60/US
+  requirements**, exact source coverage. The durable run stops awaiting PM decisions; real
+  customer requirements are not automatically approved.
+- Actual configured OpenAI initial/update workflow passed through HTTP and real MCP. This
+  checks integration and behavior on a small synthetic fixture, not general semantic quality
+  or full-dataset live-model coverage.
+- Browser synthetic journey: import → run → challenge blocks completion → edit/version →
+  approve → complete; new evidence → updated proposal → preserved approved baseline →
+  approve and complete; selecting the old completed run retains its old version and score.
+- `node scripts/verify_pm_ui_state.cjs` covers pinned traces, failed selections, frozen briefs,
+  late responses, incomplete pagination, interrupted-run recovery and native download requests.
+- Browser attachment download completed; its **4,249-byte** Markdown content exactly matched the
+  persisted completed brief. SQLite integrity and the **296-event** audit hash chain verified.

@@ -24,7 +24,7 @@ flowchart LR
 
 The database folder is **not a third running service**: SQLite runs inside the API process. Compose starts the `api` and `mcp` services, waits for the API health check before starting MCP, and persists the database through bind mounts. The BMW input files remain outside the images in `data/`.
 
-The backend workflow is implemented. BMW file import, reference/AI analysis, requirements, prioritization, change assessment, and PM workspace operations share this runtime. The graphical PM workspace remains a separate frontend; its data and actions are exposed by the backend. Two interactive MCP Apps now provide scoring/decision review and trace exploration inside a compatible MCP host; see [widget setup](notes/mcp-apps-widgets.md). See [backend API and decisions](server/README.md) and the executable [live verifier](scripts/verify_backend.py).
+The backend workflow is implemented. BMW file import, reference/AI analysis, requirements, prioritization, change assessment, and PM workspace operations share this runtime. A same-origin PM workflow cockpit at `/pm/` now covers import, agent stages, trace, edit, decisions and frozen planning briefs. The broader enterprise frontend and 3D twin remain separate roadmap items. Two interactive MCP Apps now provide scoring/decision review and trace exploration inside a compatible MCP host; see [widget setup](notes/mcp-apps-widgets.md). See [backend API and decisions](server/README.md) and the executable [live verifier](scripts/verify_backend.py).
 
 ## Components and connections
 
@@ -99,7 +99,7 @@ The [BMW demo proposal](notes/winning-demo-proposal.md) preserves additional pre
 The [PM workspace and 3D Requirement Twin plan](notes/pm-workspace-and-3d-twin.md) designs component 6, enterprise integration, and the 3D layer on top of the database views.
 
 
-## BMW PM workflow extension (in progress)
+## BMW PM workflow extension
 
 BMW's supplied [process diagram](materials/images/product-management-process.png) defines
 situation analysis → structure and context → requirement definition → prioritization →
@@ -116,7 +116,7 @@ Deliver in separately reviewed, verified commits:
 2. **Decision preparation (implemented and reviewed):** source-linked briefs with conflicts, missing dates,
    PM-assumed targets, explicit next review actions, frozen completed decision
    snapshots, and the same operations exposed through MCP.
-3. **Working PM cockpit and evaluation:** a same-origin `/pm/` browser workspace
+3. **Working PM cockpit and evaluation (implemented and reviewed):** a same-origin `/pm/` browser workspace
    for import, run, trace, edit, decide and document; isolated Compose HTTP/MCP
    verification and browser checks for the initial and changed-evidence journeys.
 

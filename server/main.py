@@ -1,12 +1,14 @@
 import os
 import sqlite3
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import Field, model_validator
 
 from database.store import create_source, get_source, init_database, list_sources, ping_database
@@ -116,3 +118,6 @@ def source(source_id: str) -> dict:
     if result is None:
         raise HTTPException(status_code=404, detail="Source not found")
     return result
+
+
+app.mount("/pm", StaticFiles(directory=Path(__file__).parent / "pm_static", html=True), name="pm")
