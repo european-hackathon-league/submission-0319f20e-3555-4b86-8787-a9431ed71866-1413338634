@@ -21,33 +21,53 @@ def connect() -> sqlite3.Connection:
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA busy_timeout = 10000")
     connection.execute("PRAGMA foreign_keys = ON")
+    # REPLACE deletes the existing row; recursive triggers make the append-only
+    # DELETE guards apply to that implicit deletion too.
+    connection.execute("PRAGMA recursive_triggers = ON")
     return connection
+
+
+def _execute_schema(connection: sqlite3.Connection, path: Path) -> None:
+    """Execute schema statements without executescript's implicit commit."""
+    statement = ""
+    for line in path.read_text().splitlines(keepends=True):
+        statement += line
+        if sqlite3.complete_statement(statement):
+            connection.execute(statement)
+            statement = ""
+    if statement.strip():
+        connection.execute(statement)
 
 
 def init_database() -> None:
     with closing(connect()) as connection:
         connection.execute("PRAGMA journal_mode = WAL")
-        connection.executescript(SCHEMA_PATH.read_text())
-        columns = {row["name"] for row in connection.execute("PRAGMA table_info(sources)")}
-        for name, definition in {
-            "content_hash": "TEXT",
-            "metadata": "TEXT NOT NULL DEFAULT '{}'",
-            "observed_at": "TEXT",
-            "original_path": "TEXT",
-        }.items():
-            if name not in columns:
-                connection.execute(f"ALTER TABLE sources ADD COLUMN {name} {definition}")
-        connection.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_source_hash_scope "
-                           "ON sources(content_hash, vehicle, market) WHERE content_hash IS NOT NULL")
-        connection.executescript(SCHEMA_PATH.with_name("workflow.sql").read_text())
-        for table in ("evidence", "analysis_runs", "findings", "finding_evidence", "requirement_versions",
-                      "requirement_findings", "scores", "decisions", "audit_events", "imports"):
-            for action in ("UPDATE", "DELETE"):
-                connection.execute(f"CREATE TRIGGER IF NOT EXISTS immutable_{table}_{action.lower()} "
-                                   f"BEFORE {action} ON {table} BEGIN "
-                                   f"SELECT RAISE(ABORT, '{table} is append-only'); END")
-        connection.execute("PRAGMA user_version = 2")
-        connection.commit()
+        connection.execute("BEGIN IMMEDIATE")
+        try:
+            _execute_schema(connection, SCHEMA_PATH)
+            columns = {row["name"] for row in connection.execute("PRAGMA table_info(sources)")}
+            for name, definition in {
+                "content_hash": "TEXT",
+                "metadata": "TEXT NOT NULL DEFAULT '{}'",
+                "observed_at": "TEXT",
+                "original_path": "TEXT",
+            }.items():
+                if name not in columns:
+                    connection.execute(f"ALTER TABLE sources ADD COLUMN {name} {definition}")
+            connection.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_source_hash_scope "
+                               "ON sources(content_hash, vehicle, market) WHERE content_hash IS NOT NULL")
+            _execute_schema(connection, SCHEMA_PATH.with_name("workflow.sql"))
+            for table in ("evidence", "analysis_runs", "findings", "finding_evidence", "requirement_versions",
+                          "requirement_findings", "scores", "decisions", "audit_events", "imports"):
+                for action in ("UPDATE", "DELETE"):
+                    connection.execute(f"CREATE TRIGGER IF NOT EXISTS immutable_{table}_{action.lower()} "
+                                       f"BEFORE {action} ON {table} BEGIN "
+                                       f"SELECT RAISE(ABORT, '{table} is append-only'); END")
+            connection.execute("PRAGMA user_version = 2")
+            connection.commit()
+        except BaseException:
+            connection.rollback()
+            raise
 
 
 def now() -> str:
