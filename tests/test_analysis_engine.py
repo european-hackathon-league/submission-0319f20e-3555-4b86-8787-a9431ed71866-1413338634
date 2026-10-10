@@ -47,6 +47,7 @@ def test_customer_pipeline_retains_strengths_needs_and_conflicts():
     assert any("PM planning assumption" in assumption for assumption in proposal["assumptions"])
     assert all(0 <= score <= 5 for score in proposal["factors"].values())
     assert result["provider"] == "deterministic"
+    assert result["analyzed_evidence_ids"] == ["e1", "e2", "e3"]
 
 
 def test_positive_evidence_generates_preservation_requirement():
@@ -204,6 +205,7 @@ def test_openai_partial_coverage_and_truncation_are_explicit(ai, monkeypatch):
     assert any("Partial AI source coverage" in warning and "1 records omitted" in warning for warning in result["warnings"])
     assert any("truncated to 6000" in warning for warning in result["warnings"])
     assert result["findings"][0]["evidence_ids"] == ["e1"]
+    assert result["analyzed_evidence_ids"] == ["e1"]
 
 
 def test_cross_batch_citations_rejected_even_if_id_exists_in_full_input(ai, monkeypatch):
