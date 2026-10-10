@@ -1,252 +1,95 @@
-# Winning implementation plan
+# Implementation plan
 
-Ja – Pipeline zuerst und 3D als Abschluss ist genau die richtige Reihenfolge. Die stärkste Positionierung wäre:
+Build one application that turns customer evidence into a prioritized list of product requirements and tells PMs when a decision needs revisiting.
 
-> Ein „BMW Requirement Twin“, der Kundenevidenz in versionierte, priorisierte und überprüfbare Anforderungen übersetzt – und anschließend am 3D-Fahrzeug zeigt, wo diese Anforderungen das Kundenerlebnis verändern.
+Start with **G60 / US**, while carrying vehicle and market through every component.
 
-Nicht: „AI empfiehlt dem Kunden ein Auto.“<br>
-Sondern: „AI hilft dem PM, die nächste Fahrzeuggeneration zu definieren.“
+## Current setup
 
-## Meine Analyse
+Docker Compose (`compose.yml`) runs two Python services and keeps the SQLite database in a third folder on the host:
 
-Das bestehende Repository enthält gute Research-Arbeit, Dateninventar und einen konzeptionell sinnvollen Plan. Es enthält aber noch keinen ausführbaren Prototyp: keine Anwendung, Schemas, Datenbank, Pipeline oder Tests. Der größte nächste Schritt ist daher ein vollständiger vertikaler Durchlauf statt weiterer Research-Dokumentation.
+| Folder | Role | Current implementation |
+| --- | --- | --- |
+| `mcp_server/` | MCP interface for AI clients. It calls the Python API over the Compose network rather than opening the database directly. | Streamable HTTP on port 8001, with `list_sources` and `get_source` tools. |
+| `server/` | Ordinary Python/FastAPI server and the application's business logic. It owns validation, workflows, and database access. | HTTP API on port 8000, with a health check and endpoints to create, list, and get source records. |
+| `database/` | Shared persistence code, SQLite schema, local database file, and snapshots. | A `sources` table; `database/local/` and `database/snapshots/` are mounted into the API container and persist across rebuilds. |
 
-BMWs Material beschreibt eindeutig diese Kette:
-
-`Situation Analysis → Structure & Context → Requirement Definition → Prioritization → Documentation & Tracking`
-
-Dazu kommen die wichtigsten Bewertungspunkte: erklärbares Scoring, Human-in-the-loop, vollständige Rückverfolgbarkeit und ehrlicher Umgang mit Unsicherheit.
-
-Quellen: [BMW Product Management Keynote](materials/261010_BMW_Product_Management_Key_Note.pptx), [BMW Hackathon Briefing](materials/BMW_Hackathon_Briefing_Short.pdf), [BMW team guidance](notes/bmw-guidance.md) und [authoritative challenge requirements](notes/challenge.md).
-
-## Empfohlener Demo-Scope
-
-Nehmt zunächst:
-
-- Fahrzeug: BMW G60
-- Derivative: i5 M60 xDrive
-- Markt: USA
-- Horizont: Nachfolgegeneration in drei bis fünf Jahren
-
-Warum:
-
-- G60/USA besitzt 4.365 Feedback-Zeilen und 3.610 unterschiedliche Feedback-IDs.
-- Die sichtbaren Stärken sind insbesondere Antrieb, Handling und Exterieurdesign.
-- Relevante Problemfelder sind Sitze, elektrische Reichweite, öffentliches Laden und Bedienkonzept.
-- 72,7 % der US-Feedback-IDs kommen allerdings aus „Source B“. Deshalb dürfen die Zahlen nicht als Marktprävalenz dargestellt werden.
-
-Die Datengrundlage und ihre Einschränkungen sind im [Research Review](research/RESEARCH.md) dokumentiert. Die BMW-Eingabedaten selbst bleiben gemäß BMWs Vorgabe in `.gitignore`; Dateinamen, Hashes und Source-IDs stehen im [Source Inventory](notes/source-inventory.json).
-
-Der Annual Report unterstützt diesen Scope: 5er/6er-Auslieferungen stiegen 2025 um 19,5 %, elektrifizierte Fahrzeuge erreichten 26,1 % der Auslieferungen, und fast jeder zehnte BMW war ein M-Modell. Das macht den i5 M60 zu einem plausiblen Demo-Anker – nicht zu einer bewiesenen optimalen Produktentscheidung. Quelle: [BMW Group Report 2025](https://www.bmwgroup.com/content/dam/grpw/websites/bmwgroup_com/ir/downloads/en/2026/bericht/BMW-Group-Report-2025-en.pdf).
-
-## Zielarchitektur
-
-```text
-Excel / PDF / Web
-        ↓
-Raw Source Registry
-        ↓
-Evidence Spans
-        ↓
-Consolidated Findings
-        ↓
-Customer Need
-        ↓
-Requirement Version
-        ↓
-Deterministic Score + Evidence Grade
-        ↓
-PM Decision
-        ↓
-Append-only Audit Trail
-        ↓
-3D Requirement Hotspot
+```mermaid
+flowchart LR
+    A[AI client] -->|MCP| M[mcp_server/]
+    M -->|HTTP| S[server/]
+    P[PM workspace] -->|HTTP| S
+    S -->|SQLite| D[database/]
 ```
 
-Empfohlener Stack:
+The database folder is **not a third running service**: SQLite runs inside the API process. Compose starts the `api` and `mcp` services, waits for the API health check before starting MCP, and persists the database through bind mounts. The BMW input files remain outside the images in `data/`.
 
-- Next.js, React und TypeScript für die PM-Oberfläche
-- FastAPI, Python und Pydantic für Import und AI-Pipeline
-- SQLite für den Hackathon, später PostgreSQL
-- strukturierte LLM-Ausgaben per JSON-Schema
-- React Three Fiber für die abschließende 3D-Ansicht
-- Caching anhand von Source-Hash und Prompt-Version, damit API-Credits nicht bei jedem Lauf erneut verbraucht werden
+This is the runtime foundation, not the completed product workflow. Source records and their MCP reads exist today; BMW file import, evidence analysis, requirements, prioritization, change assessment, and the PM workspace still need implementation.
 
-Kein Microservice-Netz, keine Graphdatenbank und kein Multi-Agent-System für den MVP.
+## Components and connections
 
-## Build-Plan
+The planned application has six functional components and a shared data store. Implement the workflow logic in `server/`, expose selected operations through `mcp_server/`, and keep their records in `database/`. Every requirement, priority, and decision remains connected to its supporting evidence.
 
-### P0 – der bewertbare Kern
+```mermaid
+flowchart LR
+    A[BMW files and external research] --> B[1. Source import]
+    B --> C[2. Evidence analysis]
+    C --> D[3. Requirement builder]
+    D --> E[4. Prioritization]
+    E --> F[6. PM workspace]
 
-#### 1. Source Registry bauen
+    C --> G[5. Change assessment]
+    D --> G
+    E --> G
 
-Jede Datei, Tabellenzeile und Webquelle erhält:
+    F --> H[Approved decisions and history]
+    H --> G
+    G -->|Changes needing review| F
+```
 
-- `source_id`
-- Datei-Hash
-- Fahrzeug und Markt
-- Zeile, Seite oder URL
-- Importzeitpunkt
-- verfügbare Zeitinformation
-- Vertrauens- und Abhängigkeitskennzeichen
+All components use the same source references, requirement IDs, and versions. They are modules within the Python server rather than separate Compose services. The MCP server is an adapter to that API, so its tools and other clients use the same rules and data.
 
-#### 2. Evidenz extrahieren
+| Component | What it does | What it passes onward |
+| --- | --- | --- |
+| **1. Source import** | Reads spreadsheets, PDFs, and selected web sources. Preserves originals, identifies duplicates, and records exact source locations. | Searchable source records, including vehicle, market, and available dates. |
+| **2. Evidence analysis** | Uses AI to identify customer needs, positive attributes, problems, and relevant context. Connects related findings and identifies supporting or conflicting evidence. | Structured findings linked to original records. |
+| **3. Requirement builder** | Consolidates findings into clear customer-facing requirements with scope, acceptance criteria, and assumptions. Maintains stable identities as requirements evolve. | Draft requirement versions and their evidence links. |
+| **4. Prioritization** | Applies an explicit scoring rubric to the findings and requirements. Produces an understandable explanation of each priority. | A ranked list with recorded scoring inputs and results. |
+| **5. Change assessment** | Compares updated evidence, requirements, and priorities against the last approved state. Determines which changes warrant attention. | Review items explaining what changed, why it matters, and the suggested response. |
+| **6. PM workspace** | Presents the priority list, evidence, and review items. Lets PMs approve, edit, reject, or postpone. | Recorded decisions and newly approved versions. |
 
-Das Modell liefert pro exaktem Textausschnitt:
+## Shared foundation
 
-- Signaltyp: Like, Defect, Difficult to Use, Want, Trend, Competitor Advantage
-- Kundenbedürfnis
-- Fahrzeugbereich
-- Markt und Antrieb
-- Schweregrad
-- unterstützend oder widersprechend
-- exakte Quellenreferenz
+The database currently holds source records. Expand its schema to hold findings, requirement versions, priority calculations, review items, and decision history as those workflows are built.
 
-Zählen, Filtern und Deduplizieren übernimmt deterministischer Code, nicht das LLM.
+The essential connection is:
 
-#### 3. Anforderungen formulieren
+**Source → finding → requirement version → priority → PM decision**
 
-Bedürfnis, Lösung und Messung bleiben getrennt:
+This connection supports explaining a recommendation, identifying affected decisions when evidence changes, and reconstructing previous decisions.
 
-- Need: „Der Kunde möchte auf Langstrecken Vertrauen in Reichweite und Laden haben.“
-- Candidate response: verbesserte Ladeplanung und zuverlässigere Stationsinformationen.
-- Acceptance test: messbarer Kundentest mit klarer Erfolgsgrenze.
+## Workflows
 
-Jeder numerische Zielwert muss entweder eine Quelle oder `PM assumption` tragen.
+1. **Initial analysis:** import the BMW data → extract findings → build requirements → calculate priorities → PM reviews and approves.
+2. **Ongoing updates:** import new evidence → identify affected requirements → propose revisions and recalculate priorities → assess significance → present relevant changes for PM review.
 
-#### 4. Scoring implementieren
+Approved versions remain intact until the PM accepts a revision. Proposed changes appear alongside the approved version, with a clear explanation. Edits also pass through prioritization so the displayed score matches the actual requirement.
 
-Beispiel:
+The PM workspace consists of vehicle and market selection, a priority list, the selected requirement's details, and a **Needs review** filter.
 
-`Priority = 35 % Customer Impact + 25 % Market Relevance + 20 % Strategic Fit + 10 % Differentiation + 10 % Feasibility`
+## Implementation sequence
 
-Davon getrennt:
+The Compose stack, the three-folder layout, API health check, source-record endpoints, MCP source tools, and persistent SQLite storage are in place.
 
-- Evidence Grade A–D
-- Source Coverage
-- Source Diversity
-- Consistency
-- Conflict Flag
-- Uncertainty Notes
+1. **Expand the shared records and import BMW data:** add reliable source locations, vehicle and market scope, deduplication, and the records needed for findings and requirements.
+2. **Complete the initial workflow:** implement analysis, requirement generation, scoring, evidence display, and decision recording in the Python server; expose the needed operations through the API and MCP tools.
+3. **Complete the update workflow:** detect meaningful changes, recalculate affected priorities, and support reviewed revisions.
+4. **Evaluate and refine:** measure evidence quality, decision time, and change-detection accuracy; improve the PM workspace around those results.
 
-Wichtig: Ein hoher Wert mit schwacher Evidenz muss sichtbar anders aussehen als ein hoher Wert mit starker Evidenz.
+The first milestone is one requirement completing both workflows end to end.
 
-#### 5. PM Workspace
+## Research background
 
-Vier Kernaktionen:
+The [internal research review](research/RESEARCH.md) provides the papers, methods, and evaluation principles behind this plan. It also records broader research options; the implementation scope is defined by this plan.
 
-- Approve
-- Edit
-- Reject
-- Postpone/Challenge
-
-Eine Änderung erzeugt immer eine neue Requirement-Version. Alte Versionen bleiben unverändert.
-
-#### 6. Audit Trail
-
-Jedes Event speichert:
-
-- Actor: PM, AI oder System
-- Action und Timestamp
-- Before/After JSON
-- Begründung
-- betroffene Quellen
-- Modell-, Prompt- und Schema-Version
-- Score-Gewichte
-- relevante Zugriffsereignisse
-
-### P1 – der Winning Layer
-
-- EU/China/USA-Vergleich
-- Market-weighted Scoring
-- Konflikterkennung zwischen Märkten
-- kontrollierter Update-Replay
-- Impact Detection: Welche genehmigten Anforderungen müssen neu geprüft werden?
-
-Da die Feedbackdaten keine Zeitstempel enthalten, darf der Replay nicht als historischer Backtest verkauft werden. Zeigt ihn ehrlich als simulierten neuen Feedback-Batch. Genau diese Transparenz wird laut BMW ausdrücklich belohnt.
-
-### P2 – 3D Requirement Twin
-
-Die 3D-Ansicht sollte Anforderungen räumlich erklären:
-
-- Sitz-Hotspot → Komfort, Materialien, Ergonomie
-- Cockpit-Hotspot → iDrive, Displays, Bedienbarkeit
-- Ladeport/Batterie → Reichweiten- und Ladeerlebnis
-- Karosserie → Raumgefühl und Design
-- Farben zeigen Priorität, Status oder Evidenzniveau
-- Klick öffnet Quellen, Score, Annahmen und Audit-Historie
-
-Der Prompt „make it more luxurious“ sollte nicht bloß das Auto von i5 auf i7 wechseln. Besser:
-
-1. System interpretiert „luxury“ als Seat Comfort, Material Quality, Acoustic Comfort, Rear Experience und Digital Experience.
-2. G60-Anforderungen werden gegen G70-Evidenz verglichen.
-3. Betroffene Hotspots leuchten auf.
-4. Der PM entscheidet, welche Anforderungen für den G60-Nachfolger übernommen werden.
-
-Das G70-Kundenstudium eignet sich dabei als Benchmark für Sitzkomfort und Fond-Erlebnis. Die zugrunde liegende Arbeitsmappe `F70_G60_G68_G70_customer_studies.xlsx` bleibt als BMW-Eingabedatei aus Git ausgeschlossen und ist im [Source Inventory](notes/source-inventory.json) verzeichnet.
-
-Kleine Modellkorrektur: Die elektrischen Performance-Modelle heißen i5 M60 xDrive und i7 M70 xDrive.
-
-## Beispielanforderung
-
-**REQ-G60-US-CHG-001**
-
-> The successor vehicle shall enable a first-time EV customer in the US to identify a compatible and available public charging location and integrate it into an active route without leaving the BMW navigation experience.
-
-Dazu:
-
-- Evidence: 38 Feedback-IDs zu Public Charging, weitere 46 zu Electric Range
-- Acceptance: beispielsweise 90 % erfolgreicher Abschluss eines validierten Reiseplanungs-Tests
-- Assumption: Der Wert von 90 % ist PM-definiert, nicht aus den Feedbackdaten abgeleitet
-- Uncertainty: ausgewähltes, undatiertes Feedback; Quellenabhängigkeit
-- Status: Proposed
-- 3D hotspot: Ladeport/Cockpit
-- PM action: Edit target → Approve
-- Audit: vollständiger Before/After-Diff
-
-## Fünf-Minuten-Demo
-
-1. G60 / i5 M60 / USA auswählen.
-2. Stärken, Pain Points und Datenlimits zeigen.
-3. Ein Originalfeedback öffnen und daraus die Requirement-Kette verfolgen.
-4. Score, Evidence Grade und Konflikte erklären.
-5. PM ändert Acceptance Target und genehmigt die Anforderung.
-6. Neuer Feedback-Batch verändert die Priorität und erzeugt „Needs review“.
-7. 3D-Modell zeigt die betroffenen Fahrzeugbereiche.
-
-Damit treffen wir alle fünf BMW-Bewertungskategorien direkt.
-
-## Bewertungskriterien und Demonstrationsbeleg
-
-| BMW-Kriterium | Was wir im Prototyp zeigen |
-| --- | --- |
-| Decision and Scoring Logic | Deterministische Gewichtung, getrenntes Evidence Grade, Konflikte, Unsicherheiten und nachvollziehbare Score-Runs. |
-| Workflow and Human Decision-Making | Klare PM-Gates für Edit, Approve, Reject und Postpone sowie eine gezielte erneute Prüfung bei relevanten Updates. |
-| Traceability and Auditability | Rückverfolgung vom 3D-Hotspot und Requirement über Finding und Evidence Span bis zur Originalquelle; append-only Before/After-Historie. |
-| Solution Quality, Usability, and Feasibility | Ein enger G60/US-Vertical-Slice mit realer Datenpipeline, wenigen klaren PM-Screens und einem relationalen Datenmodell. |
-| Innovation, Scalability, and Business Impact | Kontinuierlicher Requirement Twin über zwei Jahre, marktübergreifender Vergleich, Change Impact und räumliche 3D-Erklärung. |
-
-## Qualitäts- und Abnahmekriterien
-
-- 100 % der demonstrierten Requirements lassen sich auf konkrete Evidence Spans zurückführen.
-- Gleiche Eingaben, Gewichtungen und Versionen erzeugen denselben Score.
-- Kein numerischer Zielwert ohne Quelle oder explizite `PM assumption`.
-- Jede PM-Änderung erzeugt eine neue unveränderliche Version und ein Audit Event.
-- Ein kontrollierter Update-Batch verändert nur tatsächlich betroffene Findings, Requirements und Score-Runs.
-- Materiale AI-Claims werden vor der Demo manuell auf Quellenunterstützung geprüft.
-- Die Demonstration unterscheidet klar zwischen Sample Counts, Marktprävalenz, Annahmen und bestätigten Fakten.
-
-## Bewusste Kürzungen
-
-Für den MVP nicht bauen:
-
-- keinen vollständigen offenen Web-Crawler
-- keine autonome Requirement-Freigabe
-- keine erfundenen Kunden- oder Marktwahrscheinlichkeiten
-- keine technischen Komponenten- oder Architekturanforderungen
-- keine Preis-, Kosten- oder Business-Case-Berechnung
-- keine vollständige BMW-Modellpalette
-- keine fotorealistische generative 3D-Geometrie
-- keine zusätzliche Agenten- oder Graph-Infrastruktur ohne belegbaren Demo-Nutzen
-
-Die 3D-Idee ist stark – aber nur als visuelle Oberfläche für ein glaubwürdiges Requirement- und Decision-System. Der eigentliche Winning-Moment ist, wenn ein Juror auf einen Hotspot klickt und innerhalb von Sekunden von der Fahrzeugstelle bis zum Originalfeedback, Score, PM-Entscheid und Audit-Ereignis zurückgehen kann.
+The [BMW demo proposal](notes/winning-demo-proposal.md) preserves additional presentation and 3D ideas for later review.
