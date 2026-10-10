@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0.0",
+  "defaultVehicle": "g60-us-i5-m60",
+  "vehicles": [
+    {
+      "id": "g60-us-i5-m60",
+      "manifest": "./g60-us/manifest.json"
+    }
+  ]
+}

@@ -32,6 +32,9 @@ importers:
       three:
         specifier: 0.180.0
         version: 0.180.0
+      three-mesh-bvh:
+        specifier: 0.9.2
+        version: 0.9.2(three@0.180.0)
 
 packages:
 
@@ -266,6 +269,11 @@ packages:
       '@types/node':
         optional: true
 
+  three-mesh-bvh@0.9.2:
+    resolution: {integrity: sha512-W0oUU4AZv0QwisjlkYlLVaYTVxijhMXCztyNvVlDmTK/u0QB16Xbfem5nWkQBsz3oTzztA1B/ouiz4wYCMj78g==}
+    peerDependencies:
+      three: '>= 0.159.0'
+
   three@0.180.0:
     resolution: {integrity: sha512-o+qycAMZrh+TsE01GqWUxUIKR1AL0S8pq7zDkYOQw8GqfX8b8VoCKYUoHbhiX5j+7hr8XsuHDVU6+gkQJQKg9w==}
 
@@ -486,6 +494,10 @@ snapshots:
       '@img/sharp-win32-arm64': 0.35.5
       '@img/sharp-win32-ia32': 0.35.5
       '@img/sharp-win32-x64': 0.35.5
+
+  three-mesh-bvh@0.9.2(three@0.180.0):
+    dependencies:
+      three: 0.180.0
 
   three@0.180.0: {}
 

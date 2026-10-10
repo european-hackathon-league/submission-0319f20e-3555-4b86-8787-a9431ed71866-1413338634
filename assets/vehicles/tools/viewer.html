@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>G60 asset acceptance viewer</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #101923;
+        color: #e5edf6;
+        font: 14px system-ui;
+      }
+      header {
+        padding: 23px 30px;
+        border-bottom: 1px solid #293746;
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+      }
+      h1 {
+        font-weight: 500;
+        margin: 0 0 7px;
+        font-size: 22px;
+      }
+      p {
+        color: #aebccc;
+        margin: 5px 0;
+      }
+      main {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        height: calc(100vh - 153px);
+        min-height: 560px;
+      }
+      #stage {
+        position: relative;
+        overflow: hidden;
+        background: radial-gradient(
+          ellipse at 50% 50%,
+          #344352 0,
+          #16212d 65%,
+          #101923 100%
+        );
+      }
+      canvas {
+        display: block;
+        max-width: 100%;
+      }
+      #pins {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      button,
+      select,
+      input {
+        font: inherit;
+        color: inherit;
+        background: #203140;
+        border: 1px solid #526575;
+        border-radius: 8px;
+        min-height: 44px;
+        padding: 9px 13px;
+        cursor: pointer;
+      }
+      button:hover,
+      button:focus-visible {
+        border-color: #53e0c6;
+        outline: 2px solid #53e0c6;
+        outline-offset: 2px;
+      }
+      .pin {
+        position: absolute;
+        pointer-events: auto;
+        min-width: 44px;
+        min-height: 44px;
+        padding: 7px;
+        border: 2px solid #4bd8c0;
+        border-radius: 24px;
+        background: #142a36ed;
+        transform: translate(-50%, -50%);
+        font-size: 11px;
+        color: #d4fff6;
+        max-width: 115px;
+      }
+      .pin[data-selected="true"] {
+        background: #167d73;
+        color: white;
+        z-index: 2;
+      }
+      aside {
+        padding: 22px;
+        overflow: auto;
+        border-left: 1px solid #293746;
+      }
+      h2 {
+        font-size: 17px;
+        font-weight: 500;
+        margin-top: 24px;
+      }
+      #cameras {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      #cameras button {
+        font-size: 12px;
+        padding: 7px 9px;
+      }
+      footer {
+        padding: 15px 30px;
+        border-top: 1px solid #293746;
+        color: #c0cedb;
+        font-size: 12px;
+      }
+      a {
+        color: #70dbcb;
+      }
+      #metrics {
+        font: 11px ui-monospace;
+        line-height: 1.7;
+        color: #a1b8c9;
+      }
+      #data {
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
+      #data button {
+        width: 100%;
+        text-align: left;
+        margin: 5px 0;
+      }
+      .source {
+        border-left: 2px solid #55c9b8;
+        padding: 8px;
+        margin: 12px 0;
+        background: #172732;
+      }
+      .warning {
+        color: #ffc68c;
+      }
+      summary {
+        cursor: pointer;
+        padding: 8px 0;
+      }
+      pre {
+        white-space: pre-wrap;
+        font-size: 11px;
+      }
+      #fallback {
+        display: none;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      #status {
+        position: absolute;
+        bottom: 18px;
+        left: 22px;
+        color: #adc2d3;
+        font-size: 12px;
+        max-width: 70%;
+      }
+      @media (max-width: 800px) {
+        main {
+          grid-template-columns: 1fr;
+          height: auto;
+        }
+        #stage {
+          height: 65vh;
+          min-height: 420px;
+        }
+        aside {
+          border-left: 0;
+        }
+        header {
+          display: block;
+        }
+        footer {
+          padding: 15px;
+        }
+      }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./node_modules/three/build/three.module.js",
+          "three/addons/": "./node_modules/three/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>G60 / US · Vehicle asset review</h1>
+        <p>BMW i5 M60 · licensed artist model · MY2024 reference scope</p>
+      </div>
+      <p>Asset acceptance tool<br />Application data is fetched live</p>
+    </header>
+    <main>
+      <section id="stage" aria-label="Interactive BMW i5 M60">
+        <img
+          id="fallback"
+          src="../g60-us/schematic.svg"
+          alt="G60 topic schematic"
+        />
+        <div id="pins"></div>
+        <div id="status" role="status">Loading model…</div>
+      </section>
+      <aside>
+        <div id="metrics" aria-label="Model performance"></div>
+        <h2>Inspect the model</h2>
+        <label
+          >Material isolation
+          <select id="isolate">
+            <option value="all">All materials</option>
+            <option value="body_paint">Paint</option>
+            <option value="alloy_satin">Alloy / unpainted source</option>
+            <option value="trim_black">Trim</option>
+            <option value="glass_opaque">Glass</option>
+          </select></label
+        >
+        <div id="cameras"></div>
+        <p id="cameraNote" class="warning"></p>
+        <p>
+          <label
+            ><input id="cutaway" type="checkbox" /> Show approximate cabin
+            zones</label
+          >
+        </p>
+        <p>
+          <label>Paint <input id="paint" type="color" value="#2d4960" /></label>
+        </p>
+        <p>
+          <button id="poster">Save poster</button>
+          <button id="fallbackToggle">2D fallback</button>
+        </p>
+        <label for="zoneSelect">Requirement zone</label
+        ><select id="zoneSelect" style="width: 100%; margin-top: 8px"></select>
+        <h2 id="zoneTitle">Select a hotspot</h2>
+        <p id="approx"></p>
+        <div id="data" aria-live="polite">
+          No customer figures are stored in this package.
+        </div>
+        <details>
+          <summary>Official vehicle context · separate from evidence</summary>
+          <div id="officialFacts"></div>
+        </details>
+      </aside>
+    </main>
+    <footer id="attribution"></footer>
+    <script type="module" src="./viewer.mjs?v=1.0.0-final"></script>
+  </body>
+</html>

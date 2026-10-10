@@ -1,6 +1,6 @@
 # G60 / US 3D asset sourcing
 
-Research checked 10 October 2026. This document is not a model-delivery claim.
+Research checked 10 October 2026. The selected model is now downloaded and packaged; see `../g60-us/INTEGRATION.md`.
 
 ## Accepted visual target
 
@@ -11,7 +11,7 @@ An accurate, detailed **BMW i5 M60 xDrive (G60)** model, with a usable interior 
 - [2023 BMW I5 M60](https://sketchfab.com/3d-models/2023-bmw-i5-m60-207fd872d28b4cafa7fefe061ae98e26), [Nazh Design](https://sketchfab.com/NazhDesign).
 - Listing and [public model metadata](https://api.sketchfab.com/v3/models/207fd872d28b4cafa7fefe061ae98e26) checked on 2026-10-10: `isDownloadable: true`, CC Attribution linking to **CC BY 4.0**, 1,477,883 triangles / 795,020 vertices, published 2024-01-20.
 - The normal Download 3D Model action opens a login dialog. [Sketchfab's download documentation](https://sketchfab.com/developers/download-api/downloading-models) confirms authenticated download is required. No viewer extraction or authentication bypass is allowed.
-- Interior availability: **unverified until the actual download is inspected**. The text description contains no interior claim. The embedded viewer did not render reliably in the in-app browser; this is not evidence that the model lacks an interior.
+- Download inspected: **exterior only**, with opaque windows and no usable seat/dashboard/rear-cabin geometry. Cabin, battery and cargo anchors are explicitly approximate.
 - Source naming is “2023”; that does not establish a US model year. Use US MY2024 as separately sourced reference scope, recording any actual geometry/trim mismatch.
 - [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) permits sharing and adaptation, including commercial use, subject to attribution, a licence link and indication of changes. An optimized GLB may be redistributed in Git under those terms for rights controlled by the licensor. Preserve provenance and licence notices with the GLB.
 - The licence does not confer BMW sponsorship or trademark rights; see [legal code §2(b)](https://creativecommons.org/licenses/by/4.0/legalcode.en). The artist's licence declaration is not a claim of BMW authorization. Do not use BMW brand marks as the application logo or imply endorsement.
@@ -41,4 +41,6 @@ The creator's Sketchfab profile links to [their 3D Warehouse profile](https://3d
 
 Other located listings are not substitutes for permission: [Freecreat](https://www.freecreat.com/detail/16469.html) requires paid access and does not establish redistribution rights; [Zifir3D on Superhive](https://superhivemarket.com/products/bmw-i5-m60/docs) is a paid royalty-free asset whose exact browser-delivery/team-sharing terms still require review. No purchase or third-party account creation was performed.
 
-To resume: provide an authorized Sketchfab session, an archive lawfully downloaded by a teammate with its source/licence, or the BMW organizer pack and permission terms. Do not fetch preview/viewer binaries as a workaround.
+The user subsequently signed in through Epic Games. The authenticated Download dialog explicitly displayed “CC Attribution”, creator credit and commercial use allowed. Both the original (28,426,496 bytes) and converted (42,990,308 bytes) GLBs were downloaded through the normal UI. No authentication bypass was used. Exact source hashes are recorded in the final manifest; source archives remain outside Git. The converted GLB is the build input because it includes normals. No textures were present. The derivative adds named PBR materials, topology cleanup, anchors and compression.
+
+A final remote check is recorded in `../verification.json`; no contact with Troy was made during the download/build work.

@@ -1,13 +1,15 @@
 # BMW Requirement Twin vehicle assets
 
-**Status: sourcing — no approved 3D model delivered yet.**
+**Ready for integration: G60 / US i5 M60, licensed exterior model.**
 
-The selected target is an accurate licensed BMW i5 M60 xDrive (G60), US reference scope, initially MY2024. The user rejected the stylised sedan; it and its raw authoring files are outside Git and are not part of this package.
+The [package manifest](g60-us/manifest.json) describes the actual GLB, provenance, CC BY 4.0 attribution, 11 stable anchors, 5 camera presets, material overrides and SHA-256. Start with the [integration note](g60-us/INTEGRATION.md) for exact loading paths and real API topic/trace mapping. [index.json](index.json) supports additional vehicles later; only G60 is included.
 
-The [candidate review](research/README.md) records current download/licence findings and official references. The [tools](tools/README.md) are ready for the authorized download. Sketchfab requires user authentication; neither inspected browser session was signed in when the normal download action was attempted.
+The 3.04 MB self-contained GLB retains 997,637 triangles with Draco compression. It was downloaded normally after the user signed in, then cleaned and optimized. It is an accurate independent artist's BMW exterior model, **not BMW-supplied CAD**. The creator calls it “2023”; US MY2024 is the official reference scope. Cabin, battery and cargo hotspots are marked approximate because there is no usable interior geometry. Some source panel faceting and simplified lamp shapes remain.
 
-Planned first ready package: `g60-us/manifest.json`, optimized GLB, poster, 2D schematic, licence, attribution and integration notes. Each vehicle will have its own directory and a versioned manifest; another vehicle can be added without blocking G60. Do not import a directory as a ready asset until its manifest has `status: "ready"` and validation passes.
+![Locally rendered GLB poster](g60-us/poster.webp)
 
-Acceptance still required after acquisition: inspect exterior/interior and source year/market, optimize without losing visible detail, calibrate metres/orientation, add 11 anchors and 5 cameras, record hashes and attribution, open the actual GLB in a browser, check charging hit area and performance. Customer requirements must come from the G60/US API; official vehicle facts remain separately cited context.
+[2023 BMW I5 M60](https://sketchfab.com/3d-models/2023-bmw-i5-m60-207fd872d28b4cafa7fefe061ae98e26) by [Nazh Design ✔](https://sketchfab.com/NazhDesign), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Optimized geometry, materials and anchors modified. Keep the linked credit visible in the UI footer and distribute [LICENSE.txt](g60-us/LICENSE.txt) with the model.
 
-Preparation checks on 2026-10-10: local-source inspection and optimization smoke test passed; a compressed test GLB decoded successfully and had zero Khronos validator errors/warnings. The validator reports that Draco internals are unsupported, so browser decoding remains a required final check. No BMW model performance result is claimed. The existing BMW Compose services were inspected and left running; no API, database or frontend was changed.
+The [verification record](verification.json) covers the actual GLB's browser loading, charging target, cameras, linked attribution, fallback and measured laptop performance. The [developer acceptance viewer](tools/README.md) exercises the live requirements → source evidence → score → PM decision → audit flow. The running test API contained explicitly labelled synthetic records; no feedback, scores or decisions are bundled. Official product facts stay in a separately cited file with market and model year on every fact.
+
+No Troy frontend files, API, database or shared plans were changed. The package was built in its own worktree/branch. Raw downloads and the rejected stylised prototype stay outside Git. This is a loadable handoff, not a claim that Troy has already loaded the asset in his frontend. The [research log](research/README.md) records the licence review, organizer request, official references and remote-branch checks.

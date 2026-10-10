@@ -1,0 +1,81 @@
+{
+  "checkedAt": "2026-10-10T21:12:23Z",
+  "assetSha256": "214b4a1c16e7a3bde7b8ce68cf9a7e1b443cda7343f687e2d44e95586f406794",
+  "asset": {
+    "path": "i5-m60.glb",
+    "bytes": 3038024,
+    "triangles": 997637,
+    "sha256": "214b4a1c16e7a3bde7b8ce68cf9a7e1b443cda7343f687e2d44e95586f406794"
+  },
+  "checks": {
+    "khronosCompressed": {
+      "errors": 0,
+      "warnings": 0,
+      "infos": 10,
+      "note": "Validator cannot inspect Draco; its buffer views are reported unused."
+    },
+    "khronosDecoded": {
+      "errors": 0,
+      "warnings": 0,
+      "infos": 0
+    },
+    "selfContained": true,
+    "elevenAnchorNamesAndTranslationsMatchManifest": true,
+    "chargingRightRearAlignment": "Visually checked on the exterior quarter panel in default and charging camera views.",
+    "chargingTargetCSSPixels": {
+      "width": 80.16,
+      "height": 44
+    },
+    "cameraPresetsVisuallyChecked": [
+      "default_orbit",
+      "charging_port",
+      "cockpit",
+      "seats",
+      "rear_cabin"
+    ],
+    "interiorLabelsVisible": true,
+    "linkedFooterAttributionVisible": true,
+    "fallbackSchematicAndZoneSelectorChecked": true,
+    "posterRenderedFromFinalGLB": true
+  },
+  "browser": {
+    "name": "Codex in-app browser",
+    "renderer": "WebKit WebGL",
+    "viewportCSS": [1280, 720],
+    "devicePixelRatio": 2,
+    "hardware": "Apple M3 Pro, Mac15,6, 18 GiB RAM",
+    "localHTTPDecodeLoadMs": 131.6,
+    "medianFPS": 120.5,
+    "p95FrameMs": 9.6,
+    "drawCalls": 10,
+    "method": "180-frame camera orbit; first 30 frames discarded. Final model opened in browser; five camera presets also selected manually.",
+    "limits": "Local laptop and loopback HTTP only. No cold mobile network or Troy frontend performance claim."
+  },
+  "dataFlow": {
+    "service": "Existing loopback BMW API on port 18000",
+    "scope": {
+      "vehicle": "G60",
+      "market": "US",
+      "topic": "charging"
+    },
+    "customerEvidenceBundled": false,
+    "fixtureType": "Existing explicitly labelled synthetic fixture",
+    "verified": [
+      "Hotspot opens matching API requirement",
+      "Located source feedback remains labelled synthetic",
+      "Score/evidence grade shown from trace response",
+      "PM decision and audit history loaded",
+      "Full evidence detail available"
+    ],
+    "evidenceRecords": 15,
+    "decisionRecords": 1,
+    "pagination": "Evidence limit/offset; audit stops on empty/short page or non-advancing next_after cursor."
+  },
+  "remoteCheck": {
+    "originMain": "4bbe606",
+    "frontendBranchVisible": false,
+    "codexWebVisible": false,
+    "contactedTroy": false
+  },
+  "troyFrontendLoaded": "Not verified; no frontend implementation or contact performed in this work stage."
+}

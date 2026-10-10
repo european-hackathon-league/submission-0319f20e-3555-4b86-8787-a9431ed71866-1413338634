@@ -4,6 +4,9 @@ import path from "node:path";
 import crypto from "node:crypto";
 import assert from "node:assert/strict";
 import validator from "gltf-validator";
+import { NodeIO } from "@gltf-transform/core";
+import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
+import draco from "draco3dgltf";
 const folder = path.resolve(process.argv[2] || "../g60-us");
 const m = JSON.parse(
   await fs.readFile(path.join(folder, "manifest.json"), "utf8"),
@@ -132,4 +135,26 @@ assert.equal(
   result.issues.numErrors,
   0,
   "Khronos glTF validator reported errors",
+);
+
+// The validator cannot inspect compressed Draco internals. Decode independently
+// and validate the expanded geometry as well as the original artifact.
+const io = new NodeIO()
+  .registerExtensions(ALL_EXTENSIONS)
+  .registerDependencies({
+    "draco3d.decoder": await draco.createDecoderModule(),
+  });
+const decoded = await io.readBinary(bytes);
+for (const extension of decoded.getRoot().listExtensionsUsed()) {
+  if (extension.extensionName === "KHR_draco_mesh_compression")
+    extension.dispose();
+}
+const expanded = await validator.validateBytes(await io.writeBinary(decoded), {
+  maxIssues: 100,
+});
+console.log(JSON.stringify({ decodedValidator: expanded.issues }, null, 2));
+assert.equal(
+  expanded.issues.numErrors,
+  0,
+  "Decoded geometry failed validation",
 );

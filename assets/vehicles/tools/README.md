@@ -1,17 +1,25 @@
-# Vehicle asset tools
+# Asset authoring and acceptance tools
 
-These utilities prepare an **authorized local download**. They do not fetch hidden viewer files. Install with Node.js 22+ and `pnpm install --frozen-lockfile` from this directory. Sharp's prebuilt platform package was verified on the local Apple Silicon laptop. Newer pnpm may require explicit approval of Sharp's installation script if the prebuilt binary is unavailable.
+This is a standalone developer viewer, not Troy's frontend. It reads only the shipped asset and a loopback BMW API, and has no bundled customer records. Node 22+ and Python 3 are required; install pinned dependencies with `pnpm install --frozen-lockfile` in this directory.
+
+From the repository root:
 
 ```sh
-node inspect.mjs /absolute/private/download/scene.gltf > /absolute/private/inspection.json
-node optimize.mjs /absolute/private/download/scene.gltf /absolute/private/intermediate.glb
-node validate.mjs ../g60-us
+python3 assets/vehicles/tools/serve.py --api http://127.0.0.1:18000
+# Open http://127.0.0.1:18460/tools/viewer.html
+node assets/vehicles/tools/validate.mjs assets/vehicles/g60-us
 ```
 
-Keep both raw downloads and intermediate exports outside Git. The optimizer refuses to overwrite the source or an existing output. It retains named leaves, caps textures at 2048 pixels, uses WebP (lossless for normal maps), conservatively simplifies within a 0.05% geometric error bound, and writes Draco geometry. It preserves source scene structure; it does not pretend to know orientation, paint materials, interior availability or anchor positions before inspecting the model.
+The viewer includes all five camera presets, material isolation, paint override, a 44 px charging target, approximate zone toggle, API topic filtering, source/score/decision/audit trace, attribution, 2D fallback and poster export. The local server only binds loopback and proxies GET requests for requirement and audit routes. Existing access logging may write API audit events. Never start or stop another worker's API stack for this tool. Override `--api` to the intended stack.
 
-Set `ASSET_KEEP_RATIO=0.5` to preserve more geometry if visible details degrade. Size alone is not acceptance. Inspect lights, grille, rims, window edges and interior before approving the output. A heavily partitioned source may remain above the target size; adjust only after reviewing the relevant meshes.
+Rebuild only from the authorized **Sketchfab converted GLB download** stored outside Git. The source hash must match the manifest; the script rejects other input. The original downloaded GLB is also retained privately for provenance. The build removes coincident/covered back faces, normalizes coordinates, rebuilds normals and materials, simplifies protected mesh borders, compresses with Draco, embeds anchors and updates the size/hash/triangle metadata. It does not extract any website viewer resource.
 
-A compressed final GLB needs Three.js `DRACOLoader` with its matching decoder files served from the app, or the equivalent `useGLTF` decoder configuration. WebP textures require modern browser support. Do not claim the model is delivered until the final model is present, the manifest is marked ready, validation passes and a browser opens the actual GLB.
+```sh
+node --max-old-space-size=6144 assets/vehicles/tools/build.mjs \
+  /private/path/sketchfab-converted.glb assets/vehicles/g60-us/i5-m60.glb
+node assets/vehicles/tools/inspect.mjs assets/vehicles/g60-us/i5-m60.glb
+```
 
-`validate.mjs` checks the GLB container, Khronos validation, SHA-256, size, self-contained resources, all eleven named anchors, topic mappings, camera presets, vehicle scope and companion files. `inspect.mjs` reports mesh/material names, world bounds and texture sizes to support manual calibration. These tools do not implement Troy's frontend.
+Re-render the poster and repeat browser acceptance after changing geometry, lighting or materials. Set manifest status to `review` while making changes, and only set it to `ready` after acceptance. `optimize.mjs` is an intermediate source-inspection utility; it is not the final G60 build (the original needs backing-face cleanup before simplification). Keep intermediates and all original downloads outside Git. The Khronos validator cannot inspect compressed Draco internals, so independently decoding the GLB and opening it in the browser are required alongside `validate.mjs`.
+
+The poster is generated with the viewer's **Save poster** control from the actual GLB, then encoded as WebP. No screenshot of BMW's site is used. Browser performance numbers are local warm HTTP/decode measurements, not a mobile/network SLA.
