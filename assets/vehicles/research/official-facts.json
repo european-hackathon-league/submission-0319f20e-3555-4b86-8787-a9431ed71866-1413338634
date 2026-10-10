@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "1.0.0",
+  "checkedDate": "2026-10-10",
+  "classification": "official_vehicle_context",
+  "customerEvidence": false,
+  "facts": [
+    {
+      "id": "body_dimensions",
+      "value": {
+        "length": 199.2,
+        "width": 74.8,
+        "height": 59.3,
+        "wheelbase": 117.9
+      },
+      "units": "inches",
+      "modelYear": 2024,
+      "market": "US",
+      "variant": "i5 M60 xDrive",
+      "sourceUrl": "https://www.press.bmwgroup.com/usa/article/detail/T0418778EN_US/the-all-new-2024-bmw-5-series?language=en_US",
+      "sourceSection": "Specifications \u2014 Body, i5 M60 xDrive column",
+      "caveat": "Width is the published body width; geometry is not certified dimensional CAD."
+    },
+    {
+      "id": "seating",
+      "value": 5,
+      "units": "seats",
+      "modelYear": 2024,
+      "market": "US",
+      "variant": "i5 M60 xDrive",
+      "sourceUrl": "https://www.press.bmwgroup.com/usa/article/detail/T0418778EN_US/the-all-new-2024-bmw-5-series?language=en_US",
+      "sourceSection": "Specifications \u2014 No. of doors/seats",
+      "caveat": "Does not establish the downloaded model has interior geometry."
+    },
+    {
+      "id": "charging_port_location",
+      "value": "right rear side panel",
+      "modelYear": 2024,
+      "market": "US",
+      "variant": "BMW i5 (applies to i5 M60 family)",
+      "sourceUrl": "https://faq.bmwusa.com/s/article/BMW-i5-2023-Charging-Charging-socket-flap-MY24-MCylz?language=en_US",
+      "caveat": "Location only; connector and charging performance vary by model year."
+    },
+    {
+      "id": "product_page_year",
+      "value": 2027,
+      "modelYear": 2027,
+      "market": "US",
+      "variant": "i5 M60",
+      "sourceUrl": "https://www.bmwusa.com/vehicles/m-series/bmw-i5-m60/bmw-i5-m60xdrive-overview.html",
+      "sourceSection": "2027 BMW i5 M60 heading",
+      "caveat": "Visual reference only. Do not reuse current specifications as MY2024 data."
+    }
+  ]
+}

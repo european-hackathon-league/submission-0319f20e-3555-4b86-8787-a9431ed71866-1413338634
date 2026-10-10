@@ -1,0 +1,25 @@
+{
+  "uid": "207fd872d28b4cafa7fefe061ae98e26",
+  "name": "2023 BMW I5 M60",
+  "description": "2023 BMW I5 M60",
+  "license": {
+    "uri": "https://api.sketchfab.com/v3/licenses/322a749bcfa841b29dff1e8a1bb74b0b",
+    "label": "CC Attribution",
+    "fullName": "Creative Commons Attribution",
+    "requirements": "Author must be credited. Commercial use is allowed.",
+    "url": "http://creativecommons.org/licenses/by/4.0/",
+    "slug": "by"
+  },
+  "isDownloadable": true,
+  "vertexCount": 795020,
+  "faceCount": 1477883,
+  "publishedAt": "2024-01-20T06:59:37.209281",
+  "viewerUrl": "https://sketchfab.com/3d-models/2023-bmw-i5-m60-207fd872d28b4cafa7fefe061ae98e26",
+  "creator": {
+    "username": "NazhDesign",
+    "displayName": "Nazh Design \u2714",
+    "profileUrl": "https://sketchfab.com/NazhDesign"
+  },
+  "checkedDate": "2026-10-10",
+  "metadataSource": "https://api.sketchfab.com/v3/models/207fd872d28b4cafa7fefe061ae98e26"
+}
