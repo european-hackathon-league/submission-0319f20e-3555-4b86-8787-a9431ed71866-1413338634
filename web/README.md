@@ -1,6 +1,6 @@
 # BMW Product Intelligence
 
-The product planning frontend for the shared FastAPI/MCP/database runtime. It starts at **G60 / US**, preserves the BMW dashboard supplied by the user, and connects sources, findings, requirement versions, scores and human decisions. The 3D car and configurator are excluded from this implementation.
+The product planning frontend for the shared FastAPI/MCP/database runtime. It starts at **G60 / US**, preserves the BMW dashboard supplied by the user, and connects sources, findings, requirement versions, scores and human decisions. The vehicle studio adds Alex's licensed G60 i5 and G70 i7 artist models as spatial views of the same requirement register.
 
 ## Run
 
@@ -32,6 +32,7 @@ EHL_API_URL=http://127.0.0.1:8000 bun dev
 | Decisions and versions | PM edits create a new scored version. Approval/rejection/postponement/challenge require rationale and exact version/score IDs. Lead PMs can save reweighted scores. Approved/current comparison, historical snapshots and audit history. |
 | Needs review | Persisted reasons, before/after changes, priorities and keyboard navigation (`j`, `k`, `o`/Enter). |
 | Evidence | Search, source filter, analysed findings by kind/topic, preserved originals, metadata and reverse links into current requirement versions. |
+| Vehicle studio | G60/G70 3D model explorer with named topic anchors, camera presets, priority/evidence/review layers, live scoped requirement roll-ups and links into the existing source-to-decision drawer. A local response hypothesis, notes, illustrative paint preview and JSON export support planning without changing governed records. The supplied schematic appears when WebGL or model loading fails. |
 | Sources and imports | Original-file checksums/metadata, XLSX/CSV/PDF upload, server-local inputs and supplied web snapshots. |
 | Pipeline | Initial and cumulative update runs, explicit provider selection, persisted stages and failures, live readiness checks, human decision gate, frozen planning briefs and Markdown download. |
 | Market comparison | Actual topic/requirement records across US, CN and EU for the selected vehicle; absent evidence is labelled. |
@@ -39,7 +40,13 @@ EHL_API_URL=http://127.0.0.1:8000 bun dev
 
 Filters, selected requirement/tab, immutable version/score, selected evidence, and workflow selection use shareable URLs. Stable-key links such as `/g60/us/requirements/REQ-G60-US-003/trace` work. Global search uses ⌘K/Ctrl+K. The register uses a semantic paginated table; paged API reads are collected without silently truncating records. TanStack Query manages server state. Input contracts are generated in `lib/generated-api.ts`; `lib/types.ts` describes additional response shapes from the current API.
 
-The sidebar keeps Overview, Requirements and Evidence visible. Pipeline, imports, reviews, markets, audit and settings remain available under **More tools**. A reviewer can be selected within the requirement drawer before recording a decision. See [the three-minute demo guide](DEMO.md).
+The sidebar keeps Overview, Requirements, Evidence and Vehicle studio visible. Pipeline, imports, reviews, markets, audit and settings remain available under **More tools**. A reviewer can be selected within the requirement drawer before recording a decision. See [the three-minute demo guide](DEMO.md).
+
+## Vehicle studio assets and data
+
+Open `/g60/us/twin` or `/g70/us/twin`. The two static model packages in `public/models/` are byte-identical copies of the licensed handoffs in [`assets/vehicles/`](../assets/vehicles/). Their GLBs, manifests, posters, schematics, official-facts files and licence notices stay together. `/draco/` contains the decoder from the same pinned Three.js version as the loader. The 3D bundle loads only when the studio is opened.
+
+The manifest's `zone.topics` maps a visual anchor to live `/requirements` records for the selected vehicle and US market. A requirement opens the existing drawer for located customer evidence, score, versions, decisions and audit history. Empty G70 data remains empty; G60 records and official product facts are never substituted. The model years in the manifests describe reference vehicles, not an evidence filter. Studio scenario choices persist only in this browser and download as a review-only JSON file with linked requirement/version/score IDs. Paint colors are illustrative and do not claim to be BMW orderable options. G60 has exterior geometry only; G70's cabin is simplified. All internal/feature zone positions are planning approximations.
 
 ## Reference checkpoint
 
@@ -78,5 +85,5 @@ Regenerate API input types against a running API with `bun run generate:api` (de
 - The current HTTP API has no audit-chain verification or dedicated export-audit endpoint. The UI shows hash fields and this limitation; it never claims verification or fabricates `access.export` events. Local exports preserve trace/version IDs.
 - Reverse evidence links inspect current requirement versions. Historical uses remain available through immutable version traces.
 - ReqIF is a basic string-attribute interchange file of approved snapshots; interoperability with a specific enterprise requirements tool has not been certified.
-- The broader proposal's draggable dashboard, virtualized enterprise grid, German translation, SSO, webhooks, and embeddable portal remain roadmap work. The supplied BMW reference determines the layout and typography. No 2D/3D car or configurator is included.
+- The broader proposal's draggable dashboard, virtualized enterprise grid, German translation, SSO, webhooks, and embeddable portal remain roadmap work. The supplied BMW reference determines the layout and typography. The studio does not configure validated equipment, create requirement versions from a zone, or save a planning scenario to the governed database.
 - No automatic approval, invented trend deltas, fabricated evidence, or silent AI-provider fallback. Empty/error states remain visible when data is unavailable.

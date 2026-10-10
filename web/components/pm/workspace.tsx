@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import Image from "next/image";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -23,6 +24,7 @@ import {
   Info,
   Ellipsis,
   ChevronDown,
+  CarFront,
 } from "lucide-react";
 import {
   Sidebar,
@@ -64,10 +66,15 @@ import { EvidenceExplorer, Sources } from "./sources";
 import { Pipeline } from "./pipeline";
 import { AuditPage, Markets, SettingsPage } from "./secondary";
 import { ErrorMessage, Loading } from "./shared";
+const VehicleStudio = dynamic(() => import("./vehicle-studio").then((module) => module.VehicleStudio), {
+  ssr: false,
+  loading: () => <Loading label="Opening vehicle studio…" />,
+});
 const nav = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "requirements", label: "Requirements", icon: ListChecks },
   { key: "evidence", label: "Evidence", icon: FileSearch },
+  { key: "twin", label: "Vehicle studio", icon: CarFront },
 ];
 const more = [
   { key: "pipeline", label: "Pipeline", icon: GitBranch },
@@ -364,6 +371,7 @@ export function WorkspaceApp({
                   {section === "requirements" && <Register />}
                   {section === "reviews" && <Reviews />}
                   {section === "evidence" && <EvidenceExplorer />}
+                  {section === "twin" && <VehicleStudio />}
                   {section === "sources" && <Sources />}
                   {section === "pipeline" && <Pipeline />}
                   {section === "markets" && <Markets />}

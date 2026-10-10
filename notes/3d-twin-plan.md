@@ -1,6 +1,6 @@
 # 3D Requirement Twin: implementation plan
 
-Status: **proposed**, 10 October 2026. Implements the twin described in the [PM workspace plan](pm-workspace-and-3d-twin.md#3d-requirement-twin-north-star). The goal is one demo moment: **click the charging port on an i5 M60 and land on the original public-charging feedback rows, the score, the PM decision and the audit event.**
+Status: **G60/G70 frontend studio implemented; broader twin roadmap remains proposed**, 10 October 2026. The shipped [vehicle studio](../web/README.md#vehicle-studio-assets-and-data) uses Alex's licensed model packages, manifest topic anchors, live scoped requirements, the existing evidence/decision drawer, three data layers, and local scenario export. The schematic is the WebGL fallback. Database `topic_zones`, additional layers, governed scenario writes and package configuration remain future work. The goal is one demo moment: **click the charging port on an i5 M60 and land on the original public-charging feedback rows, the score, the PM decision and the audit event.**
 
 ## Model
 
