@@ -1,6 +1,7 @@
 import json
 import os
 import sqlite3
+import time
 from contextlib import closing, contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -41,9 +42,21 @@ def _execute_schema(connection: sqlite3.Connection, path: Path) -> None:
         connection.execute(statement)
 
 
+def _enable_wal(connection: sqlite3.Connection) -> None:
+    """Switching a fresh file to WAL returns SQLITE_BUSY without consulting busy_timeout; retry briefly."""
+    for attempt in range(100):
+        try:
+            connection.execute("PRAGMA journal_mode = WAL")
+            return
+        except sqlite3.OperationalError as exc:
+            if "locked" not in str(exc) or attempt == 99:
+                raise
+            time.sleep(0.05)
+
+
 def init_database() -> None:
     with closing(connect()) as connection:
-        connection.execute("PRAGMA journal_mode = WAL")
+        _enable_wal(connection)
         connection.execute("BEGIN IMMEDIATE")
         try:
             _execute_schema(connection, SCHEMA_PATH)
