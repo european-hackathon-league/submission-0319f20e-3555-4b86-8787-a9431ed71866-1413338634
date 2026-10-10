@@ -350,6 +350,67 @@ def test_fetched_content_is_reusable_without_key(cache):
     assert offline["candidates"] == first["candidates"]
 
 
+def test_corrupted_fetch_content_cannot_replay_with_original_hashes_and_id(cache):
+    requests = []
+
+    def handler(request):
+        requests.append(request)
+        return httpx.Response(200, json=provider_response([
+            provider_result(text="Public BMW source content retrieved from the provider."),
+        ]))
+
+    original = provider_client(cache, handler).fetch(fetch_request())["candidates"][0]
+    path = next(cache.directory.glob("*.json"))
+    envelope = json.loads(path.read_text(encoding="utf-8"))
+    corrupted = envelope["value"]["candidates"][0]
+    corrupted["content"] = "Fabricated replacement content that was never retrieved."
+    assert corrupted["candidate_id"] == original["candidate_id"]
+    assert corrupted["content_hash"] == original["content_hash"]
+    assert corrupted["excerpt_hash"] == original["excerpt_hash"]
+    path.write_text(json.dumps(envelope), encoding="utf-8")
+
+    with pytest.raises(EvidenceError):
+        provider_client(cache, handler, api_key=None).fetch(fetch_request(cache_only=True))
+    assert len(requests) == 1
+
+
+def test_refetch_preserves_search_provenance_after_search_cache_eviction(tmp_path, monkeypatch):
+    clock = [1_000.0]
+    monkeypatch.setattr(cache_module, "time", SimpleNamespace(time=lambda: clock[0]))
+    cache = FileCache(tmp_path / "cache", ttl_seconds=0, max_entries=1)
+    requests = []
+
+    def handler(request):
+        requests.append(request)
+        result = provider_result(text=f"Public BMW source text from provider request {len(requests)}.")
+        return httpx.Response(200, json=provider_response([result], requestId=f"request-{len(requests)}"))
+
+    client = provider_client(cache, handler)
+    search = client.search(search_request())["candidates"][0]
+    expected_discovery = {key: search[key] for key in (
+        "candidate_id", "query", "search_query", "retrieved_at", "provider_metadata", "exa_result_id",
+    )}
+    request = FetchRequest(
+        identifier="exa-public-bmw-page",
+        query="BMW G60 US public infotainment source verification",
+        public_data_confirmed=True,
+    )
+    clock[0] += 1
+    first_fetch = client.fetch(request)["candidates"][0]
+    assert first_fetch["discovery_provenance"] == expected_discovery
+    cached_candidates = list(cache.candidates())
+    assert len(cached_candidates) == 1
+    assert cached_candidates[0]["candidate_id"] == first_fetch["candidate_id"]
+    assert cached_candidates[0]["candidate_id"] != search["candidate_id"]
+
+    clock[0] += 1
+    refetched = client.fetch(request)["candidates"][0]
+    assert len(requests) == 3
+    assert refetched["discovery_provenance"] == expected_discovery
+    assert refetched["query"] == request.query
+    assert refetched["provider_metadata"] != expected_discovery["provider_metadata"]
+
+
 @pytest.mark.parametrize("identifier", [
     "unknown-provider-id",
     "http://localhost/internal",

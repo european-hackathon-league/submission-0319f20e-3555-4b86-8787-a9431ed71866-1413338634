@@ -1,6 +1,7 @@
 """Cache storage remains separate from backend persistence and preserves provenance."""
 
 import json
+import os
 import stat
 from types import SimpleNamespace
 
@@ -37,6 +38,21 @@ def test_cache_caps_number_of_requests(tmp_path):
     hits = [cache.get(f"request-{number}") for number in range(5)]
     assert sum(hit is not None for hit in hits) <= 2
     assert cache.get("request-4").value == {"number": 4}
+
+
+def test_eviction_preserves_unrelated_application_json(tmp_path):
+    directory = tmp_path / "cache"
+    directory.mkdir()
+    unrelated = directory / "other-application.json"
+    unrelated_content = '{"owner":"another application","setting":"preserve me"}'
+    unrelated.write_text(unrelated_content, encoding="utf-8")
+    os.utime(unrelated, (0, 0))
+    cache = FileCache(directory, max_entries=1)
+    cache.set("request-one", {"number": 1})
+    cache.set("request-two", {"number": 2})
+    assert unrelated.read_text(encoding="utf-8") == unrelated_content
+    assert cache.get("request-one") is None
+    assert cache.get("request-two").value == {"number": 2}
 
 
 def test_cache_discovers_known_provider_candidates(tmp_path):
