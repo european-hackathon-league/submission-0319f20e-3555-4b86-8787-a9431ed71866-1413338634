@@ -85,6 +85,7 @@ const more = [
   { key: "settings", label: "Settings", icon: Settings },
 ];
 const pages = [...nav, ...more];
+const marketNames: Record<string, string> = { US: "United States", CN: "China", EU: "Europe" };
 export function WorkspaceApp({
   scope,
   section,
@@ -145,11 +146,10 @@ export function WorkspaceApp({
     return () => window.removeEventListener("keydown", handler);
   }, []);
   const scopes = workspace.data?.available_scopes || [];
-  const options = scopes.some(
-    (s) => s.vehicle === scope.vehicle && s.market === scope.market,
-  )
-    ? scopes
-    : [scope, ...scopes];
+  const options = [...new Map(
+    [scope, ...["US", "CN", "EU"].map((market) => ({ vehicle: scope.vehicle, market })), ...scopes]
+      .map((item) => [`${item.vehicle}/${item.market}`, item] as const),
+  ).values()];
   const title =
     pages.find((n) => n.key === section)?.label || "Overview";
   const loadError =
@@ -251,6 +251,7 @@ export function WorkspaceApp({
                     value={`${s.vehicle}/${s.market}`}
                   >
                     {s.vehicle} · {s.market}
+                    {marketNames[s.market] ? ` (${marketNames[s.market]})` : ""}
                   </option>
                 ))}
               </select>

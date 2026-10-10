@@ -18,6 +18,9 @@ async function call(path, body, method = "POST", expected = 200) {
   assert.equal(r.status, expected, JSON.stringify(data));
   return data;
 }
+const exaStatus = await call("/research/exa/status");
+assert.equal(exaStatus.provider, "exa");
+await call("/research/exa/search", { query: "Public BMW charging" }, "POST", 422);
 await call(
   "/imports/records",
   {

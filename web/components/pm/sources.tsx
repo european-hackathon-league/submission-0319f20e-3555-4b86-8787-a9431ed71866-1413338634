@@ -43,6 +43,7 @@ import {
   write,
 } from "@/lib/api";
 import type { Detail, Evidence, Finding, Page } from "@/lib/types";
+import { ExaResearch } from "./exa-research";
 export function EvidenceExplorer() {
   const { scope, base, sources } = useWorkspace();
   const { params, set } = useUrlState();
@@ -589,6 +590,7 @@ function ImportForm({ onDone }: { onDone: () => void }) {
       className="pm-form"
       onSubmit={(e) => {
         e.preventDefault();
+        if (mode === "exa") return;
         setError(null);
         mutation.mutate(new FormData(e.currentTarget));
       }}
@@ -598,6 +600,7 @@ function ImportForm({ onDone }: { onDone: () => void }) {
           { id: "upload", label: "Upload file", icon: Upload },
           { id: "local", label: "Local input", icon: HardDrive },
           { id: "web", label: "Web snapshot", icon: Globe2 },
+          { id: "exa", label: "Exa research", icon: Search },
         ].map((m) => (
           <button
             key={m.id}
@@ -610,6 +613,7 @@ function ImportForm({ onDone }: { onDone: () => void }) {
           </button>
         ))}
       </div>
+      {mode === "exa" ? <ExaResearch onDone={onDone} /> : <>
       <Field label="Source title">
         <input
           className="pm-input"
@@ -697,6 +701,7 @@ function ImportForm({ onDone }: { onDone: () => void }) {
           : "Select an active human reviewer in the header before importing."}{" "}
         Analysis runs separately from import.
       </p>
+      </>}
     </form>
   );
 }

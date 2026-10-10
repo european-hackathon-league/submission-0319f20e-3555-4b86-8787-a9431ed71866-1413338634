@@ -13,6 +13,7 @@ const roots = new Set([
   "audit",
   "workflows",
   "imports",
+  "research",
   "pipeline",
   "updates",
   "openapi.json",
