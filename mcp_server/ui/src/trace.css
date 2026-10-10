@@ -1,0 +1,88 @@
+.trace-app {
+  --trace-accent: var(--color-text-info, #1768ae);
+  --trace-line: var(--color-border-secondary, #d9e0e8);
+  --trace-soft: var(--color-background-secondary, #f4f7fa);
+  --trace-ink: var(--color-text-primary, #152433);
+  --trace-muted: var(--color-text-secondary, #536475);
+  max-width: 1120px;
+  color: var(--trace-ink);
+}
+[data-theme="dark"] .trace-app {
+  --trace-accent: var(--color-text-info, #91c5ff);
+  --trace-line: var(--color-border-secondary, #394553);
+  --trace-soft: var(--color-background-secondary, #202b37);
+  --trace-ink: var(--color-text-primary, #edf2f7);
+  --trace-muted: var(--color-text-secondary, #b7c5d3);
+}
+.trace-app h1 { font-size: clamp(1.45rem, 3.4vw, 2rem); margin: .3rem 0 .5rem; letter-spacing: -.025em; }
+.trace-app h2 { font-size: 1.1rem; margin: 0 0 .6rem; }
+.trace-app h3 { font-size: 1rem; margin: 1rem 0 .5rem; }
+.trace-app p { line-height: 1.55; }
+.trace-app button, .trace-app select { font: inherit; }
+.trace-app button { cursor: pointer; }
+.trace-app button:disabled { cursor: default; opacity: .55; }
+.trace-app button:focus-visible, .trace-app summary:focus-visible, .trace-app select:focus-visible, .trace-app a:focus-visible {
+  outline: 3px solid var(--trace-accent); outline-offset: 3px;
+}
+.trace-app .muted { color: var(--trace-muted); }
+.trace-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+.trace-heading .eyebrow { margin-top: 0; }
+.trace-heading p { margin-bottom: .4rem; }
+.trace-heading button { flex-shrink: 0; margin-top: .25rem; }
+.trace-app .badge { display: inline-block; font-size: .75rem; line-height: 1.5; border: 1px solid var(--trace-line); border-radius: 999px; padding: .12rem .6rem; white-space: normal; }
+.trace-badges { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.trace-app .trace-current { color: var(--trace-accent); }
+.trace-controls { padding: 1rem 0; align-items: center; display: flex; gap: .8rem; flex-wrap: wrap; }
+.trace-controls label { font-size: .875rem; font-weight: 600; }
+.trace-controls select { max-width: 100%; min-width: 200px; }
+.trace-flow { display: flex; flex-wrap: wrap; gap: .5rem; padding: .75rem 0 1rem; margin: 0; list-style: none; color: var(--trace-muted); font-size: .8rem; }
+.trace-flow li + li::before { content: "→"; margin-right: .5rem; color: var(--trace-accent); }
+.trace-app .card { margin-bottom: 1rem; }
+.trace-app details { border-top: 1px solid var(--trace-line); }
+.trace-app summary { cursor: pointer; padding: .85rem 0; font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
+.trace-app summary .badge { margin-left: .6rem; font-weight: 400; vertical-align: middle; }
+.trace-detail { padding: 0 0 .8rem 1.1rem; }
+.trace-finding { border-left: 2px solid var(--trace-line); padding-left: 1rem; margin-top: .7rem; }
+.trace-finding > summary { color: var(--trace-accent); }
+.trace-finding p { margin: .2rem 0 .7rem; }
+.trace-evidence { margin: .6rem 0; }
+.trace-evidence > summary { font-weight: 500; }
+.trace-quote { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.65; margin: .5rem 0 1rem; padding: 1rem; border-left: 3px solid var(--trace-accent); background: var(--trace-soft); border-radius: 0 6px 6px 0; font-size: .95rem; }
+.trace-kv { display: grid; grid-template-columns: minmax(90px, 150px) minmax(0, 1fr); gap: .4rem 1rem; font-size: .85rem; margin: .75rem 0; }
+.trace-kv dt { color: var(--trace-muted); }
+.trace-kv dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.trace-app pre { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--trace-soft); padding: .8rem; border-radius: 6px; font-size: .75rem; max-height: 320px; overflow-y: auto; }
+.trace-app a { color: var(--trace-accent); overflow-wrap: anywhere; }
+.trace-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; border-top: 1px solid var(--trace-line); padding-top: 1rem; margin-top: .6rem; }
+.trace-pagination > div { display: flex; flex-wrap: wrap; gap: .5rem; }
+.trace-pagination p { margin: 0; font-size: .85rem; color: var(--trace-muted); }
+.trace-note { padding: .75rem 1rem; background: var(--trace-soft); border-radius: 6px; color: var(--trace-muted); font-size: .85rem; }
+.trace-error { padding: .8rem 1rem; border: 1px solid var(--color-border-danger, #b94b4b); border-radius: 6px; margin: .7rem 0; }
+.trace-status { min-height: 1.5em; margin: .2rem 0; color: var(--trace-muted); font-size: .85rem; }
+.trace-state-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin: 1rem 0; }
+.trace-state-grid > div { padding: .85rem 1rem; border: 1px solid var(--trace-line); border-radius: 8px; }
+.trace-state-grid span { display: block; font-size: .75rem; color: var(--trace-muted); margin-bottom: .3rem; }
+.trace-state-grid strong { font-size: .95rem; }
+.trace-score { display: flex; align-items: baseline; gap: .5rem; margin: .7rem 0; }
+.trace-score strong { font-size: 2rem; color: var(--trace-accent); font-weight: 600; }
+.trace-table-wrap { overflow-x: auto; }
+.trace-table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+.trace-table th, .trace-table td { text-align: right; padding: .55rem .45rem; border-bottom: 1px solid var(--trace-line); }
+.trace-table th:first-child, .trace-table td:first-child { text-align: left; }
+.trace-table th { color: var(--trace-muted); font-weight: 500; }
+.trace-history { list-style: none; padding: 0; margin: 0; }
+.trace-history > li { border-left: 2px solid var(--trace-line); margin: .7rem 0; padding: .2rem 0 .2rem 1rem; }
+.trace-history p { margin: .3rem 0; }
+.trace-history .trace-badges { gap: .5rem; }
+.trace-history .trace-badges small { color: var(--trace-muted); }
+.trace-app .trace-secondary { background: transparent; color: var(--trace-accent); border: 1px solid var(--trace-line); border-radius: 6px; padding: .4rem .7rem; font-size: .8rem; }
+.trace-app .trace-empty { padding: .9rem 0; color: var(--trace-muted); font-size: .9rem; }
+@media (max-width: 560px) {
+  .trace-heading { flex-direction: column; gap: .4rem; }
+  .trace-state-grid { grid-template-columns: 1fr; }
+  .trace-detail { padding-left: .35rem; }
+  .trace-finding { padding-left: .6rem; }
+  .trace-kv { grid-template-columns: 1fr; gap: .2rem; }
+  .trace-kv dd { margin-bottom: .5rem; }
+  .trace-controls select { flex: 1; min-width: 0; }
+}
