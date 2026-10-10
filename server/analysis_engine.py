@@ -6,11 +6,11 @@ validated again locally before callers may persist any result.
 """
 from __future__ import annotations
 
-from collections import defaultdict
 import json
 import math
 import os
 import re
+from collections import defaultdict
 from typing import Literal
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -504,6 +504,7 @@ def _openai_analysis(records: list[dict], vehicle: str, market: str) -> tuple[di
     result["warnings"].append(f"AI source coverage: {covered}/{len(records)} scoped records in {len(selected)} bounded requests. Model output remains a proposal requiring PM review.")
     # Batch indices have now been remapped; validate the final provenance graph too.
     result = _validate(result, [record for batch in selected for record in batch])
+    result["analyzed_evidence_ids"] = [record["id"] for batch in selected for record in batch]
     return result, model
 
 
@@ -521,6 +522,7 @@ def analyze_evidence(records: list[dict], vehicle: str, market: str, provider: s
         result, model = _openai_analysis(selected, vehicle, market)
     else:
         result = _validate(_reference_analysis(selected, vehicle, market), selected)
+        result["analyzed_evidence_ids"] = [record["id"] for record in selected]
         model = "keyword-rules-v1"
         result["warnings"].append(f"Reference source coverage: {len(selected)}/{len(selected)} non-empty scoped records; context and unclassified records may not produce a requirement.")
     result["warnings"] = list(dict.fromkeys(warnings + result["warnings"]))
