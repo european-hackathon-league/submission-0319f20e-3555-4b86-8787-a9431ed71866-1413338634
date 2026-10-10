@@ -6,11 +6,11 @@ validated again locally before callers may persist any result.
 """
 from __future__ import annotations
 
-from collections import defaultdict
 import json
 import math
 import os
 import re
+from collections import defaultdict
 from typing import Literal
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen

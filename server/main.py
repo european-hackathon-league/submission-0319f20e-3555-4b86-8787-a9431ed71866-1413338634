@@ -7,6 +7,8 @@ from pydantic import Field
 from database.store import create_source, get_source, init_database, list_sources, ping_database
 from server.evidence import router as evidence_router
 from server.models import Scope
+from server.pipeline import router as pipeline_router
+from server.requirements import router as requirements_router
 
 
 class SourceCreate(Scope):
@@ -32,6 +34,8 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="BMW Product Evidence API", version="0.2.0", lifespan=lifespan)
 app.include_router(evidence_router)
+app.include_router(pipeline_router)
+app.include_router(requirements_router)
 
 
 @app.get("/health")
