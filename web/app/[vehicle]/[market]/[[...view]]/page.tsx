@@ -19,6 +19,7 @@ export default async function Page({
       "requirements",
       "reviews",
       "evidence",
+      "twin",
       "sources",
       "pipeline",
       "markets",

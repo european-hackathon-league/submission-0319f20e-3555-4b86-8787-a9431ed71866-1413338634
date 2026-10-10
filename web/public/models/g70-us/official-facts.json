@@ -1,0 +1,153 @@
+{
+  "schemaVersion": "1.0.0",
+  "purpose": "Official vehicle context only; never customer evidence, requirement scores or PM decisions.",
+  "checkedAt": "2026-10-10",
+  "facts": [
+    {
+      "id": "length",
+      "value": 212.2,
+      "units": "in",
+      "vehicle": "G70",
+      "variant": "i7 M70 xDrive",
+      "market": "US",
+      "modelYear": 2024,
+      "sourceUrl": "https://www.press.bmwgroup.com/usa/article/detail/T0413219EN_US/the-bmw-i7-m70-xdrive?language=en_US",
+      "caveat": "US MY2024 M70 measurement used for uniform scale only; artist proportions are not CAD."
+    },
+    {
+      "id": "width_excluding_mirrors",
+      "value": 76.8,
+      "units": "in",
+      "vehicle": "G70",
+      "variant": "i7 M70 xDrive",
+      "market": "US",
+      "modelYear": 2024,
+      "sourceUrl": "https://www.press.bmwgroup.com/usa/article/detail/T0413219EN_US/the-bmw-i7-m70-xdrive?language=en_US",
+      "caveat": "Model bounding width includes mirrors; do not equate it with this specification."
+    },
+    {
+      "id": "height",
+      "value": 60.8,
+      "units": "in",
+      "vehicle": "G70",
+      "variant": "i7 M70 xDrive",
+      "market": "US",
+      "modelYear": 2024,
+      "sourceUrl": "https://www.press.bmwgroup.com/usa/article/detail/T0413219EN_US/the-bmw-i7-m70-xdrive?language=en_US",
+      "caveat": "Reference specification; artist geometry may differ."
+    },
+    {
+      "id": "wheelbase",
+      "value": 126.6,
+      "units": "in",
+      "vehicle": "G70",
+      "variant": "i7 M70 xDrive",
+      "market": "US",
+      "modelYear": 2024,
+      "sourceUrl": "https://www.press.bmwgroup.com/usa/article/detail/T0413219EN_US/the-bmw-i7-m70-xdrive?language=en_US",
+      "caveat": "Reference specification; artist wheel positions are approximate."
+    },
+    {
+      "id": "battery_location",
+      "value": "underbody",
+      "units": null,
+      "vehicle": "G70",
+      "variant": "i7 M70 xDrive",
+      "market": "US",
+      "modelYear": 2024,
+      "sourceUrl": "https://www.press.bmwgroup.com/usa/article/detail/T0413219EN_US/the-bmw-i7-m70-xdrive?language=en_US",
+      "caveat": "Reference location; battery geometry is not supplied."
+    },
+    {
+      "id": "rear_luggage_volume",
+      "value": 17.7,
+      "units": "cu ft",
+      "vehicle": "G70",
+      "variant": "i7 M70 xDrive",
+      "market": "US",
+      "modelYear": 2024,
+      "sourceUrl": "https://www.press.bmwgroup.com/usa/article/detail/T0413219EN_US/the-bmw-i7-m70-xdrive?language=en_US",
+      "caveat": "No cargo interior supplied; do not derive usable capacity from mesh geometry."
+    },
+    {
+      "id": "m70_standard_wheels",
+      "value": "21-inch M light-alloy, Jet Black solid with high-gloss metal inserts",
+      "units": null,
+      "vehicle": "G70",
+      "variant": "i7 M70 xDrive",
+      "market": "US",
+      "modelYear": 2024,
+      "sourceUrl": "https://www.press.bmwgroup.com/usa/article/detail/T0413219EN_US/the-bmw-i7-m70-xdrive?language=en_US",
+      "caveat": "Artist wheel geometry is not the official M70 wheel; dark finish only approximates its contrast."
+    },
+    {
+      "id": "m70_rear_apron",
+      "value": "model-specific rear apron with diffuser insert",
+      "units": null,
+      "vehicle": "G70",
+      "variant": "i7 M70 xDrive",
+      "market": "US",
+      "modelYear": 2024,
+      "sourceUrl": "https://www.press.bmwgroup.com/usa/article/detail/T0413219EN_US/the-bmw-i7-m70-xdrive?language=en_US",
+      "caveat": "Reference detail only; the source apron is simplified and no exact diffuser geometry is supplied."
+    },
+    {
+      "id": "m70_side_details",
+      "value": "sculpted M side skirts, M logos on front side panels, black twin-stalk M mirrors",
+      "units": null,
+      "vehicle": "G70",
+      "variant": "i7 M70 xDrive",
+      "market": "US",
+      "modelYear": 2024,
+      "sourceUrl": "https://www.press.bmwgroup.com/usa/article/detail/T0413219EN_US/the-bmw-i7-m70-xdrive?language=en_US",
+      "caveat": "Source artist geometry does not accurately reproduce all these details."
+    },
+    {
+      "id": "m70_system_output",
+      "value": 650,
+      "units": "hp",
+      "vehicle": "G70",
+      "variant": "i7 M70 xDrive",
+      "market": "US",
+      "modelYear": 2024,
+      "sourceUrl": "https://www.press.bmwgroup.com/usa/article/detail/T0413219EN_US/the-bmw-i7-m70-xdrive?language=en_US",
+      "caveat": "US MY2024 official vehicle context; never a customer requirement score."
+    },
+    {
+      "id": "m70_usable_battery_capacity",
+      "value": 101.7,
+      "units": "kWh",
+      "vehicle": "G70",
+      "variant": "i7 M70 xDrive",
+      "market": "US",
+      "modelYear": 2024,
+      "sourceUrl": "https://www.press.bmwgroup.com/usa/article/detail/T0413219EN_US/the-bmw-i7-m70-xdrive?language=en_US",
+      "caveat": "Official net capacity; no battery geometry or customer requirement inferred."
+    },
+    {
+      "id": "m70_max_dc_charging_rate",
+      "value": 195,
+      "units": "kW",
+      "vehicle": "G70",
+      "variant": "i7 M70 xDrive",
+      "market": "US",
+      "modelYear": 2024,
+      "sourceUrl": "https://www.press.bmwgroup.com/usa/article/detail/T0413219EN_US/the-bmw-i7-m70-xdrive?language=en_US",
+      "caveat": "Official maximum rate; charging feedback must still come from G70/US evidence."
+    }
+  ],
+  "visualReferences": [
+    {
+      "url": "https://www.press.bmwgroup.com/usa/article/detail/T0413219EN_US/the-bmw-i7-m70-xdrive?language=en_US",
+      "market": "US",
+      "modelYear": 2024,
+      "use": "M70 specifications and exterior differentiation; images used as visual reference only, not copied."
+    },
+    {
+      "url": "https://www.press.bmwgroup.com/usa/photo/compilation/T0413219EN_US/the-bmw-i7-m70-xdrive?language=en_US",
+      "market": "US",
+      "modelYear": 2024,
+      "use": "Official M70 exterior photo reference only; no images included in package."
+    }
+  ]
+}

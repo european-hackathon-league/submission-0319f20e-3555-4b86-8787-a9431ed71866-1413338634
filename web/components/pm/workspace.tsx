@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import Image from "next/image";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -21,6 +22,9 @@ import {
   Command,
   CircleHelp,
   Info,
+  Ellipsis,
+  ChevronDown,
+  CarFront,
 } from "lucide-react";
 import {
   Sidebar,
@@ -62,19 +66,25 @@ import { EvidenceExplorer, Sources } from "./sources";
 import { Pipeline } from "./pipeline";
 import { AuditPage, Markets, SettingsPage } from "./secondary";
 import { ErrorMessage, Loading } from "./shared";
+const VehicleStudio = dynamic(() => import("./vehicle-studio").then((module) => module.VehicleStudio), {
+  ssr: false,
+  loading: () => <Loading label="Opening vehicle studio…" />,
+});
 const nav = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "requirements", label: "Requirements", icon: ListChecks },
-  { key: "pipeline", label: "Pipeline", icon: GitBranch },
   { key: "evidence", label: "Evidence", icon: FileSearch },
-  { key: "sources", label: "Sources & imports", icon: Files },
-  { key: "markets", label: "Market comparison", icon: Globe2 },
+  { key: "twin", label: "Vehicle studio", icon: CarFront },
 ];
-const secondary = [
+const more = [
+  { key: "pipeline", label: "Pipeline", icon: GitBranch },
+  { key: "sources", label: "Sources & imports", icon: Files },
   { key: "reviews", label: "Needs review", icon: ListChecks },
+  { key: "markets", label: "Market comparison", icon: Globe2 },
   { key: "audit", label: "Audit trail", icon: History },
   { key: "settings", label: "Settings", icon: Settings },
 ];
+const pages = [...nav, ...more];
 export function WorkspaceApp({
   scope,
   section,
@@ -141,13 +151,12 @@ export function WorkspaceApp({
     ? scopes
     : [scope, ...scopes];
   const title =
-    [...nav, ...secondary].find((n) => n.key === section)?.label || "Overview";
+    pages.find((n) => n.key === section)?.label || "Overview";
   const loadError =
     requirements.error ||
     sources.error ||
     metrics.error ||
-    workspace.error ||
-    actors.error;
+    workspace.error;
   const context = {
     scope,
     base,
@@ -250,15 +259,22 @@ export function WorkspaceApp({
           <SidebarContent>
             <SidebarGroupLabel>Workspace</SidebarGroupLabel>
             {renderNav(nav)}
-            <div className="mt-auto">{renderNav(secondary)}</div>
+            <details className="workspace-more" open={more.some((item) => item.key === section) || undefined}>
+              <summary>
+                <Ellipsis size={16} />
+                <span>More tools</span>
+                <ChevronDown className="workspace-more-chevron" size={14} />
+              </summary>
+              {renderNav(more)}
+            </details>
           </SidebarContent>
           <SidebarFooter>
             <div className="sidebar-scope-note">
               <span className="mono">EVIDENCE TO DECISION</span>
               <span>Successor product planning</span>
               <span className="system-state">
-                <i className={loadError ? "failed" : ""} />
-                {loadError
+                <i className={loadError || actors.error ? "failed" : ""} />
+                {loadError || actors.error
                   ? "Connection needs attention"
                   : "Connected to local API"}
               </span>
@@ -302,8 +318,11 @@ export function WorkspaceApp({
                 aria-label="Acting reviewer"
                 value={actor?.id || ""}
                 onChange={(e) => setActor(e.target.value)}
+                disabled={actors.isPending || !!actors.error}
               >
-                <option value="">Select reviewer</option>
+                <option value="">
+                  {actors.error ? "Reviewers unavailable" : "Select reviewer"}
+                </option>
                 {activeActors.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.display_name} · {readable(a.role)}
@@ -352,6 +371,7 @@ export function WorkspaceApp({
                   {section === "requirements" && <Register />}
                   {section === "reviews" && <Reviews />}
                   {section === "evidence" && <EvidenceExplorer />}
+                  {section === "twin" && <VehicleStudio />}
                   {section === "sources" && <Sources />}
                   {section === "pipeline" && <Pipeline />}
                   {section === "markets" && <Markets />}
@@ -387,7 +407,7 @@ export function WorkspaceApp({
             onChange={(e) => setSearch(e.target.value)}
           />
           <div className="command-results">
-            {[...nav, ...secondary]
+            {pages
               .filter((n) =>
                 n.label.toLowerCase().includes(search.toLowerCase()),
               )

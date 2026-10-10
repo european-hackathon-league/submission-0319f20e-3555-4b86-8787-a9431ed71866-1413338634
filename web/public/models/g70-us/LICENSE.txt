@@ -1,0 +1,22 @@
+2023 BMW I7 G70
+Creator: Nazh Design ✔
+Source: https://sketchfab.com/3d-models/2023-bmw-i7-g70-07937cca69864dfe9f4b4ed235fc32f7
+Creator: https://sketchfab.com/NazhDesign
+
+Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0).
+Licence: https://creativecommons.org/licenses/by/4.0/
+Legal terms: https://creativecommons.org/licenses/by/4.0/legalcode.en
+
+You may share and adapt, including commercially, subject to the licence.
+Retain credit, link to the source and licence, and indicate modifications.
+Modifications: duplicate geometry cleanup, PBR finishes, normal smoothing,
+metre normalization, Draco compression, stable anchors and authored renders.
+Further changes: author-built i7 / M70 xDrive rear lettering and M70-inspired
+dark wheel finish, using US MY2024 official vehicle design as reference only.
+No extra restrictions are imposed on the licensed model.
+
+Independent artist model; not supplied or endorsed by BMW. The licence
+does not grant rights to BMW trademarks or imply endorsement.
+
+Download page checked 2026-10-10: CC Attribution; author must be credited;
+commercial use is allowed. Downloaded through the authenticated Download UI.
