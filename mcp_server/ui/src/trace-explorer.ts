@@ -111,6 +111,8 @@ export class TraceExplorer {
   private sources = new Map<string, Source>();
   private evidence = new Map<string, Evidence>();
   private requestedRequirement = "";
+  private requestedVersion: string | null = null;
+  private hostInputPending = false;
   private auditRows: RecordData[] = [];
   private auditAfter = 0;
   private auditBusy = false;
@@ -128,7 +130,13 @@ export class TraceExplorer {
   connectionFailed(error: unknown): void { this.error = message(error); this.status = "Host connection failed. Reopen this app to reconnect."; this.render(); }
   setInput(value: unknown): void {
     const input = record(value);
-    if (typeof input.requirement_id === "string") this.requestedRequirement = input.requirement_id;
+    if (typeof input.requirement_id === "string") {
+      this.requestedRequirement = input.requirement_id;
+      this.requestedVersion = typeof input.version_id === "string" ? input.version_id : null;
+      this.hostInputPending = true;
+      ++this.generation;
+      this.busy = this.versionsBusy = this.auditBusy = false;
+    }
   }
 
   receive(value: unknown): void {
@@ -155,6 +163,7 @@ export class TraceExplorer {
     ++this.generation;
     this.busy = false;
     this.versionsBusy = false;
+    this.auditBusy = false;
     this.error = message(error);
     this.status = "The host could not load the trace.";
     this.render();
@@ -162,6 +171,10 @@ export class TraceExplorer {
 
   private accept(trace: Trace): void {
     const preserveOpen = this.trace?.version.id === trace.version.id;
+    if (this.trace?.requirement.id !== trace.requirement.id) this.versions = [];
+    this.requestedRequirement = trace.requirement.id;
+    this.requestedVersion = trace.version.id;
+    this.hostInputPending = false;
     this.trace = trace;
     this.sources = new Map(trace.sources.map((source) => [source.id, source]));
     this.evidence = new Map(this.pageItems().map((item) => [item.id, item]));
@@ -198,8 +211,8 @@ export class TraceExplorer {
     }
   }
 
-  private async loadTrace(versionId: string | null, offset: number, reloadVersions = false): Promise<void> {
-    const requirement = this.trace?.requirement.id ?? this.requestedRequirement;
+  private async loadTrace(versionId: string | null, offset: number, reloadVersions = false, requirementId?: string): Promise<void> {
+    const requirement = requirementId ?? this.trace?.requirement.id ?? this.requestedRequirement;
     if (!requirement || !this.connected) return;
     const generation = ++this.generation;
     this.busy = true;
@@ -254,7 +267,10 @@ export class TraceExplorer {
     heading.append(el("p", "BMW PRODUCT EVIDENCE · TRACE EXPLORER", "eyebrow"));
     heading.append(el("h1", trace ? valueText(trace.requirement.key, "Requirement trace") : "Requirement trace"));
     if (trace) heading.append(el("p", valueText(trace.version.title), "muted"));
-    header.append(heading, button("Reload trace", () => void this.loadTrace(this.trace?.version.id ?? null, 0, true), !this.connected || this.busy || (!trace && !this.requestedRequirement)));
+    header.append(heading, button("Reload trace", () => void this.loadTrace(
+      this.hostInputPending ? this.requestedVersion : this.trace?.version.id ?? null,
+      0, true, this.hostInputPending ? this.requestedRequirement : undefined,
+    ), !this.connected || this.busy || (!trace && !this.requestedRequirement)));
     this.root.append(header);
     if (trace) {
       const badges = el("div", undefined, "trace-badges");
@@ -373,16 +389,17 @@ export class TraceExplorer {
       linked += ids.length;
       for (const id of ids) {
         const evidence = this.evidence.get(id);
-        if (evidence) { body.append(this.renderEvidence(evidence, relation)); shown++; }
+        if (evidence) { body.append(this.renderEvidence(evidence, relation, finding.id)); shown++; }
       }
     }
     if (!linked) body.append(empty("No evidence links recorded for this finding."));
     else if (linked > shown) body.append(el("p", `${linked - shown} linked evidence record${linked - shown === 1 ? " is" : "s are"} on other pages. Use the evidence page controls below.`, "trace-note"));
   }
 
-  private renderEvidence(evidence: Evidence, relation: string): HTMLElement {
+  private renderEvidence(evidence: Evidence, relation: string, findingId: string): HTMLElement {
     const source = this.sources.get(evidence.source_id);
-    const [node, body] = this.treeDetails(`${relation} · ${valueText(source?.title, "Evidence record")}`, `evidence:${relation}:${evidence.id}`);
+    const occurrence = `${findingId}:${relation}:${evidence.id}`;
+    const [node, body] = this.treeDetails(`${relation} · ${valueText(source?.title, "Evidence record")}`, `evidence:${occurrence}`);
     node.classList.add("trace-evidence");
     let rendered = false;
     const generation = this.generation;
@@ -407,7 +424,7 @@ export class TraceExplorer {
           finally { refresh.disabled = !this.connected; }
         }, !this.connected);
         body.append(refresh);
-        body.append(this.renderSource(item.source_id, source, generation));
+        body.append(this.renderSource(item.source_id, source, generation, occurrence));
       };
       renderRecord(evidence);
     });
@@ -425,8 +442,8 @@ export class TraceExplorer {
     return wrapper;
   }
 
-  private renderSource(sourceId: string, known: Source | undefined, generation: number): HTMLElement {
-    const [node, body] = this.treeDetails(`Source · ${valueText(known?.title, "Open source record")}`, `source:${sourceId}`);
+  private renderSource(sourceId: string, known: Source | undefined, generation: number, occurrence: string): HTMLElement {
+    const [node, body] = this.treeDetails(`Source · ${valueText(known?.title, "Open source record")}`, `source:${occurrence}:${sourceId}`);
     let loading = false, loaded = false;
     const renderSource = (source: Source) => {
       body.replaceChildren();

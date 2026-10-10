@@ -56,6 +56,43 @@ async function ready(root: HTMLElement) {
 afterEach(() => { document.body.replaceChildren(); vi.restoreAllMocks(); });
 
 describe("trace explorer", () => {
+  it("retries the newly requested requirement after a host error instead of the previous trace", async () => {
+    const request = vi.fn(async (name: string, args: Record<string, unknown>) => name === "get_requirement_versions"
+      ? [version(1, String(args.requirement_id)), version(2, String(args.requirement_id))]
+      : trace({ requirement: String(args.requirement_id), number: 2 }));
+    const { root, explorer } = mounted(request);
+    explorer.receive(trace()); await ready(root);
+    explorer.setInput({ requirement_id: "req-2", version_id: "req-2-v2" });
+    explorer.receiveError(new Error("Host request cancelled"));
+    getButton(root, "Reload trace").click();
+    await vi.waitFor(() => expect(root.querySelector("h1")?.textContent).toBe("REQ-G60-US-002"));
+    expect(request).toHaveBeenCalledWith("trace_requirement", { requirement_id: "req-2", version_id: "req-2-v2", limit: 12, offset: 0 });
+  });
+
+  it("keeps repeated evidence occurrences independently expanded across rerenders", async () => {
+    const request = vi.fn(async () => [version(1)]);
+    const { root, explorer } = mounted(request);
+    const data = trace({ total: 1 });
+    data.findings.push({ ...data.findings[0], id: "finding-2" });
+    explorer.receive(data); await ready(root);
+    const first = root.querySelector<HTMLDetailsElement>("details.trace-evidence")!;
+    first.open = true;
+    first.dispatchEvent(new Event("toggle"));
+    explorer.setConnected();
+    expect([...root.querySelectorAll<HTMLDetailsElement>("details.trace-evidence")].map((node) => node.open)).toEqual([true, false]);
+  });
+
+  it("unlocks audit reads when the host cancels a pending request", async () => {
+    const request = vi.fn((name: string) => name === "get_requirement_versions"
+      ? Promise.resolve([version(1)]) : new Promise(() => {}));
+    const { root, explorer } = mounted(request);
+    explorer.receive(trace()); await ready(root);
+    getButton(root, "Load audit history").click();
+    expect(getButton(root, "Loading history…").disabled).toBe(true);
+    explorer.receiveError(new Error("Host request cancelled"));
+    expect(getButton(root, "Load audit history").disabled).toBe(false);
+  });
+
   it("uses the readable key and sorts history newest first while keeping an older version selected across pages", async () => {
     const request = vi.fn(async (name: string, args: Record<string, unknown>) => name === "get_requirement_versions"
       ? [version(1), version(2)] : trace({ offset: Number(args.offset) }));
