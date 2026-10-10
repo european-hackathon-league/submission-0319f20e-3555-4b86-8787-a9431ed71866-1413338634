@@ -2380,6 +2380,58 @@ summary {
 .demo-trace-note strong { font-weight: 600; }
 .demo-trace-note a { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; color: var(--primary); }
 
+/* The overview airflow spans the toolbar, source note, and introduction. */
+.overview-shell > .motion-field {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 460px;
+  overflow: hidden;
+  pointer-events: none;
+  background: #0b1422;
+  -webkit-mask-image: linear-gradient(#000 0 85%, transparent 100%);
+  mask-image: linear-gradient(#000 0 85%, transparent 100%);
+}
+.overview-shell > .motion-control {
+  z-index: 11;
+  right: clamp(16px, 2.5vw, 44px);
+  top: 320px;
+  bottom: auto;
+}
+.overview-shell .workspace-header {
+  color: #eaf3ff;
+  background: rgb(11 20 34 / 72%);
+  border-bottom-color: rgb(165 201 244 / 20%);
+  backdrop-filter: blur(12px);
+}
+.overview-shell .header-separator { background: rgb(165 201 244 / 30%); }
+.overview-shell .global-search { color: #aec3df; }
+.overview-shell .global-search kbd,
+.overview-shell .workspace-status { color: #aec3df; border-color: rgb(165 201 244 / 28%); }
+.overview-shell .actor-select {
+  color: #edf5ff;
+  color-scheme: dark;
+  background: rgb(16 36 62 / 78%);
+  border-color: rgb(165 201 244 / 36%);
+}
+.overview-shell .workspace-header [data-slot="button"] { color: #eaf3ff; }
+.overview-shell .workspace-header [data-slot="button"]:hover { background: rgb(104 156 221 / 20%); }
+.overview-shell .scope-limitation {
+  position: relative;
+  z-index: 1;
+  color: #b8c8dd;
+  background: rgb(11 20 34 / 45%);
+  border-bottom-color: rgb(165 201 244 / 20%);
+}
+.overview-shell .scope-limitation a { color: #eaf3ff; }
+.overview-shell .workspace-content { position: relative; z-index: 1; }
+.overview-shell .overview-intro { background: transparent; }
+.overview-shell:not(:has(.scope-limitation)) > .motion-control { top: 285px; }
+
+@media (max-width: 767px) {
+  .overview-shell > .motion-control { top: 150px; bottom: auto; }
+  .overview-shell:not(:has(.scope-limitation)) > .motion-control { top: 110px; }
+}
+
 .register-advanced { padding: 10px 16px; background: var(--card); }
 .register-advanced > summary { display: flex; align-items: center; gap: 9px; list-style: none; font-size: 11px; color: var(--foreground); }
 .register-advanced > summary::-webkit-details-marker { display: none; }

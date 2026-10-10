@@ -47,6 +47,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { AppearanceToggle } from "@/components/appearance";
+import { MotionField } from "@/components/motion-field";
 import { Button } from "@/components/ui/button";
 import { api, allPages, query, readable } from "@/lib/api";
 import type {
@@ -295,7 +296,8 @@ export function WorkspaceApp({
             </Link>
           </SidebarFooter>
         </Sidebar>
-        <SidebarInset>
+        <SidebarInset className={section === "overview" ? "overview-shell" : undefined}>
+          {section === "overview" && <MotionField />}
           <header className="workspace-header">
             <div className="flex items-center gap-4">
               <SidebarTrigger />
