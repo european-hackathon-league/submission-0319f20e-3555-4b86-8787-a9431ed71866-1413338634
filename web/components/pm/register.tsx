@@ -106,14 +106,8 @@ export function Register() {
   return (
     <>
       <Heading
-        title="Requirements"
-        description="A living register of customer needs, with a source behind every priority."
-        action={
-          <Button onClick={() => setCreating(true)} variant="outline">
-            <Plus size={14} />
-            New requirement
-          </Button>
-        }
+        title="Prioritized requirements"
+        description="Open a proposal to inspect its evidence, score, and human decision."
       />
       <div className="register-toolbar">
         <div className="search-input">
@@ -125,72 +119,56 @@ export function Register() {
             onChange={(e) => filter({ q: e.target.value })}
           />
         </div>
-        <select
-          aria-label="Requirement status"
-          value={status}
-          onChange={(e) => filter({ status: e.target.value })}
-        >
-          <option value="">All statuses</option>
-          {[
-            "proposed",
-            "approved",
-            "needs_review",
-            "postponed",
-            "rejected",
-          ].map((s) => (
-            <option key={s} value={s}>
-              {readable(s)}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label="Topic"
-          value={topic}
-          onChange={(e) => filter({ topic: e.target.value })}
-        >
-          <option value="">All topics</option>
-          {[...new Set(requirements.map((r) => r.topic))].sort().map((t) => (
-            <option key={t} value={t}>
-              {readable(t)}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label="Evidence grade"
-          value={grade}
-          onChange={(e) => filter({ grade: e.target.value })}
-        >
-          <option value="">All evidence grades</option>
-          {["A", "B", "C", "D"].map((g) => (
-            <option key={g} value={g}>
-              Grade {g}
-            </option>
-          ))}
-        </select>
-        <button
-          className="icon-button"
-          aria-label="Clear filters"
-          onClick={() =>
-            set({
-              q: undefined,
-              status: undefined,
-              topic: undefined,
-              grade: undefined,
-              page: undefined,
-            })
-          }
-        >
-          <X size={16} />
-        </button>
       </div>
-      <div className="register-summary">
-        <span>
-          {filtered.length} requirements{" "}
-          <span className="muted">
-            / {scope.vehicle} · {scope.market}
-          </span>
-        </span>
-        <div className="flex items-center gap-3">
+      <details className="register-advanced" open={!!(status || topic || grade || sort !== "-score") || undefined}>
+        <summary>
+          <ListFilter size={14} />
+          Filters and tools
+          {(status || topic || grade) && <span className="register-active-filter">Active filters</span>}
+        </summary>
+        <div className="register-toolbar register-filters">
+          <select
+            aria-label="Requirement status"
+            value={status}
+            onChange={(e) => filter({ status: e.target.value })}
+          >
+            <option value="">All statuses</option>
+            {["proposed", "approved", "needs_review", "postponed", "rejected"].map((s) => (
+              <option key={s} value={s}>{readable(s)}</option>
+            ))}
+          </select>
+          <select
+            aria-label="Topic"
+            value={topic}
+            onChange={(e) => filter({ topic: e.target.value })}
+          >
+            <option value="">All topics</option>
+            {[...new Set(requirements.map((r) => r.topic))].sort().map((t) => (
+              <option key={t} value={t}>{readable(t)}</option>
+            ))}
+          </select>
+          <select
+            aria-label="Evidence grade"
+            value={grade}
+            onChange={(e) => filter({ grade: e.target.value })}
+          >
+            <option value="">All evidence grades</option>
+            {["A", "B", "C", "D"].map((g) => (
+              <option key={g} value={g}>Grade {g}</option>
+            ))}
+          </select>
+          <button
+            className="icon-button"
+            aria-label="Clear filters"
+            onClick={() => set({ q: undefined, status: undefined, topic: undefined, grade: undefined, page: undefined })}
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <div className="register-tools">
+          <Button onClick={() => setCreating(true)} variant="outline" size="sm">
+            <Plus size={14} /> New requirement
+          </Button>
           <button
             className="text-link"
             onClick={() => {
@@ -230,31 +208,31 @@ export function Register() {
             <option value="reqif">ReqIF · approved snapshots</option>
           </select>
         </div>
+        {saved.length > 0 && (
+          <div className="saved-views">
+            {saved.map((v) => (
+              <span key={v.name}>
+                <Link href={`${base}/requirements?${v.query}`}>{v.name}</Link>
+                <button
+                  aria-label={`Remove saved view ${v.name}`}
+                  onClick={() => setSaved(saved.filter((s) => s.name !== v.name))}
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </details>
+      <div className="register-summary">
+        <span>{filtered.length} requirements <span className="muted">/ {scope.vehicle} · {scope.market}</span></span>
+        <span className="muted">Priority score and evidence grade are separate judgments.</span>
       </div>
-      {saved.length > 0 && (
-        <div className="saved-views">
-          {saved.map((v) => (
-            <span key={v.name}>
-              <Link href={`${base}/requirements?${v.query}`}>{v.name}</Link>
-              <button
-                aria-label={`Remove saved view ${v.name}`}
-                onClick={() => {
-                  const next = saved.filter((s) => s.name !== v.name);
-                  setSaved(next);
-                }}
-              >
-                <X size={12} />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
       <div className="pm-table-wrap">
         <table className="pm-table">
           <thead>
             <tr>
               <th className="pin-column">Requirement</th>
-              <th>Topic</th>
               <th>Status</th>
               <th>
                 <button
@@ -264,15 +242,6 @@ export function Register() {
                 >
                   Priority / evidence <ArrowDownWideNarrow size={13} />
                 </button>
-              </th>
-              <th>Version</th>
-              <th>
-                <button onClick={() => filter({ sort: "updated" })}>
-                  Updated
-                </button>
-              </th>
-              <th>
-                <span className="sr-only">Open</span>
               </th>
             </tr>
           </thead>
@@ -285,7 +254,6 @@ export function Register() {
                     <strong>{r.title}</strong>
                   </RequirementLink>
                 </td>
-                <td>{readable(r.topic)}</td>
                 <td>
                   <Status value={r.status} />
                   {r.needs_review && r.status !== "needs_review" && (
@@ -295,19 +263,6 @@ export function Register() {
                 <td>
                   <RequirementLink id={r.id} tab="score">
                     <ScoreLabel score={r.priority} grade={r.evidence_grade} />
-                  </RequirementLink>
-                </td>
-                <td className="mono">
-                  v{r.version}
-                  {r.approved_version_id && (
-                    <small className="muted">Baseline saved</small>
-                  )}
-                </td>
-                <td className="date-cell">{date(r.updated_at)}</td>
-                <td>
-                  <RequirementLink id={r.id}>
-                    <ArrowUpRight size={17} />
-                    <span className="sr-only">Open {r.key}</span>
                   </RequirementLink>
                 </td>
               </tr>

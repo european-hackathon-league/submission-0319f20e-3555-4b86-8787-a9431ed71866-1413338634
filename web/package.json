@@ -9,6 +9,7 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "bun test lib/*.test.ts",
+    "demo:check": "node scripts/demo-preflight.mjs",
     "generate:api": "openapi-typescript http://127.0.0.1:18000/openapi.json -o lib/generated-api.ts"
   },
   "dependencies": {

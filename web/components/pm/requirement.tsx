@@ -573,7 +573,7 @@ function DecisionPanel({
   version: Version;
   onEdit: () => void;
 }) {
-  const { actor, refresh } = useWorkspace();
+  const { actor, actors, setActor, refresh } = useWorkspace();
   const [action, setAction] =
     useState<Schema["DecisionRequest"]["action"]>("approve");
   const [rationale, setRationale] = useState("");
@@ -644,6 +644,20 @@ function DecisionPanel({
       <div className="decision-actions">
         <select
           className="pm-select"
+          aria-label="Reviewer for decision"
+          value={actor?.id || ""}
+          onChange={(e) => setActor(e.target.value)}
+          disabled={mutation.isPending || stale}
+        >
+          <option value="">Select reviewer</option>
+          {actors.map((person) => (
+            <option key={person.id} value={person.id}>
+              {person.display_name} · {readable(person.role)}
+            </option>
+          ))}
+        </select>
+        <select
+          className="pm-select"
           aria-label="Decision action"
           value={action}
           onChange={(e) =>
@@ -658,13 +672,6 @@ function DecisionPanel({
             </option>
           ))}
         </select>
-        <span className="muted">
-          {!actor
-            ? "Select a reviewer in the header."
-            : !allowed
-              ? "Your role cannot perform this action."
-              : `Recorded as ${actor.display_name}`}
-        </span>
         <Button
           type="submit"
           disabled={
