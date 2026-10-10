@@ -21,7 +21,6 @@ import {
   Car,
   Command,
   CircleHelp,
-  Info,
   ChevronRight,
   Layers3,
   Bot,
@@ -174,6 +173,7 @@ export function WorkspaceApp({
     setDensity(value ? "compact" : "comfortable");
   const [command, setCommand] = useState(false);
   const [search, setSearch] = useState("");
+  const [headerScrolled, setHeaderScrolled] = useState(false);
   const workspace = useQuery({
     queryKey: ["workspace", qs],
     queryFn: ({ signal }) => api<Workspace>(`/workspace?${qs}`, { signal }),
@@ -211,6 +211,13 @@ export function WorkspaceApp({
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
+  useEffect(() => {
+    if (section !== "overview") return;
+    const update = () => setHeaderScrolled(window.scrollY > 8);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, [section]);
   const scopes = workspace.data?.available_scopes || [];
   const options = [...new Map(
     [scope, ...["US", "CN", "EU"].map((market) => ({ vehicle: scope.vehicle, market })), ...scopes]
@@ -247,7 +254,7 @@ export function WorkspaceApp({
       <SidebarProvider
         style={{ "--sidebar-width": "15rem" } as React.CSSProperties}
       >
-        <Sidebar collapsible="icon">
+        <Sidebar collapsible="icon" className="workspace-sidebar">
           <SidebarHeader>
             <Link
               href={base}
@@ -361,10 +368,9 @@ export function WorkspaceApp({
         </Sidebar>
         <SidebarInset className={section === "overview" ? "overview-shell" : undefined}>
           {section === "overview" && <MotionField />}
-          <header className="workspace-header">
+          <header className={`workspace-header ${section === "overview" && headerScrolled ? "is-scrolled" : ""}`}>
             <div className="flex items-center gap-4">
               <SidebarTrigger />
-              <span className="header-separator" />
               <span className="header-page">{title}</span>
             </div>
             <div className="header-controls">
@@ -393,18 +399,6 @@ export function WorkspaceApp({
               <AppearanceToggle />
             </div>
           </header>
-          {section !== "agents" && scope.vehicle === "G60" && scope.market === "US" && (
-            <div className="scope-limitation">
-              <Info size={14} />
-              <span>
-                Supplied G60 / US inventory: 72.7% of unique feedback IDs come
-                from Source B. Sample counts are not market prevalence.
-              </span>
-              <Link href={`${base}/evidence`}>
-                Inspect evidence <ArrowUpRight size={12} />
-              </Link>
-            </div>
-          )}
           <div
             id="workspace-content"
             tabIndex={-1}

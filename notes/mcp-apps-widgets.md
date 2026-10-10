@@ -24,6 +24,35 @@ to the API or hold credentials. Tool names, arguments and return values are
 unchanged. These widgets provide a PM interface; they do not add an autonomous
 analysis agent or another LLM provider.
 
+## Brand frame
+
+Both widgets use the PM workspace's visual identity from [web/DESIGN.md](../web/DESIGN.md):
+Barlow and IBM Plex Mono (embedded as WOFF2, since the resource CSP allows no font domains),
+the workspace colour tokens, square borderless panels, status chips, evidence grades and the
+navy airflow header ported from the overview's `MotionField`. The header animation pauses on
+request, off screen, when hidden, or when reduced motion is preferred. The host's light/dark
+theme is applied, but host style variables no longer replace the brand tokens.
+
+The widgets have two fixed frames and never scroll or zoom:
+
+- **Landscape** reports a height of exactly 9/16 of the frame width (720 × 405 in a 720 px
+  chat column). Requirement brief, priority factors and decision share tabs beside an always
+  visible sign-off column; the trace explorer shows a step rail beside a drill-down pane.
+- **Square** reports a height equal to the width and keeps the brief in view above the controls.
+
+The header toggle switches frames and remembers the choice where storage is available. Below
+600 px only the square frame is offered, and below 560 px the body becomes a single column
+(sign-off turns into a tab; trace steps become a grid). The SDK's content auto-resize is off:
+the shell reports the frame height itself and respects a host `containerDimensions` height cap.
+Content that does not fit is divided into pages (`src/shared/fit.ts`) rather than scrolled;
+long text and JSON split at word or line boundaries. Ctrl/⌘ zoom, pinch and programmatic
+scrolling are blocked inside the frame.
+
+The PM sign-off (name and rationale) applies to every save and decision, so it stays visible
+next to the priority and decision panes. After a factor or weight save the panel opens the
+decision pane on the freshly read version. Trace findings open into their supporting and
+conflicting evidence, then the exact quote, location, dates and source record.
+
 ## Resource and tool contracts
 
 | Tool | Resource |
@@ -32,7 +61,8 @@ analysis agent or another LLM provider.
 | `trace_requirement` | `ui://bmw-evidence/trace-explorer.html` |
 
 Tool `_meta.ui.resourceUri` points to a static resource with MIME
-`text/html;profile=mcp-app`. Both HTML files contain their own JavaScript and CSS;
+`text/html;profile=mcp-app` and `prefersBorder: false`, because the widgets draw their own
+edge-to-edge brand header. Both HTML files contain their own JavaScript and CSS;
 resource CSP declares no external connection or asset domains. The handlers serve
 fixed filenames without environment interpolation. A missing build returns an
 explicit build instruction without breaking normal tool discovery or calls.
@@ -60,6 +90,10 @@ npm ci
 npm test
 npm run build
 ```
+
+For design review without an MCP host, `npx vite --port 18190` serves
+`preview/index.html`, which mounts either widget with an invented in-memory fixture and
+emulates host widths, frames and themes.
 
 `build.mjs` runs two independent Vite/singlefile builds and verifies that the output
 has no external script, stylesheet or shared chunk. `dist/` and `node_modules/`

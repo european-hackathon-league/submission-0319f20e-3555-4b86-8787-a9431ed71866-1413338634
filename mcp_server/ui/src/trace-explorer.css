@@ -1,0 +1,67 @@
+/* A rail of trace steps beside a drill-down pane; both frames share the layout. */
+.tx-stage .bmw-body { grid-template-columns: 164px minmax(0, 1fr); }
+.tx-stage[data-frame="square"] .bmw-body { grid-template-columns: 176px minmax(0, 1fr); }
+.tx-rail { padding: 12px 10px; gap: 4px; }
+.tx-rail-label { padding: 0 6px 6px; }
+.tx-steps { display: grid; gap: 2px; }
+.tx-step {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 29px; padding: 0 9px;
+  font-size: 12px; text-align: left; color: var(--foreground); transition: background-color .15s, box-shadow .15s;
+}
+.tx-step:hover:not(:disabled) { background: var(--muted); }
+.tx-step[aria-current="step"] { color: var(--accent-foreground); background: var(--accent); box-shadow: inset 2px 0 var(--primary); font-weight: 500; }
+.tx-count { font: 10px var(--font-mono); color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+.tx-step[aria-current="step"] .tx-count { color: var(--primary); }
+.tx-version { display: grid; gap: 5px; margin-top: auto; padding: 10px 6px 0; border-top: 1px solid var(--border); }
+.tx-version select { min-height: 28px; font-size: 11px; }
+.tx-version-note { font-size: 9.5px; color: var(--muted-foreground); }
+.tx-version .btn-link { justify-self: start; padding: 0; font-size: 11px; }
+.tx-stage[data-frame="landscape"] .tx-rail { padding: 8px; }
+.tx-stage[data-frame="landscape"] .tx-rail-label, .tx-stage[data-frame="landscape"] .tx-version-note { display: none; }
+.tx-stage[data-frame="landscape"] .tx-step { min-height: 25px; }
+.tx-stage[data-frame="landscape"] .tx-version { padding-top: 8px; gap: 4px; }
+
+.tx-pane-lead { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.tx-pane-title { font-size: 12.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-back { display: inline-flex; align-items: center; gap: 5px; font: 9px var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--primary); white-space: nowrap; }
+.tx-back svg { width: 12px; height: 12px; }
+.tx-back:hover { text-decoration: underline; }
+.tx-crumb { color: var(--border); }
+.tx-alerts:empty { display: none; }
+.tx-alerts .bmw-alert + .bmw-alert { margin-top: -4px; }
+.tx-pane .bmw-footer-actions .btn-link { font-size: 11px; }
+.tx-server-pages { display: inline-flex; align-items: center; gap: 2px; padding-left: 10px; border-left: 1px solid var(--border); }
+.tx-range { margin-right: 4px; font: 10px var(--font-mono); color: var(--muted-foreground); white-space: nowrap; }
+.tx-server-button { display: inline-grid; place-items: center; width: 22px; height: 22px; color: var(--primary); }
+.tx-server-button:hover:not(:disabled) { background: var(--accent); }
+.tx-server-button svg { width: 13px; height: 13px; }
+.tx-intro { font-size: 11px; color: var(--muted-foreground); line-height: 1.5; }
+.tx-link { font-size: 11.5px; color: var(--primary); overflow-wrap: anywhere; }
+
+.tx-states { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.tx-states > div { display: grid; gap: 2px; padding: 8px 10px; background: var(--background); }
+.tx-states strong { font-size: 14px; font-weight: 400; }
+.tx-score { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
+.tx-score strong { font: 300 34px/1 var(--font-sans); letter-spacing: -.03em; color: var(--primary); font-variant-numeric: tabular-nums; }
+.tx-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.tx-table th, .tx-table td { padding: 5px 6px; text-align: right; border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; }
+.tx-table th:first-child, .tx-table td:first-child { text-align: left; text-transform: capitalize; }
+.tx-table th { font: 9px var(--font-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted-foreground); font-weight: 400; }
+.tx-decision { display: grid; gap: 6px; padding: 10px 12px; background: var(--background); }
+.tx-decision strong { font-size: 12px; font-weight: 500; }
+.tx-decision small { font: 9.5px var(--font-mono); }
+.tx-rationale { font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.tx-meta { font: 9.5px var(--font-mono); color: var(--muted-foreground); }
+
+/* Compact hosts (phones): the rail becomes a step grid above the pane. */
+.tx-stage[data-compact] .bmw-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+.tx-stage[data-compact] .tx-rail { padding: 6px; gap: 6px; }
+.tx-stage[data-compact] .tx-rail-label, .tx-stage[data-compact] .tx-version-note, .tx-stage[data-compact] .tx-version > .bmw-label { display: none; }
+.tx-stage[data-compact] .tx-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tx-stage[data-compact] .tx-step { min-height: 24px; padding: 0 7px; font-size: 11px; }
+.tx-stage[data-compact] .tx-version { display: flex; align-items: center; gap: 8px; margin: 0; padding: 6px 2px 0; }
+.tx-stage[data-compact] .tx-version select { flex: 1; min-height: 26px; }
+.tx-stage[data-compact] .tx-states { grid-template-columns: minmax(0, 1fr); }
+.tx-stage[data-compact] .tx-range, .tx-stage[data-compact] .tx-hint { display: none; }
+.tx-stage[data-compact]:not([data-step="requirement"]) .tx-version { display: none; }
+.tx-stage[data-compact] .bmw-footer { min-height: 34px; padding: 4px 0; }

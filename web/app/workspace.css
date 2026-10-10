@@ -155,11 +155,6 @@ textarea {
 textarea {
   resize: vertical;
 }
-.header-separator {
-  height: 16px;
-  width: 1px;
-  background: var(--border);
-}
 .header-page {
   font-size: 14px;
   font-weight: 600;
@@ -197,7 +192,7 @@ textarea {
   gap: 11px;
   margin: 0 16px 25px;
   padding: 11px;
-  border: 1px solid var(--sidebar-border);
+  background: #151e2a;
   min-height: 54px;
   color: var(--sidebar-foreground);
 }
@@ -249,7 +244,7 @@ textarea {
 .group[data-collapsible="icon"] .scope-switcher {
   padding: 0;
   margin: 0 8px 20px;
-  border: 0;
+  background: transparent;
   min-height: 32px;
 }
 .group[data-collapsible="icon"] .scope-switcher > svg:first-child {
@@ -1935,9 +1930,6 @@ summary {
   .global-search {
     display: flex;
   }
-  .header-separator {
-    display: none;
-  }
   .header-page {
     font-size: 11px;
   }
@@ -2254,40 +2246,9 @@ summary {
   display: grid;
   gap: 12px;
 }
-.scope-limitation {
-  padding: 9px 28px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--card);
-  color: var(--muted-foreground);
-  font-size: 11px;
-}
-.scope-limitation > svg {
-  flex-shrink: 0;
-}
-.scope-limitation a {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  white-space: nowrap;
-  color: var(--foreground);
-}
-@media (max-width: 767px) {
-  .scope-limitation {
-    padding: 9px 16px;
-    align-items: flex-start;
-  }
-  .scope-limitation a {
-    display: none;
-  }
-}
-
 .software-nav-chevron { margin-left: auto; width: 14px !important; height: 14px !important; transition: transform 150ms ease; }
 .software-nav-chevron.is-open { transform: rotate(90deg); }
-[data-slot="sidebar-menu-sub"] { margin-block: 5px 8px; gap: 2px; }
+[data-slot="sidebar-menu-sub"] { margin-block: 5px 8px; gap: 2px; border-left: 0; }
 [data-slot="sidebar-menu-sub-button"] { min-height: 30px; height: auto; padding-inline: 10px; font-size: 11px; }
 [data-slot="sidebar-menu-sub-button"][data-active] { color: #d7e8ff; background: #192b46; font-weight: 500; }
 [data-slot="sidebar-menu-sub-button"] .nav-count { margin-left: auto; }
@@ -2318,9 +2279,10 @@ summary {
 .demo-trace-note > svg { flex-shrink: 0; color: var(--primary); }
 .demo-trace-note p { flex: 1; }
 .demo-trace-note strong { font-weight: 600; }
+.source-concentration-note { display: block; margin-top: 5px; color: var(--muted-foreground); font-size: 11px; }
 .demo-trace-note a { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; color: var(--primary); }
 
-/* The overview airflow spans the toolbar, source note, and introduction. */
+/* The overview airflow spans the toolbar and introduction. */
 .overview-shell > .motion-field {
   position: absolute;
   inset: 0 0 auto;
@@ -2334,36 +2296,25 @@ summary {
 .overview-shell > .motion-control {
   z-index: 11;
   right: clamp(16px, 2.5vw, 44px);
-  top: 320px;
+  top: 285px;
   bottom: auto;
 }
 .overview-shell .workspace-header {
   color: #eaf3ff;
-  background: rgb(11 20 34 / 72%);
-  border-bottom-color: rgb(165 201 244 / 20%);
-  backdrop-filter: blur(12px);
+  background: transparent;
+  transition: background-color 180ms ease;
 }
-.overview-shell .header-separator { background: rgb(165 201 244 / 30%); }
+.overview-shell .workspace-header.is-scrolled { background: #0b1422; }
 .overview-shell .global-search { color: #c9d9ed; background: rgb(16 36 62 / 60%); border-color: rgb(165 201 244 / 28%); }
 .overview-shell .global-search:hover { color: #fff; border-color: rgb(165 201 244 / 60%); }
 .overview-shell .global-search kbd { color: #c9d9ed; border-color: rgb(165 201 244 / 28%); }
 .overview-shell .workspace-header [data-slot="button"] { color: #eaf3ff; }
 .overview-shell .workspace-header [data-slot="button"]:hover { background: rgb(104 156 221 / 20%); }
-.overview-shell .scope-limitation {
-  position: relative;
-  z-index: 1;
-  color: #b8c8dd;
-  background: rgb(11 20 34 / 45%);
-  border-bottom-color: rgb(165 201 244 / 20%);
-}
-.overview-shell .scope-limitation a { color: #eaf3ff; }
 .overview-shell .workspace-content { position: relative; z-index: 1; }
 .overview-shell .overview-intro { background: transparent; }
-.overview-shell:not(:has(.scope-limitation)) > .motion-control { top: 285px; }
 
 @media (max-width: 767px) {
-  .overview-shell > .motion-control { top: 150px; bottom: auto; }
-  .overview-shell:not(:has(.scope-limitation)) > .motion-control { top: 110px; }
+  .overview-shell > .motion-control { top: 110px; bottom: auto; }
 }
 
 .register-advanced { padding: 10px 16px; background: var(--card); }

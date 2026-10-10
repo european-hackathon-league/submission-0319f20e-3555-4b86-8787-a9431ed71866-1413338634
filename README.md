@@ -69,6 +69,7 @@ See [backend API and decisions](server/README.md), [MCP tools](notes/mcp-api.md)
 - [Internal research: papers, existing approaches, and evaluation metrics](research/RESEARCH.md)
 - [PM workspace and 3D Requirement Twin: enterprise UI, integration, and north star](notes/pm-workspace-and-3d-twin.md)
 - [Product Management Factory: agents do the PM work, humans oversee and decide](notes/pm-factory.md)
+- [BMW product manager role research: responsibilities, stakeholders, communications, agent and pitch implications](notes/pm-role-research/README.md)
 - [3D Requirement Twin: model, asset pipeline, stack, and milestones](notes/3d-twin-plan.md)
 
 ## Challenge and guidance

@@ -139,7 +139,7 @@ async def test_resource_discovery_and_reads_preserve_html_mime_and_sandbox_metad
         for uri, resource in resources.items():
             assert resource["mimeType"] == APP_MIME
             metadata = resource["_meta"]["ui"]
-            assert metadata["prefersBorder"] is True
+            assert metadata["prefersBorder"] is False
             assert metadata["csp"]["connectDomains"] == []
             assert metadata["csp"]["resourceDomains"] == []
             result = wire(await session.read_resource(uri))
