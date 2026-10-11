@@ -332,3 +332,41 @@ async def test_cli_provider_failure_never_falls_back_or_leaks_remote_bodies(db, 
     assert not offline_provider
     assert not reference_calls
     assert "remote-secret" not in output and "confidential" not in output and "test-only-key" not in output
+
+
+def platform_responder(request):
+    """Offline structured outputs for the platform AI calls (grounded in the supplied input)."""
+    task, data = request["text"]["format"]["name"], json.loads(request["input"])
+    if task == "aspect_sentiment":
+        return {"items": [{"item_id": item["item_id"], "relevant": True, "overall_polarity": 0.0, "aspects": []}
+                          for item in data["items"]]}
+    if task == "request_classification":
+        return {"items": [{"request_id": item["request_id"], "topic": "charging", "attribute": None, "scope_flags": [],
+                           "quote": item["title"], "rationale": "Simulated offline classification"}
+                          for item in data["requests"]]}
+    if task == "market_attribute_directions":
+        return {"mentions": []}
+    if task == "priority_explanation":
+        return {"summary": "Offline summary", "items": [
+            {"requirement_id": item["requirement_id"], "explanation": "Offline explanation", "cited_ids": [item["score_id"]]}
+            for item in data["ranking"]]}
+    raise AssertionError(f"Unexpected platform task {task}")
+
+
+async def test_platform_ai_calls_record_model_prompt_and_usage(db, monkeypatch, offline_provider, fake_llm):
+    from tests.fakes import FAKE_MODEL
+
+    fake_llm.responder = platform_responder
+    async with offline_api(monkeypatch) as verification:
+        await verification.run()
+        verification.expected_model = FAKE_MODEL   # the injected llm.py double; analyses used OPENAI_MODEL above
+        await verification.run_platform()
+        report = verification.report("passed", 1)
+    usage = report["counts"]["platform_llm_usage"]
+    assert set(usage) == {"signals.score_sentiment", "requests.classify", "markets.extract_directions",
+                          "priorities.explain"}
+    assert all(item["model"] == FAKE_MODEL and item["calls"] == 1 and item["total_tokens"] == 18
+               for item in usage.values())
+    assert report["checks_passed"] == 7 and report["stage"] == "complete" and "platform_vehicle" not in report
+    assert [payload["text"]["format"]["name"] for payload in fake_llm.calls("/responses")] == [
+        "aspect_sentiment", "request_classification", "market_attribute_directions", "priority_explanation"]

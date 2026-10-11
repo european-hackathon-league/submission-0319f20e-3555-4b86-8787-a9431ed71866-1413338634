@@ -121,6 +121,9 @@ def _present(**values) -> dict:
 async def api_request(method: str, path: str, *, params: dict | None = None, payload: dict | None = None) -> dict | list:
     """Keep transport/HTTP failures as MCP errors, preserving the API's detail."""
     timeout = httpx.Timeout(API_TIMEOUT_SECONDS, connect=min(10, API_TIMEOUT_SECONDS))
+    # httpx sends a None query value as an empty string ("topic="), which the API reads as a filter value or
+    # rejects; an omitted optional tool argument must omit the parameter.
+    params = _present(**params) if params else None
     try:
         async with httpx.AsyncClient(timeout=timeout, follow_redirects=False) as client:
             response = await client.request(method, f"{API_BASE_URL}{path}", params=params, json=payload)

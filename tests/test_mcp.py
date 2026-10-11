@@ -322,3 +322,13 @@ async def test_fetch_source_and_score_guard_reach_api(upstream):
     assert body(requests[-1])["url"] == "https://example.org/research"
     await adapter.score_requirement("r", "v", "PM", "Changed rubric", expected_score_id="s")
     assert body(requests[-1])["expected_score_id"] == "s"
+
+
+@pytest.mark.parametrize(("name", "arguments", "query"), [
+    ("get_sentiment_timeseries", {"vehicle": "G60", "market": "US"}, "vehicle=G60&market=US&limit=1000&offset=0"),
+    ("list_market_conflicts", {"vehicle": "G60", "status": "resolved"}, "vehicle=G60&status=resolved&limit=100&offset=0"),
+])
+async def test_omitted_optional_arguments_are_not_sent_as_empty_filters(upstream, name, arguments, query):
+    requests, _ = upstream
+    await adapter.mcp.call_tool(name, arguments)
+    assert requests[-1].url.query.decode() == query

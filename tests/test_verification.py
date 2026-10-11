@@ -5,6 +5,7 @@ Streamable HTTP client and makes all database mutations through the public API.
 """
 
 import json
+from contextlib import asynccontextmanager
 from copy import deepcopy
 from types import SimpleNamespace
 
@@ -222,3 +223,113 @@ async def test_trace_rejects_disconnected_scope_priority_or_decisions(invalid, m
         trace["version"]["score"]["explanation"]["evidence_count"] = 0
     with pytest.raises(verifier.VerificationFailure, match="Trace"):
         await verification.trace(requirement)
+
+
+@asynccontextmanager
+async def in_process(monkeypatch, **options):
+    real_client = httpx.AsyncClient
+    transport = httpx.ASGITransport(app=app)
+    monkeypatch.setattr(adapter, "API_BASE_URL", "http://api.test")
+    monkeypatch.setattr(adapter.httpx, "AsyncClient", lambda **kwargs: real_client(transport=transport, **kwargs))
+
+    class AdapterSession:
+        async def list_tools(self):
+            return SimpleNamespace(tools=await adapter.mcp.list_tools())
+
+        async def call_tool(self, name, arguments, read_timeout_seconds=None):
+            try:
+                return await adapter.mcp.call_tool(name, arguments)
+            except ToolError as exc:
+                return SimpleNamespace(is_error=True, structured_content=None, content=[SimpleNamespace(text=str(exc))])
+
+    async with real_client(transport=transport, base_url="http://api.test") as api:
+        yield verifier.Verification(api, AdapterSession(), **options)
+
+
+@pytest.fixture
+def no_exa(tmp_path, monkeypatch):
+    from server import exa_research
+
+    monkeypatch.delenv("EXA_API_KEY", raising=False)
+    monkeypatch.setenv("EXA_CACHE_DIR", str(tmp_path / "exa-cache"))
+    exa_research.exa_client.cache_clear()
+    yield
+    exa_research.exa_client.cache_clear()
+
+
+async def test_platform_journey_runs_every_step_in_process(db, monkeypatch, no_exa):
+    async with in_process(monkeypatch) as verification:
+        await verification.run_platform()
+        report = verification.report("passed", 1)
+    assert report["status"] == "passed" and report["provider"] == "deterministic"
+    assert [check.split(":")[0] for check in report["checks"]] == [f"Platform {step}" for step in range(1, 9)]
+    counts = report["counts"]
+    assert counts["platform_weights"] == 6 and counts["platform_requirements"] >= 7
+    assert counts["platform_conflict_markets"] == {"exhaust": ["CN", "US"], "rear": ["CN", "EU"]}
+    assert counts["platform_task_status"] == "failed" and counts["exa_configured"] is False
+    assert counts["audit_chain"]["events"] > 100 and counts["audit_chain"]["head_sequence"]
+    assert counts["platform_reviews_opened"] >= 1
+    assert report["platform_vehicle"].startswith("E2E-") and report["platform_label"] == "simulated"
+    assert "llm_usage" not in counts
+    json.dumps(report)
+
+
+async def test_platform_real_data_imports_bmw_layout_without_g60_decisions(db, monkeypatch, tmp_path):
+    from tests.test_market_data import feedback_rows, sales_sheets, workbook_bytes
+
+    folder = tmp_path / "data" / "BMW-Data"
+    folder.mkdir(parents=True)
+    (folder / "G60_feedback_simulated.xlsx").write_bytes(workbook_bytes({"Feedback_Explorer": feedback_rows()}))
+    (folder / "sales_volumes_simulated.xlsx").write_bytes(workbook_bytes(sales_sheets()))
+    monkeypatch.setenv("DATA_DIR", str(tmp_path / "data"))
+    async with in_process(monkeypatch) as verification:
+        await verification.run_platform_real_data()
+        decisions = await verification.http("GET", "/audit", params={"after": 0, "limit": 1000})
+    counts = verification.counts
+    assert counts["real_platform_import"]["files"] == 2 and counts["real_g60_simulated_requests"] == 6
+    assert counts["real_g60_weight_periods"] == ["2024", "2025", "2030"] and counts["real_g60_us_preserve"] >= 1
+    assert "single_source_dominance" in counts["real_g60_coverage_warnings"]["US"]
+    assert not {event["action"] for event in decisions["items"]} & {
+        "requirement.approve", "priorities.rubric_switched", "market_conflict.selectable_mode"}
+
+
+def test_audit_chain_check_matches_the_database_verifier(client, db):
+    import sqlite3
+
+    from database.integrity import verify_audit_chain as database_chain
+    from database.store import pre_chain_digest
+
+    assert verifier.AUDIT_HASH_FIELDS == __import__("database.store").store.AUDIT_HASH_FIELDS
+    assert verifier.pre_chain_digest([]) == pre_chain_digest([])
+    for index in range(3):
+        client.post("/imports/records", json=verifier.feedback_payload(
+            "G60", f"chain-{index}", f"Simulated: quiet cabin {index}", "quietness", "strength"))
+    events = client.get("/audit", params={"limit": 1000}).json()["items"]
+    assert len(events) >= 3
+    with sqlite3.connect(db) as connection:
+        expected = database_chain(connection)
+    assert verifier.verify_audit_chain(events) == {"events": expected["events"], "head_sequence": expected["head"]["sequence"]}
+    tampered = deepcopy(events)
+    tampered[-1]["after_state"] = {"changed": True}
+    with pytest.raises(verifier.VerificationFailure, match="content changed"):
+        verifier.verify_audit_chain(tampered)
+    with pytest.raises(verifier.VerificationFailure, match="link broken"):
+        verifier.verify_audit_chain(events[:-2] + events[-1:])
+
+
+@pytest.mark.parametrize(("change", "message"), [
+    ({"status": "failed"}, "not a succeeded OpenAI run"), ({"provider": "deterministic"}, "not a succeeded OpenAI run"),
+    ({"metrics": {}}, "no OpenAI calls"), ({"llm": {"total_tokens": 0, "cache_hits": 0}}, "no OpenAI token usage"),
+    ({"llm": {"requests": [{"model": "m", "prompt_version": "", "input_hash": "h"}]}}, "lack model, prompt version"),
+    ({"expected": "other-model"}, "model other than other-model")])
+def test_openai_runs_must_record_provider_model_prompt_and_usage(change, message):
+    llm = {"calls": 1, "cache_hits": 0, "input_tokens": 5, "output_tokens": 3, "total_tokens": 8,
+           "requests": [{"kind": "structured", "model": "m", "prompt_version": "p-v1", "input_hash": "h"}]}
+    run = {"id": "run", "status": "succeeded", "provider": "openai", "model": "m", "method_version": "openai:m:p-v1",
+           "metrics": {"llm": llm}}
+    assert verifier.llm_usage(run, "step", "m")["total_tokens"] == 8
+    expected = change.pop("expected", "m")
+    llm.update(change.pop("llm", {}))
+    run.update(change)
+    with pytest.raises(verifier.VerificationFailure, match=message):
+        verifier.llm_usage(run, "step", expected)

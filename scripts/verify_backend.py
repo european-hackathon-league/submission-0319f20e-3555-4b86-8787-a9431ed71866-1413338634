@@ -7,6 +7,16 @@ Every run uses a fresh E2E vehicle. It leaves that auditable fixture in place;
 there is no database access, cleanup, server lifecycle management, or approval of
 real G60 requirements. --real-data additionally imports the mounted BMW files
 and checks G60/US analysis and trace coverage, preserving prior approvals.
+
+--platform additionally runs the platform journey (PLATFORM_BUILD_PLAN.md §11 step 3) on a second
+fresh, explicitly simulated E2E vehicle in US, CN and EU: market data, pipeline, request triage,
+sentiment, market conflicts and their human gate, rubric v2, and a recurring signals task with
+runs, board, audit and hash-chain checks. --provider openai runs its AI steps on the server's
+configured OpenAI model and requires recorded model, prompt version and token usage per run; a
+missing key fails, it never falls back. The signals watchlist and task use the public G60/US
+template (the only scopes Exa monitoring accepts); the verifier pauses and cancels them at the end.
+With --real-data the platform journey also imports every BMW file through /market-data/import-bmw and
+derives G60 weights, preserve list and coverage; human decisions still happen only on the simulated vehicle.
 """
 
 from __future__ import annotations
@@ -21,9 +31,11 @@ import math
 import sys
 import time
 import uuid
-from collections import Counter
+from collections import Counter, defaultdict
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+from datetime import date, timedelta
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -39,6 +51,49 @@ REAL_FILES = (
     ("BMW-Data/G60_OptionList.PDF", "document"),
 )
 FACTOR_NAMES = {"customer_impact", "market_relevance", "strategic_fit", "differentiation", "feasibility"}
+
+# Platform journey ---------------------------------------------------------------------------------
+PLATFORM_MARKETS = ("US", "CN", "EU")
+PUBLIC_SCOPE = {"vehicle": "G60", "market": "US"}   # Exa monitoring accepts only public model/market templates
+AI_ACTOR = "ai:agent:e2e-verifier"
+REQUEST_FIXTURE = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "simulated_requests.json"
+DERIVED_FACTORS = ("market_demand", "sentiment_momentum", "request_pressure")
+TRIAGE_FACTORS = {"market_weight", "evidence_support", "evidence_conflict", "recurrence", "alignment", "effort"}
+PLATFORM_CAPABILITIES = {"market_data.derive_weights", "market_data.derive_preserve", "market_data.coverage",
+                         "requests.intake", "requests.classify", "requests.cluster", "requests.link_evidence",
+                         "requests.triage", "signals.score_sentiment", "markets.extract_directions",
+                         "markets.detect_conflicts", "priorities.derive_inputs", "priorities.sensitivity",
+                         "priorities.explain"}
+PLATFORM_TOOLS = {"list_sales_weights", "list_coverage_reports", "list_preserve_attributes", "get_request_aggregates",
+                  "list_request_clusters", "get_sentiment_timeseries", "list_market_conflicts", "get_market_conflict",
+                  "run_priority_sensitivity", "get_priority_ranking", "get_task_board", "get_task", "get_run"}
+# Human gates are API-only; MCP may prepare proposals but never decide them.
+GATE_TOOLS = {"resolve_market_conflict", "decide_request", "switch_priority_rubric", "create_signal_watchlist",
+              "update_signal_watchlist", "pause_agent", "resume_agent"}
+EXHAUST_TENSION, REAR_TENSION = {"driving-experience", "quietness"}, {"comfort", "access-storage"}
+# Explicitly simulated customer feedback, never BMW data: (text, topic, sentiment, weeks before today).
+PLATFORM_FEEDBACK = {
+    "US": (("Simulated: customers want a louder exhaust; the engine sound is too subdued for a sporty sedan.",
+            "driving-experience", "problem", 6),
+           ("Simulated: dealers hear that buyers ask for a sportier exhaust note.", "driving-experience", "problem", 2),
+           ("Simulated: I love the comfortable seats on long journeys.", "comfort", "strength", 5),
+           ("Simulated: the comfortable seats are my favourite part of the car.", "comfort", "strength", 4),
+           ("Simulated: I love how comfortable the seats feel after hours of driving.", "comfort", "strength", 3),
+           ("Simulated: excellent seat comfort for the whole family.", "comfort", "strength", 2),
+           ("Simulated: the comfortable seats make every commute relaxing.", "comfort", "strength", 1),
+           ("Simulated: public charging is confusing and unreliable.", "charging", "problem", 1)),
+    "CN": (("Simulated: customers want more rear legroom; the rear seat space is too tight for chauffeur-driven "
+            "passengers.", "comfort", "problem", 5),
+           ("Simulated: families compare rear knee room with long-wheelbase competitors.", "comfort", "problem", 3),
+           ("Simulated: customers want a quieter cabin at highway speeds.", "quietness", "problem", 4),
+           ("Simulated: road noise is too high on rough surfaces.", "quietness", "problem", 2)),
+    "EU": (("Simulated: customers want a smaller car that fits city parking garages.", "access-storage", "problem", 5),
+           ("Simulated: the car is too long to park in older city garages.", "access-storage", "problem", 3),
+           ("Simulated: noise insulation needs improvement.", "quietness", "problem", 4)),
+}
+SALES_ROWS = (("Europe", "EU", 380, 390), ("China", "CN", 250, 255), ("USA", "US", 260, 265))
+AUDIT_HASH_FIELDS = ("id", "entity_type", "entity_id", "action", "actor", "rationale", "before_state",
+                     "after_state", "metadata", "created_at", "prev_hash")   # database.store.AUDIT_HASH_FIELDS
 
 
 class VerificationFailure(RuntimeError):
@@ -126,6 +181,100 @@ def verify_priority(requirement: dict) -> None:
                 for criterion in version["acceptance_criteria"]), "Requirement targets lack a metric, target or stated basis")
 
 
+def make_sales_workbook() -> bytes:
+    """One simulated sales file; uploaded unchanged per market so every scope shares its content hash."""
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Simulated sales"
+    sheet.append(["market", "market_code", "volume_2024", "volume_2025"])
+    for row in SALES_ROWS:
+        sheet.append(list(row))
+    output = io.BytesIO()
+    workbook.save(output)
+    workbook.close()
+    return output.getvalue()
+
+
+def platform_feedback_payload(vehicle: str, market: str, today: date) -> dict:
+    records = [{"content": text, "location": {"sheet": "Simulated feedback", "row": row},
+                "observed_at": (today - timedelta(weeks=weeks)).isoformat(),
+                "metadata": {"record_type": "customer_feedback", "feedback_id": f"{vehicle}-{market}-{row}",
+                             "topic": topic, "sentiment": sentiment, "provenance": f"simulated-{market.lower()}-panel",
+                             "simulated": True}}
+               for row, (text, topic, sentiment, weeks) in enumerate(PLATFORM_FEEDBACK[market], 2)]
+    return {"title": f"Simulated {market} customer feedback", "reference": f"{vehicle}:{market}:simulated-feedback",
+            "vehicle": vehicle, "market": market, "kind": "feedback", "actor": ACTOR, "metadata": {"simulated": True},
+            "records": records}
+
+
+def simulated_requests(vehicle: str) -> list[dict]:
+    """The labelled G60 request fixture, re-scoped to the simulated vehicle (the fixture endpoint loads G60 only)."""
+    fixture = json.loads(REQUEST_FIXTURE.read_text(encoding="utf-8"))
+    require(fixture["label"] == "simulated", "Request fixture is not labelled simulated")
+    return [{**item, "vehicle": vehicle, "simulated": True, "external_ref": f"{vehicle}:{item['external_ref']}"}
+            for item in fixture["requests"]]
+
+
+def canonical(value) -> str:
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+
+
+def audit_event_hash(row: dict) -> str:
+    """database.store.audit_event_hash over the stored row (JSON columns as their canonical text)."""
+    return hashlib.sha256(canonical({key: row[key] for key in AUDIT_HASH_FIELDS}).encode()).hexdigest()
+
+
+def pre_chain_digest(rows: list[dict]) -> str:
+    digest = hashlib.sha256(b"audit.pre-chain").hexdigest()
+    for row in rows:
+        fields = {key: row[key] for key in AUDIT_HASH_FIELDS if key != "prev_hash"}
+        digest = hashlib.sha256((digest + canonical({**fields, "sequence": row["sequence"]})).encode()).hexdigest()
+    return digest
+
+
+def verify_audit_chain(events: list[dict]) -> dict:
+    """database.integrity.verify_audit_chain over GET /audit items, so the check needs no database access."""
+    previous, pre_chain = None, []
+    for item in events:
+        event = {**item, **{key: None if item[key] is None else canonical(item[key])
+                            for key in ("before_state", "after_state", "metadata")}}
+        if previous is None and event["event_hash"] is None:
+            pre_chain.append(event)
+            continue
+        require(event["event_hash"], f"Audit event {event['sequence']} is not hashed")
+        if previous is None:
+            require(not pre_chain or event["action"] == "audit.chain.started",
+                    "Pre-chain audit events are not sealed by a genesis event")
+            expected = pre_chain_digest(pre_chain)
+        else:
+            expected = previous["event_hash"]
+        require(event["prev_hash"] == expected, f"Audit hash chain link broken at sequence {event['sequence']}")
+        require(audit_event_hash(event) == event["event_hash"], f"Audit event content changed at sequence {event['sequence']}")
+        previous = event
+    require(previous is not None or not pre_chain, "Pre-chain audit events are not sealed by a genesis event")
+    return {"events": len(events), "head_sequence": previous["sequence"] if previous else None}
+
+
+def llm_usage(run: dict, label: str, expected_model: str | None = None) -> dict:
+    """Require a stored OpenAI run with provider, model, prompt versions and token usage in metrics.llm."""
+    llm = (run.get("metrics") or {}).get("llm") or {}
+    calls = llm.get("requests") or []
+    require(run["status"] == "succeeded" and run["provider"] == "openai" and run["model"],
+            f"{label} is not a succeeded OpenAI run")
+    require(llm.get("calls", 0) >= 1 and calls, f"{label} recorded no OpenAI calls in metrics.llm")
+    require(all(call.get("model") and call.get("prompt_version") and call.get("input_hash") for call in calls),
+            f"{label} OpenAI calls lack model, prompt version or input hash")
+    require(llm.get("total_tokens", 0) > 0 or llm.get("cache_hits") == llm["calls"],
+            f"{label} recorded no OpenAI token usage")
+    if expected_model:
+        require(all(call["model"] == expected_model for call in calls if call.get("kind") != "embedding"),
+                f"{label} used a model other than {expected_model}")
+    return {"run_id": run["id"], "model": run["model"], "method_version": run["method_version"],
+            "prompt_versions": sorted({call["prompt_version"] for call in calls}), "calls": llm["calls"],
+            "cache_hits": llm.get("cache_hits", 0), **{key: llm.get(key, 0) for key in
+                                                       ("input_tokens", "output_tokens", "total_tokens")}}
+
+
 @dataclass
 class Verification:
     api: httpx.AsyncClient
@@ -134,6 +283,10 @@ class Verification:
     checks: list[str] = field(default_factory=list)
     timings: list[dict] = field(default_factory=list)
     counts: dict = field(default_factory=dict)
+    provider: str = "deterministic"
+    llm_model: str | None = None
+    platform_vehicle: str = field(default_factory=lambda: "E2E-" + uuid.uuid4().hex[:16].upper())
+    llm_runs: dict = field(default_factory=dict)
 
     @property
     def scope(self) -> dict:
@@ -496,16 +649,369 @@ class Verification:
                            real_preserved_approvals=len(approvals))
         self.passed("Mounted G60/US BMW imports, complete finding/customer trace coverage, and preservation of real approvals")
 
+    # Platform journey (PLATFORM_BUILD_PLAN.md §11 step 3) -------------------------------------------------
+
+    async def ai(self, method: str, path: str, **kwargs):
+        """An AI-interpretation call: an unconfigured OpenAI provider is a clear failure, never a fallback."""
+        try:
+            return await self.http(method, path, **kwargs)
+        except VerificationFailure as exc:
+            if self.provider == "openai" and " returned 503:" in str(exc):
+                raise VerificationFailure(
+                    f"OpenAI provider unavailable for {method} {path}: the API service needs OPENAI_API_KEY and "
+                    f"OPENAI_MODEL; the journey never falls back to the deterministic provider ({exc})") from None
+            raise
+
+    async def ai_run(self, label: str, run_id: str | None) -> None:
+        if self.provider == "openai":
+            require(run_id, f"{label} returned no run id")
+            self.llm_runs[label] = llm_usage(await self.http("GET", f"/runs/{run_id}"), label, self.llm_model)
+
+    async def all_audit(self) -> list[dict]:
+        events, cursor = [], 0
+        while page := (await self.http("GET", "/audit", params={"after": cursor, "limit": 1000}))["items"]:
+            events.extend(page)
+            cursor = page[-1]["sequence"]
+        sequences = [event["sequence"] for event in events]
+        require(sequences == sorted(set(sequences)), "Audit pagination lost order or repeated events")
+        return events
+
+    async def run_platform_real_data(self) -> None:
+        """Every BMW file through Pod E, then G60 context layers. Derivations only: no G60 decisions."""
+        scope = {"vehicle": "G60"}
+        imported = await self.http("POST", "/market-data/import-bmw", expected_status=201, json={"actor": ACTOR})
+        require(imported["totals"]["files"] > 0 and imported["totals"]["sources"] > 0, "BMW import found no files")
+        weights = await self.http("POST", "/market-data/weights/derive", expected_status=201, json={**scope, "actor": ACTOR})
+        totals = defaultdict(float)
+        for item in weights["items"]:
+            totals[item["period"]] += item["share"]
+        require(totals and all(math.isclose(total, 1, abs_tol=1e-9) for total in totals.values()),
+                "BMW G60 sales shares do not sum to 1 per period")
+        preserve = await self.http("POST", "/market-data/preserve/derive", expected_status=201,
+                                   json={**scope, "market": "US", "provider": "deterministic", "actor": ACTOR})
+        coverage = await self.http("POST", "/market-data/coverage", expected_status=201, json={**scope, "actor": ACTOR})
+        require(any(report["warnings"] for report in coverage["items"]), "BMW G60 coverage reports carry no warnings")
+        fixture = await self.http("POST", "/requests/fixtures/simulated", expected_status=201, json={"actor": ACTOR})
+        require(fixture["label"] == "simulated" and fixture["items"] and all(item["simulated"] for item in fixture["items"]),
+                "G60 request fixture is not entirely labelled simulated")
+        self.counts.update(real_platform_import=imported["totals"], real_g60_weight_periods=sorted(totals),
+                           real_g60_us_preserve=len(preserve["items"]),
+                           real_g60_coverage_warnings={item["market"]: [w["code"] for w in item["warnings"]]
+                                                       for item in coverage["items"]},
+                           real_g60_simulated_requests=fixture["total"])
+        self.passed("Platform real data: every BMW file imported, G60 weights sum to 1, preserve list, coverage warnings, "
+                    "simulated G60 request fixture")
+
+    async def run_platform(self) -> None:
+        vehicle, today = self.platform_vehicle, date.today()
+        scope = {"vehicle": vehicle, "market": "US"}
+        tools = {tool.name for tool in (await self.session.list_tools()).tools}
+        require(PLATFORM_TOOLS <= tools, f"Platform MCP tools missing: {sorted(PLATFORM_TOOLS - tools)}")
+        require(not tools & GATE_TOOLS, f"Human-gate operations exposed over MCP: {sorted(tools & GATE_TOOLS)}")
+        audit_start = (await self.http("GET", "/audit", params={"after": 0, "limit": 1}))["items"]
+        require((await self.http("GET", "/workspace", params=scope))["evidence_count"] == 0,
+                "Fresh platform scope already has evidence")
+
+        # 1. Market data: simulated feedback and one sales file per market, weights, preserve list, coverage.
+        sales = make_sales_workbook()
+        for market in PLATFORM_MARKETS:
+            feedback = await self.http("POST", "/imports/records", expected_status=201,
+                                       json=platform_feedback_payload(vehicle, market, today))
+            require(feedback["record_count"] == len(PLATFORM_FEEDBACK[market]), f"{market} feedback import lost records")
+            upload = await self.http("POST", "/imports/files", expected_status=201, files={"file": (
+                "simulated_sales.xlsx", sales, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+                data={"vehicle": vehicle, "market": market, "kind": "sales", "actor": ACTOR,
+                      "title": "Simulated sales volumes"})
+            require(upload["record_count"] == 1 and upload["sha256"] == hashlib.sha256(sales).hexdigest(),
+                    f"{market} sales import did not keep exactly its own row of the shared file")
+        weights = await self.http("POST", "/market-data/weights/derive", expected_status=201,
+                                  json={"vehicle": vehicle, "actor": ACTOR})
+        listed = await self.mcp("list_sales_weights", vehicle=vehicle)
+        require({item["id"] for item in listed["items"]} == {item["id"] for item in weights["items"]},
+                "MCP weight list differs from the derivation")
+        totals = defaultdict(float)
+        for item in weights["items"]:
+            totals[item["period"]] += item["share"]
+            require(item["evidence_ids"] and item["run_id"] == weights["run_id"], "Weight lacks evidence or run provenance")
+        require(sorted(totals) == ["2024", "2025"] and all(math.isclose(t, 1, abs_tol=1e-9) for t in totals.values()),
+                f"Market weights do not sum to 1 per period: {dict(totals)}")
+        require({item["market"] for item in weights["items"]} == set(PLATFORM_MARKETS), "Weights do not cover US, CN and EU")
+        share_2025 = {item["market"]: item["share"] for item in weights["items"] if item["period"] == "2025"}
+        require(math.isclose(share_2025["US"], 265 / 910), "US 2025 sales share differs from the simulated file")
+        preserve = await self.ai("POST", "/market-data/preserve/derive", expected_status=201,
+                                 json={"vehicle": vehicle, "provider": self.provider, "actor": ACTOR})
+        await self.ai_run("market_data.derive_preserve (naming)", preserve.get("naming_run_id"))
+        preserved = await self.mcp("list_preserve_attributes", vehicle=vehicle, market="US")
+        require(any(item["topic"] == "comfort" and len(item["evidence_ids"]) >= 5 for item in preserved["items"]),
+                "Five explicit comfort likes did not become a preserve attribute")
+        coverage = await self.http("POST", "/market-data/coverage", expected_status=201,
+                                   json={"vehicle": vehicle, "actor": ACTOR})
+        reports = {item["market"]: item for item in (await self.mcp("list_coverage_reports", vehicle=vehicle))["items"]}
+        require({item["id"] for item in coverage["items"]} >= {reports[m]["id"] for m in PLATFORM_MARKETS},
+                "Coverage reports for US, CN and EU are not current")
+        require(all("small_sample" in {w["code"] for w in reports[m]["warnings"]} for m in PLATFORM_MARKETS),
+                "Coverage reports omit the small-sample warning for simulated markets")
+        self.counts.update(platform_weights=len(weights["items"]), platform_preserve=len(preserved["items"]),
+                           platform_coverage_warnings={m: sorted({w["code"] for w in reports[m]["warnings"]})
+                                                       for m in PLATFORM_MARKETS})
+        self.passed("Platform 1: simulated market data, sales weights sum to 1 per period, preserve list and coverage warnings")
+
+        # 2. The existing pipeline per market.
+        requirements = {}
+        for market in PLATFORM_MARKETS:
+            result = await self.http("POST", "/pipeline/run", expected_status=201,
+                                     json={"vehicle": vehicle, "market": market, "provider": "deterministic", "actor": ACTOR})
+            for requirement in result["generation"]["requirements"]:
+                verify_priority(requirement)
+                requirements[market, requirement["topic"]] = requirement
+        expected_topics = {("US", "driving-experience"), ("US", "comfort"), ("US", "charging"), ("CN", "comfort"),
+                           ("CN", "quietness"), ("EU", "access-storage"), ("EU", "quietness")}
+        require(expected_topics <= set(requirements), f"Pipeline omitted requirements: {sorted(expected_topics - set(requirements))}")
+        self.counts["platform_requirements"] = len(requirements)
+        self.passed("Platform 2: pipeline in US, CN and EU with measurable, scored requirements")
+
+        # 3. Simulated requests: intake, classification, clustering and triage with linked evidence.
+        created = await self.http("POST", "/requests", expected_status=201,
+                                  json={"requests": simulated_requests(vehicle), "actor": ACTOR})
+        require(created["created"] == created["total"] == 6 and all(item["simulated"] for item in created["items"]),
+                "Simulated requests were not all created and labelled simulated")
+        by_ref = {item["external_ref"].split(":", 1)[1]: item for item in created["items"]}
+        rear, exhaust = by_ref["sim-cn-rear-legroom"], by_ref["sim-us-exhaust-note"]
+        classified = await self.ai("POST", "/requests/classify", expected_status=201,
+                                   json={"vehicle": vehicle, "provider": self.provider, "actor": ACTOR})
+        await self.ai_run("requests.classify", classified["run_id"])
+        topics = {item["id"]: item for item in classified["items"]}
+        require(topics[rear["id"]]["topic"] == "comfort" and topics[exhaust["id"]]["topic"] == "driving-experience",
+                "Rear-space or exhaust request was classified into the wrong topic")
+        clustered = await self.ai("POST", "/requests/cluster", expected_status=201,
+                                  json={"vehicle": vehicle, "provider": self.provider, "actor": ACTOR})
+        await self.ai_run("requests.cluster", clustered["run_id"])
+        clusters = await self.mcp("list_request_clusters", vehicle=vehicle)
+        triage = await self.ai("POST", "/requests/triage", expected_status=201,
+                               json={"vehicle": vehicle, "link_provider": self.provider, "actor": ACTOR})
+        require(triage["link_run_id"], "Triage did not link evidence for never-linked requests")
+        await self.ai_run("requests.link_evidence", triage["link_run_id"])
+        ranked = {item["id"]: item for item in triage["items"]}
+        flagged = [item for item in triage["items"] if item["scope_flags"]]
+        for request in (rear, exhaust):
+            item = ranked[request["id"]]
+            detail = await self.http("GET", f"/requests/{request['id']}", params={"actor": ACTOR})
+            explanation = detail["triage_history"][0]["explanation"]
+            require(item["rank"] and item["triage"]["total"] == explanation["total"]
+                    and set(explanation["factors"]) == TRIAGE_FACTORS
+                    and all(factor["formula"] and "contribution" in factor for factor in explanation["factors"].values())
+                    and explanation["suggested_action"]["reason"], f"{request['key']} triage lacks an explained rank")
+            supports = [link for link in detail["links"] if link["status"] == "active" and link["entity_type"] == "evidence"
+                        and link["relation"] == "supports"]
+            require(supports and explanation["factors"]["evidence_support"]["measured"],
+                    f"{request['key']} has no linked supporting evidence")
+            require(all(link["entity"]["vehicle"] == vehicle and link["basis"]["quote"]
+                        and link["entity"]["content"][slice(*link["basis"]["span"])] == link["basis"]["quote"]
+                        for link in supports), f"{request['key']} evidence links are ungrounded or cross vehicle scope")
+            require(all(item["rank"] < other["rank"] for other in flagged), f"{request['key']} ranks below an out-of-scope ask")
+        if self.provider == "deterministic":
+            require(by_ref["sim-eu-package-pricing"]["id"] in {item["id"] for item in flagged}
+                    and all(item["triage"]["total"] <= 20 for item in flagged), "Pricing request was not flagged and capped")
+            require(any(link["relation"] == "conflicts" and link["status"] == "active" for link in (
+                await self.http("GET", f"/requests/{exhaust['id']}", params={"actor": ACTOR}))["links"]),
+                "Exhaust request lacks the conflicting quietness evidence")
+        aggregates = await self.mcp("get_request_aggregates", vehicle=vehicle)
+        self.counts.update(platform_requests=len(ranked), platform_flagged_requests=len(flagged),
+                           platform_request_clusters=clusters["total"],
+                           platform_request_ranks={"CN rear space": ranked[rear["id"]]["rank"],
+                                                   "US exhaust": ranked[exhaust["id"]]["rank"]},
+                           platform_request_aggregate_keys=sorted(aggregates))
+        self.passed("Platform 3: simulated requests classified, clustered and triaged; CN rear-space and US exhaust rank "
+                    "with factor explanations and grounded evidence links")
+
+        # 4. Sentiment for imported evidence and weekly series.
+        sentiment_method = None
+        for market in PLATFORM_MARKETS:
+            remaining = True
+            while remaining:
+                scored = await self.ai("POST", "/signals/sentiment/score", json={
+                    "vehicle": vehicle, "market": market, "provider": self.provider, "subject_type": "evidence",
+                    "actor": ACTOR})
+                if scored["created"]:
+                    await self.ai_run(f"signals.score_sentiment {market}", scored["run_id"])
+                sentiment_method, remaining = scored["method_version"], scored["remaining"]
+        require(self.provider != "deterministic" or sentiment_method == "lexicon-v1", "Deterministic sentiment method changed")
+        series = await self.mcp("get_sentiment_timeseries", vehicle=vehicle, market="US", source_class="bmw_evidence",
+                                method_version=sentiment_method)
+        weeks = {point["week_start"] for point in series["items"] if point["n"] > 0}
+        require(len(weeks) >= 3 and all(point["subject_ids"] for point in series["items"]),
+                "Weekly sentiment series for the simulated US evidence is missing")
+        summary = await self.http("GET", "/signals/summary", params={**scope, "source_class": "bmw_evidence"})
+        require(any(row["momentum"] is not None for row in summary["items"]), "No topic has a weekly sentiment momentum")
+        self.counts.update(platform_sentiment_method=sentiment_method, platform_sentiment_weeks_us=len(weeks))
+        self.passed("Platform 4: sentiment scored for imported evidence; weekly series and momentum exist")
+
+        # 5. Market conflicts with recommendations and per-market evidence.
+        detection = await self.ai("POST", "/markets/conflicts/detect", expected_status=201, json={
+            "vehicle": vehicle, "markets": list(PLATFORM_MARKETS), "provider": self.provider, "actor": ACTOR})
+        await self.ai_run("markets.extract_directions", detection["direction_run_id"])
+        conflicts = {}
+        for name, tension, recommendation in (("exhaust", EXHAUST_TENSION, "selectable_mode"),
+                                              ("rear", REAR_TENSION, "market_variant")):
+            matches = [item for item in detection["items"] if item["conflict_type"] == "direction_conflict"
+                       and {item["topic"], item["related_topic"]} == tension]
+            require(len(matches) == 1 and matches[0]["recommendation"] == recommendation and matches[0]["rationale"],
+                    f"The {name} tension did not appear once with recommendation {recommendation}")
+            detail = await self.mcp("get_market_conflict", conflict_id=matches[0]["id"])
+            require(len(detail["markets"]) >= 2 and all(detail["evidence"].get(m) for m in detail["markets"]),
+                    f"The {name} conflict lacks evidence in each market")
+            require(all(row["source_id"] and row["location"] and row["content"][slice(*mention["span"])] == mention["quote"]
+                        for rows in detail["evidence"].values() for row in rows for mention in row["mentions"]),
+                    f"The {name} conflict evidence lacks provenance or exact quotes")
+            conflicts[name] = detail
+        if self.provider == "openai":
+            brief = await self.ai("POST", f"/markets/conflicts/{conflicts['exhaust']['id']}/brief",
+                                  json={"provider": "openai", "actor": ACTOR})
+            require(brief["metrics"]["ai_brief"]["citations"] and brief["recommendation"] == "selectable_mode",
+                    "AI conflict brief lacks citations or changed the recommendation")
+            await self.ai_run("markets.draft_conflict_brief", brief["run_id"])
+        self.counts.update(platform_conflicts=detection["total"],
+                           platform_conflict_markets={name: c["markets"] for name, c in conflicts.items()})
+        self.passed("Platform 5: rear-space and exhaust/quietness tensions with recommendations and per-market evidence")
+
+        # 6. Human gate: an AI actor is refused, the PM resolves, re-detection keeps the decision.
+        exhaust_conflict = conflicts["exhaust"]
+        resolution = {"decision": "selectable_mode", "requirement_ids": exhaust_conflict["requirement_ids"],
+                      "rationale": "Simulated PM review: offer a selectable sound mode per market"}
+        await self.http("POST", f"/markets/conflicts/{exhaust_conflict['id']}/resolve", expected_status=403,
+                        json={**resolution, "actor": AI_ACTOR})
+        require((await self.http("GET", f"/markets/conflicts/{exhaust_conflict['id']}"))["status"] == "open",
+                "Refused AI resolution changed the conflict")
+        resolved = await self.http("POST", f"/markets/conflicts/{exhaust_conflict['id']}/resolve", expected_status=201,
+                                   json={**resolution, "actor": ACTOR})
+        require(resolved["conflict"]["status"] == "resolved" and resolved["actor"] == ACTOR and resolved["audit_event_id"],
+                "PM resolution was not recorded")
+        again = await self.ai("POST", "/markets/conflicts/detect", expected_status=201, json={
+            "vehicle": vehicle, "markets": list(PLATFORM_MARKETS), "provider": self.provider, "actor": ACTOR})
+        require({exhaust_conflict["id"], conflicts["rear"]["id"]} <= set(again["unchanged"]) and not again["created"],
+                "Re-detection on unchanged inputs reopened or duplicated conflicts")
+        listed = await self.mcp("list_market_conflicts", vehicle=vehicle, status="resolved")
+        require([item["id"] for item in listed["items"]] == [exhaust_conflict["id"]], "Resolved conflict list is wrong")
+        self.passed("Platform 6: AI resolution refused (403); PM resolution recorded and kept by re-detection")
+
+        # 7. Rubric v2: approved requirement, human switch, derived factors, sensitivity, reviews, explanation.
+        approved = await self.approve(requirements["US", "driving-experience"])
+        switch = {"vehicle": vehicle, "market": "US", "rubric_version": "customer-priority-v2",
+                  "rationale": "Simulated PM review: rank with recorded market demand, sentiment and requests"}
+        await self.http("POST", "/priorities/rubric", expected_status=403, json={**switch, "actor": AI_ACTOR})
+        switched = await self.http("POST", "/priorities/rubric", expected_status=201, json={**switch, "actor": ACTOR})
+        require(switched["changed"] and switched["run_id"] and switched["rescored"], "Rubric switch did not rescore")
+        reviewed = {entry["requirement_id"]: entry for entry in switched["rescored"] if entry["review_id"]}
+        require(approved["id"] in reviewed and set(switched["reviews_opened"]) == {e["review_id"] for e in reviewed.values()},
+                "Approved requirement whose score changed got no review item")
+        reviews = await self.http("GET", "/reviews", params=scope)
+        require(approved["id"] in {review["requirement_id"] for review in reviews}, "Rubric review is not open")
+        sensitivity = await self.mcp("run_priority_sensitivity", **scope, actor=ACTOR)
+        ranking = await self.mcp("get_priority_ranking", **scope)
+        require(ranking["rubric"]["rubric_version"] == "customer-priority-v2" and ranking["items"]
+                and all(item["rubric_version"] == "customer-priority-v2" for item in ranking["items"]),
+                "Ranking does not use rubric v2")
+        for item in ranking["items"]:
+            derived = {factor["factor"]: factor for factor in item["factors"] if factor["source"] == "derived"}
+            require(set(derived) == set(DERIVED_FACTORS)
+                    and all(factor["priority_input_id"] and isinstance(factor["derivation"], dict) for factor in derived.values()),
+                    f"{item['key']} lacks derived factors with derivations")
+            require(derived["market_demand"]["measured"] and derived["request_pressure"]["measured"],
+                    f"{item['key']} did not measure market demand or request pressure")
+            require(item["stability"]["current"] and item["stability"]["sensitivity_id"] == sensitivity["id"],
+                    f"{item['key']} stability is not from the current sensitivity run")
+        require(any(item["stability"]["stable"] for item in ranking["items"]), "Sensitivity marked no item stable")
+        require(any(item["preserve_warnings"] for item in ranking["items"]), "Preserve guard warned on no requirement")
+        explained = await self.ai("POST", "/priorities/explain", expected_status=201,
+                                  json={**scope, "provider": self.provider, "actor": ACTOR})
+        require(explained["ai_generated"] is (self.provider == "openai")
+                and {item["requirement_id"] for item in explained["items"]} == {i["requirement_id"] for i in ranking["items"]}
+                and all(item["explanation"] and item["score_id"] in item["cited_ids"] for item in explained["items"]),
+                "Ranking explanation is incomplete or does not cite the recorded scores")
+        await self.ai_run("priorities.explain", explained["run_id"])
+        self.counts.update(platform_v2_ranking=[{key: item[key] for key in ("key", "topic", "rank", "total")}
+                                                | {"stable": item["stability"]["stable"],
+                                                   "sentiment_measured": next(f["measured"] for f in item["factors"]
+                                                                              if f["factor"] == "sentiment_momentum")}
+                                                for item in ranking["items"]],
+                           platform_reviews_opened=len(switched["reviews_opened"]))
+        self.passed("Platform 7: AI rubric switch refused; PM switch to v2 shows derived factors with derivations, "
+                    "stable items, preserve warnings, explanations and review items for changed approvals")
+
+        # 8. Recurring signals task through run-due, runs, board, audit and the hash chain.
+        exa = await self.http("GET", "/research/exa/status")
+        watch = {**PUBLIC_SCOPE, "topic": "driving-experience", "label": f"Simulated E2E journey {vehicle}",
+                 "rationale": "Simulated verification: weekly public-signal refresh"}
+        await self.http("POST", "/signals/watchlists", expected_status=403, json={**watch, "actor": AI_ACTOR})
+        watchlist = await self.http("POST", "/signals/watchlists", expected_status=201, json={**watch, "actor": ACTOR})
+        task = await self.http("POST", "/tasks", expected_status=201, json={
+            **PUBLIC_SCOPE, "topic": "driving-experience", "capability": "signals.refresh_watchlist",
+            "title": f"Simulated E2E weekly refresh {vehicle}", "input": {"watchlist_id": watchlist["id"]},
+            "requested_by": ACTOR, "recurrence_days": 7})
+        require(task["recurring"] and task["status"] == "queued" and task["due_at"], "Recurring task is not due")
+        due = await self.http("POST", "/tasks/run-due", json={})
+        runs = [item for item in due["executed"] if item["occurrence_of"] == task["id"]]
+        require(len(runs) == 1, f"run-due did not execute the recurring task once: {due['skipped']}")
+        occurrence = await self.mcp("get_task", task_id=runs[0]["task_id"])
+        template = await self.http("GET", f"/tasks/{task['id']}")
+        require(occurrence["parent_task_id"] == task["id"] and occurrence["status"] in ("succeeded", "failed")
+                and template["status"] == "queued" and template["due_at"] > task["due_at"]
+                and occurrence["id"] in {child["id"] for child in template["children"]},
+                "Recurring task did not spawn one occurrence and advance its schedule")
+        run = await self.mcp("get_run", run_id=occurrence["last_run_id"])
+        require(run["capability"] == "signals.refresh_watchlist" and run["task_id"] == occurrence["id"]
+                and run["status"] == occurrence["status"] and run["audit_events"], "Task run is not recorded")
+        if not exa["configured"] and occurrence["status"] == "failed":
+            require("exa" in (occurrence["error"] or "").lower() and "exa" in (run["error"] or "").lower(),
+                    "Unconfigured Exa did not fail visibly with a clear error")
+        board = await self.mcp("get_task_board", **PUBLIC_SCOPE, limit=500)
+        columns = {column["key"]: {card["id"] for card in column["items"]} for column in board["columns"]}
+        require(task["id"] in columns["queued"] and occurrence["id"] in columns[occurrence["status"]],
+                "Task board does not show the schedule and its occurrence")
+        cancelled = await self.http("PATCH", f"/tasks/{task['id']}", json={
+            "actor": ACTOR, "expected_revision": template["revision"], "status": "cancelled",
+            "rationale": "Simulated verification complete; stop the schedule"})
+        paused = await self.http("PATCH", f"/signals/watchlists/{watchlist['id']}", json={
+            "actor": ACTOR, "status": "paused", "rationale": "Simulated verification complete"})
+        require(cancelled["status"] == "cancelled" and paused["status"] == "paused", "Verification schedule was not stopped")
+        platform_runs = await self.all_http_items("/runs", page_size=500, vehicle=vehicle)
+        capabilities = {item["capability"] for item in platform_runs}
+        require(PLATFORM_CAPABILITIES <= capabilities, f"Runs missing for {sorted(PLATFORM_CAPABILITIES - capabilities)}")
+        require(all(item["status"] == "succeeded" for item in platform_runs), "A platform journey run did not succeed")
+        expected_audit = {
+            exhaust_conflict["id"]: {"market_conflict.detected", "market_conflict.selectable_mode"},
+            switched["id"]: {"priorities.rubric_switched"}, rear["id"]: {"request.created", "request.triaged"},
+            task["id"]: {"task.created", "task.rescheduled", "task.cancelled"},
+            occurrence["id"]: {"task.created", "task.started", f"task.{occurrence['status']}"},
+            watchlist["id"]: {"watchlist.created", "watchlist.updated"}}
+        for entity_id, actions in expected_audit.items():
+            found = {event["action"] for event in await self.audit_events(entity_id, page_size=100)}
+            require(actions <= found, f"Audit for {entity_id} lacks {sorted(actions - found)}")
+        events = await self.all_audit()
+        chain = verify_audit_chain(events)
+        require(not audit_start or events[0]["sequence"] == audit_start[0]["sequence"], "Audit history start changed")
+        self.counts.update(platform_runs=len(platform_runs), platform_run_capabilities=sorted(capabilities),
+                           platform_task_status=occurrence["status"], exa_configured=exa["configured"],
+                           audit_chain=chain)
+        self.passed("Platform 8: recurring signals task via run-due (Exa outcome recorded), runs, board and audit for "
+                    "every step, and a verified audit hash chain")
+        if self.provider == "openai":
+            self.counts["llm_usage"] = self.llm_runs
+            self.counts["llm_total_tokens"] = sum(item["total_tokens"] for item in self.llm_runs.values())
+
     def report(self, status: str, elapsed: float, error: str | None = None) -> dict:
         totals = Counter()
         for operation in self.timings:
             totals[operation["transport"]] += 1
-        result = {"status": status, "vehicle": self.vehicle, "market": "US", "provider": "deterministic",
+        result = {"status": status, "vehicle": self.vehicle, "market": "US", "provider": self.provider,
                   "elapsed_seconds": round(elapsed, 3), "checks_passed": len(self.checks), "checks": self.checks,
                   "counts": self.counts, "requests": dict(totals),
                   "latency_ms": {transport: {"total": round(sum(item["ms"] for item in self.timings if item["transport"] == transport), 2),
                                              "max": max(item["ms"] for item in self.timings if item["transport"] == transport)}
                                  for transport in totals}}
+        if any(check.startswith("Platform") for check in self.checks) or self.llm_runs:
+            result.update(platform_vehicle=self.platform_vehicle, platform_markets=list(PLATFORM_MARKETS),
+                          platform_label="simulated")
         if error:
             result["error"] = error
         return result
@@ -524,10 +1030,17 @@ async def main_async(args) -> int:
     started = time.perf_counter()
     verification = None
     try:
+        platform = getattr(args, "platform", False)
         async with connect_live(args.api_url, args.mcp_url) as verification:
+            verification.provider = getattr(args, "provider", "deterministic")
+            verification.llm_model = getattr(args, "expected_model", None)
             await verification.run_synthetic()
             if args.real_data:
                 await verification.run_real_data()
+            if platform and args.real_data:
+                await verification.run_platform_real_data()
+            if platform:
+                await verification.run_platform()
         report = verification.report("passed", time.perf_counter() - started)
     except Exception as exc:
         # Preserve nested transport failure details instead of only ExceptionGroup's title.
@@ -544,7 +1057,15 @@ def main() -> int:
     parser.add_argument("--api-url", default="http://127.0.0.1:8000")
     parser.add_argument("--mcp-url", default="http://127.0.0.1:8001/mcp")
     parser.add_argument("--real-data", action="store_true", help="Also import mounted BMW files and check G60/US trace coverage")
+    parser.add_argument("--platform", action="store_true",
+                        help="Also run the simulated platform journey (market data, requests, sentiment, conflicts, "
+                             "rubric v2, recurring task, audit chain)")
+    parser.add_argument("--provider", choices=("deterministic", "openai"), default="deterministic",
+                        help="Provider for the platform journey's AI steps; openai needs the key on the API service")
+    parser.add_argument("--expected-model", help="With --provider openai: require this OPENAI_MODEL in every AI run")
     args = parser.parse_args()
+    if args.provider == "openai" and not args.platform:
+        parser.error("--provider openai applies to the platform journey; add --platform")
     logging.basicConfig(level=logging.WARNING, stream=sys.stderr)
     return asyncio.run(main_async(args))
 

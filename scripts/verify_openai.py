@@ -6,6 +6,11 @@ command never reads credentials, substitutes a provider, or manages services.
 It makes two uncached analyses in a unique LIVE-AI vehicle, leaves the auditable
 synthetic fixture in place, and prints only a JSON metadata report. This tests
 provider integration and workflow invariants, not general AI semantic quality.
+
+--platform adds one cheap call per platform AI capability that fits this fixture (sentiment,
+request classification, market directions, priority explanation) and requires each stored run to
+record the model, prompt version and token usage. Conflict briefs, preserve naming, evidence links
+and embeddings need the larger simulated scenario of verify_backend.py --platform --provider openai.
 """
 from __future__ import annotations
 
@@ -31,6 +36,7 @@ try:
         Verification,
         decision_payload,
         feedback_payload,
+        llm_usage,
         require,
         requirement_by_topic,
         verify_priority,
@@ -41,6 +47,7 @@ except ModuleNotFoundError:
         Verification,
         decision_payload,
         feedback_payload,
+        llm_usage,
         require,
         requirement_by_topic,
         verify_priority,
@@ -297,8 +304,53 @@ class OpenAIVerification(Verification):
         self.passed("Cached review replay, explicit revision acceptance, immutable decisions, complete audit history, and PM workspace")
         self.stage = "complete"
 
+    async def platform_ai_run(self, label: str, run_id: str) -> None:
+        run = await self.http("GET", f"/runs/{run_id}")
+        require((run["vehicle"], run["status"]) == (self.vehicle, "succeeded"), f"{label} run crossed scope or failed")
+        self.llm_runs[label] = {key: value for key, value in llm_usage(run, label, self.expected_model).items()
+                                if key != "run_id"}
+
+    async def run_platform(self) -> None:
+        """One small OpenAI call per platform AI capability, in this verifier's LIVE-AI scope."""
+        self.stage = "platform-sentiment"
+        scored = await self.http("POST", "/signals/sentiment/score", json={
+            **self.scope, "provider": "openai", "subject_type": "evidence", "actor": ACTOR})
+        require(scored["created"] == 4 and not scored["remaining"]
+                and scored["method_version"] == f"openai:{self.expected_model}:aspect-sentiment-v1",
+                "OpenAI sentiment did not score every fixture record with the expected model")
+        await self.platform_ai_run("signals.score_sentiment", scored["run_id"])
+        self.stage = "platform-request-classification"
+        request = await self.http("POST", "/requests", expected_status=201, json={
+            **self.scope, "origin_type": "dealer", "origin_name": "Simulated dealer", "simulated": True,
+            "external_ref": f"{self.vehicle}:charging-request", "title": "Reliable public charging start",
+            "body": "Simulated: customers ask that public charging sessions start reliably on the first attempt.",
+            "actor": ACTOR})
+        classified = await self.http("POST", "/requests/classify", expected_status=201, json={
+            "vehicle": self.vehicle, "request_ids": [request["id"]], "provider": "openai", "actor": ACTOR})
+        require(classified["model"] == self.expected_model and classified["items"][0]["simulated"],
+                "OpenAI request classification used another model or lost the simulated label")
+        await self.platform_ai_run("requests.classify", classified["run_id"])
+        self.stage = "platform-market-directions"
+        directions = await self.http("POST", "/markets/directions", json={
+            "vehicle": self.vehicle, "markets": ["US", "CN"], "provider": "openai", "actor": ACTOR})
+        await self.platform_ai_run("markets.extract_directions", directions["run_id"])
+        self.stage = "platform-priority-explanation"
+        explained = await self.http("POST", "/priorities/explain", expected_status=201,
+                                    json={**self.scope, "provider": "openai", "actor": ACTOR})
+        require(explained["ai_generated"] and explained["model"] == self.expected_model and len(explained["items"]) == 2
+                and all(item["score_id"] in item["cited_ids"] for item in explained["items"]),
+                "OpenAI priority explanation is incomplete or does not cite the recorded scores")
+        await self.platform_ai_run("priorities.explain", explained["run_id"])
+        self.counts.update(platform_llm_usage=self.llm_runs,
+                           platform_llm_total_tokens=sum(item["total_tokens"] for item in self.llm_runs.values()))
+        self.passed("Platform OpenAI capabilities: sentiment, request classification, market directions and priority "
+                    "explanation record model, prompt version and token usage")
+        self.stage = "complete"
+
     def report(self, status: str, elapsed: float, error: str | None = None) -> dict:
         result = super().report(status, elapsed)
+        for key in ("platform_vehicle", "platform_markets", "platform_label"):
+            result.pop(key, None)   # this verifier's platform calls run in its own LIVE-AI scope
         result.update(provider="openai", expected_model=self.expected_model, stage=self.stage,
                       verification_scope="Synthetic provider integration and workflow invariants; not general AI semantic quality")
         if error:
@@ -322,6 +374,8 @@ async def main_async(args) -> int:
     try:
         async with connect_live(args.api_url, args.mcp_url, args.expected_model) as verification:
             await verification.run()
+            if getattr(args, "platform", False):
+                await verification.run_platform()
         report = verification.report("passed", time.perf_counter() - started)
     except Exception as exc:
         report = (verification.report("failed", time.perf_counter() - started, type(exc).__name__) if verification else
@@ -337,6 +391,9 @@ def main() -> int:
     parser.add_argument("--api-url", default="http://127.0.0.1:8000")
     parser.add_argument("--mcp-url", default="http://127.0.0.1:8001/mcp")
     parser.add_argument("--expected-model", default="gpt-6.1-sol")
+    parser.add_argument("--platform", action="store_true",
+                        help="Also make one OpenAI call per platform AI capability (sentiment, request classification, "
+                             "market directions, priority explanation)")
     args = parser.parse_args()
     logging.basicConfig(level=logging.WARNING, stream=sys.stderr)
     return asyncio.run(main_async(args))
