@@ -1,6 +1,6 @@
 # G60 / US presentation runbook
 
-**Candidate:** presentation build `77f0376` on `codex/bmw-demo-core`, migration 0009, local pre-decision snapshot `app-20261011T033717381575Z-bmw-predecision.db`. The [claim ledger](bmw-demo-claim-ledger.md) is the authority for numbers and wording. The deck may show only this frozen build's verified features.
+**Candidate:** presentation build `77f0376` on `codex/bmw-demo-core`, migration 0009, local pre-decision snapshot `app-20261011T033717381575Z-bmw-predecision.db`. The [claim ledger](bmw-demo-claim-ledger.md) is the authority for numbers and wording; the [Q&A card](bmw-demo-qa.md) covers likely follow-ups. The deck may show only this frozen build's verified features.
 
 ## Reset and preflight
 
