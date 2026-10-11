@@ -383,7 +383,10 @@ function TriageBlock({ triage, history }: { triage: Triage | null; history: Tria
       {triage.suggestedAction && (
         <p className="text-xs">
           <strong>Rubric suggests {readable(triage.suggestedAction.decision)}</strong>
-          <span className="muted"> · {triage.suggestedAction.reason} The decision stays with the PM.</span>
+          <span className="muted">
+            {" "}
+            · {triage.suggestedAction.reason.replace(/\.?$/, ".")} The decision stays with the PM.
+          </span>
         </p>
       )}
       <FactorBars factors={triage.factors} />

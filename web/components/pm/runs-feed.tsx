@@ -91,7 +91,7 @@ export function RunsFeed() {
                           {(run.vehicle || run.market) && <small>{[run.vehicle, run.market].filter(Boolean).join(" / ")}</small>}
                         </td>
                         <td>
-                          <ProvenanceLabel value={run.provenance} />
+                          <RunMethod run={run} />
                         </td>
                         <td>
                           <Status value={run.status} />
@@ -135,6 +135,17 @@ export function RunsFeed() {
       </PlatformView>
     </Panel>
   );
+}
+/** A failed model run generated nothing: it is labelled as an OpenAI attempt, not as AI output. */
+function RunMethod({ run }: { run: Run }) {
+  if (run.status === "failed" && run.method_version.startsWith("openai:"))
+    return (
+      <span className="method-label" title={run.method_version}>
+        OpenAI attempt · nothing generated
+        <span className="mono">{run.method_version}</span>
+      </span>
+    );
+  return <ProvenanceLabel value={run.provenance} />;
 }
 function UsageSummary({ runs }: { runs: Run[] }) {
   const rows = usageByCapability(runs).filter((row) => row.calls > 0 || row.failed > 0);

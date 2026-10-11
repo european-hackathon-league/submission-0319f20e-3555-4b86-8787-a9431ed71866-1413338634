@@ -12,7 +12,7 @@ import {
   MARKETS,
   type ComparisonCell,
   type ConflictDetail,
-    type MarketComparison,
+  type MarketComparison,
   type MarketWeights,
   type MarketConflict,
   type Provider,
@@ -37,7 +37,7 @@ import {
   useCapability,
   usePlatformQuery,
 } from "./platform-shared";
-import { Empty, ErrorMessage, Heading, Loading, Panel, ScoreLabel, Status, useUrlState } from "./shared";
+import { Empty, ErrorMessage, Field, Heading, Loading, Panel, ScoreLabel, Status, useUrlState } from "./shared";
 
 const RECOMMENDED_DECISION: Record<string, string> = {
   global: "adopt_global",
@@ -60,8 +60,8 @@ export function Markets() {
       <div className="pm-alert">
         <Info size={16} />
         <span>
-          The matrix, conflict rules and recommendations are deterministic and versioned; AI-drafted briefs are labelled separately. An empty
-          market is missing data, not evidence of no customer need.
+          The matrix, conflict rules and recommendations are deterministic and versioned; AI-drafted briefs are labelled separately. An empty market
+          is missing data, not evidence of no customer need.
         </span>
       </div>
       <ComparisonPanel />
@@ -129,15 +129,25 @@ function WeightsStrip({ state }: { state: PlatformState<MarketWeights> }) {
                 .filter((w) => !page.selected || (w.period === page.selected.period && w.method_version === page.selected.methodVersion))
                 .sort((a, b) => b.period.localeCompare(a.period) || a.market.localeCompare(b.market))
                 .map((w) => (
-                  <span key={`${w.market}-${w.period}-${w.method_version}`} className="chip" title={`${w.method_version ?? "method not recorded"} · run ${w.run_id ?? "–"} · ${w.evidence_ids.length} sales records`}>
+                  <span
+                    key={`${w.market}-${w.period}-${w.method_version}`}
+                    className="chip"
+                    title={`${w.method_version ?? "method not recorded"} · run ${w.run_id ?? "–"} · ${w.evidence_ids.length} sales records`}
+                  >
                     {w.market} {w.period}: {percent(w.share)}
                     {w.units !== null && <small> · {Math.round(w.units).toLocaleString("en-US")} units</small>}
                   </span>
                 ))}
             </span>
-            {page.selected && <span className="muted text-xs">Used by the comparison: {page.selected.methodVersion ?? "method not recorded"} · {page.selected.period}</span>}
+            {page.selected && (
+              <span className="muted text-xs">
+                Used by the comparison: {page.selected.methodVersion ?? "method not recorded"} · {page.selected.period}
+              </span>
+            )}
             {page.warnings.map((warning) => (
-              <span key={warning} className="attention-text text-xs">{warning}</span>
+              <span key={warning} className="attention-text text-xs">
+                {warning}
+              </span>
             ))}
           </>
         )}
@@ -158,7 +168,12 @@ function ComparisonMatrix({ data }: { data: MarketComparison }) {
       <p className="chart-meta">
         <MethodLabel methodVersion={data.methodVersion} runId={data.runId} />
         <span className="muted">
-          Weights: {data.weightBasis === "sales" ? `sales shares (${data.weightsMethodVersion ?? "method not recorded"})` : data.weightBasis === "equal_fallback" ? "equal fallback — sales shares missing" : data.weightBasis ?? "basis not recorded"}
+          Weights:{" "}
+          {data.weightBasis === "sales"
+            ? `sales shares (${data.weightsMethodVersion ?? "method not recorded"})`
+            : data.weightBasis === "equal_fallback"
+              ? "equal fallback — sales shares missing"
+              : (data.weightBasis ?? "basis not recorded")}
           {" · "}Sentiment: {data.sentimentMethodVersion ?? "not scored"}
         </span>
       </p>
@@ -280,9 +295,7 @@ function RequirementScoresByMarket() {
     queryFn: ({ signal }) => allPages<Requirement>(`/requirements?vehicle=${encodeURIComponent(scope.vehicle)}`, signal),
   });
   const topics = [...new Set(result.data?.map((r) => r.topic) || [])].sort();
-  const markets = [
-    ...new Set([...MARKETS, ...(workspace?.available_scopes.filter((s) => s.vehicle === scope.vehicle).map((s) => s.market) || [])]),
-  ];
+  const markets = [...new Set([...MARKETS, ...(workspace?.available_scopes.filter((s) => s.vehicle === scope.vehicle).map((s) => s.market) || [])])];
   if (result.error) return <ErrorMessage error={result.error} />;
   if (result.isPending) return <Loading />;
   if (!topics.length)
@@ -320,7 +333,11 @@ function RequirementScoresByMarket() {
                         values
                           .filter((r) => r.market === m)
                           .map((r) => (
-                            <Link key={r.id} className="market-cell" href={`/${scope.vehicle.toLowerCase()}/${m.toLowerCase()}/requirements?requirement=${r.id}`}>
+                            <Link
+                              key={r.id}
+                              className="market-cell"
+                              href={`/${scope.vehicle.toLowerCase()}/${m.toLowerCase()}/requirements?requirement=${r.id}`}
+                            >
                               <ScoreLabel score={r.priority} grade={r.evidence_grade} />
                               <span>{r.title}</span>
                               <Status value={r.status} />
@@ -332,7 +349,11 @@ function RequirementScoresByMarket() {
                     </td>
                   ))}
                   <td>
-                    {spread == null ? <span className="muted">One market only</span> : <span className={spread >= 15 ? "spread-high" : ""}>{spread.toFixed(1)} points</span>}
+                    {spread == null ? (
+                      <span className="muted">One market only</span>
+                    ) : (
+                      <span className={spread >= 15 ? "spread-high" : ""}>{spread.toFixed(1)} points</span>
+                    )}
                   </td>
                 </tr>
               );
@@ -357,16 +378,27 @@ function ConflictsPanel({ selected, onSelect }: { selected: string; onSelect: (i
     ["market-compare"],
   ]);
   return (
-    <Panel title="Market conflicts" description="Detected with named thresholds; re-detection with unchanged inputs is idempotent and changed inputs supersede, keeping history.">
+    <Panel
+      title="Market conflicts"
+      description="Detected with named thresholds; re-detection with unchanged inputs is idempotent and changed inputs supersede, keeping history."
+    >
       <div className="platform-toolbar">
         <PmSelect
           aria-label="Conflict status"
           value={status}
           onValueChange={setStatus}
-          options={["open", "resolved", "dismissed", "superseded", "all"].map((value) => ({ value, label: value === "all" ? "All statuses" : readable(value) }))}
+          options={["open", "resolved", "dismissed", "superseded", "all"].map((value) => ({
+            value,
+            label: value === "all" ? "All statuses" : readable(value),
+          }))}
         />
         <span className="toolbar-spacer" />
-        <PmSelect aria-label="Direction extraction provider" value={provider} onValueChange={(value) => setProvider(value as Provider)} options={PROVIDER_OPTIONS} />
+        <PmSelect
+          aria-label="Direction extraction provider"
+          value={provider}
+          onValueChange={(value) => setProvider(value as Provider)}
+          options={PROVIDER_OPTIONS}
+        />
         <CapabilityButton capability={detect}>
           <Scale size={14} />
           Detect conflicts
@@ -375,7 +407,12 @@ function ConflictsPanel({ selected, onSelect }: { selected: string; onSelect: (i
       <PlatformView
         state={state}
         isEmpty={(page) => !page.items.length}
-        empty={<Empty title={`No ${status === "all" ? "" : status} conflicts`} description="Run detection after market evidence and requirements exist for more than one market." />}
+        empty={
+          <Empty
+            title={`No ${status === "all" ? "" : status} conflicts`}
+            description="Run detection after market evidence and requirements exist for more than one market."
+          />
+        }
       >
         {(page) => (
           <div className="pm-table-wrap">
@@ -416,7 +453,11 @@ function ConflictsPanel({ selected, onSelect }: { selected: string; onSelect: (i
                   ))}
               </tbody>
             </table>
-            {page.total > page.items.length && <p className="muted text-xs">Showing {page.items.length} of {page.total} conflicts.</p>}
+            {page.total > page.items.length && (
+              <p className="muted text-xs">
+                Showing {page.items.length} of {page.total} conflicts.
+              </p>
+            )}
           </div>
         )}
       </PlatformView>
@@ -431,7 +472,15 @@ function ConflictDetailPanel({ id, onClose }: { id: string; onClose: () => void 
     queryFn: ({ signal }) => platform.conflict(id, signal),
   });
   return (
-    <Panel title="Conflict detail" description="Per-market evidence side by side, the recorded metrics behind the rule, and the human resolution." action={<Button variant="ghost" size="sm" onClick={onClose}>Close</Button>}>
+    <Panel
+      title="Conflict detail"
+      description="Per-market evidence side by side, the recorded metrics behind the rule, and the human resolution."
+      action={
+        <Button variant="ghost" size="sm" onClick={onClose}>
+          Close
+        </Button>
+      }
+    >
       <PlatformView state={state}>{(detail) => <ConflictBody detail={detail} />}</PlatformView>
     </Panel>
   );
@@ -445,14 +494,19 @@ function ConflictBody({ detail }: { detail: ConflictDetail }) {
   ]);
   const markets = [...new Set([...conflict.markets, ...Object.keys(detail.evidenceByMarket)])];
   const scalars = Object.entries(conflict.metrics).filter(([key, value]) => key !== "ai_brief" && (typeof value !== "object" || value === null));
-  const nested = Object.fromEntries(Object.entries(conflict.metrics).filter(([key, value]) => key !== "ai_brief" && typeof value === "object" && value !== null));
+  const nested = Object.fromEntries(
+    Object.entries(conflict.metrics).filter(([key, value]) => key !== "ai_brief" && typeof value === "object" && value !== null),
+  );
   return (
     <div className="conflict-detail">
       <div className="conflict-summary">
         <div>
           <span className={`severity severity-${conflict.severity}`}>{conflict.severity}</span> <strong>{readable(conflict.topic)}</strong>
           {conflict.related_topic && <strong> ↔ {readable(conflict.related_topic)}</strong>}
-          <span className="muted"> · {readable(conflict.conflict_type)} · {conflict.markets.join(" vs ")}</span>
+          <span className="muted">
+            {" "}
+            · {readable(conflict.conflict_type)} · {conflict.markets.join(" vs ")}
+          </span>
         </div>
         <span className="conflict-actions">
           <Status value={conflict.status} />
@@ -469,14 +523,18 @@ function ConflictBody({ detail }: { detail: ConflictDetail }) {
       ) : (
         conflict.status === "open" && (
           <div className="ai-brief-actions">
-            <span className="muted text-xs">No AI trade-off brief yet. OpenAI drafts one from the recorded metrics and cited evidence; it never decides.</span>
+            <span className="muted text-xs">
+              No AI trade-off brief yet. OpenAI drafts one from the recorded metrics and cited evidence; it never decides.
+            </span>
             <CapabilityButton capability={brief}>Draft AI brief</CapabilityButton>
           </div>
         )
       )}
       {conflict.aiBrief && conflict.status === "open" && (
         <div className="ai-brief-actions">
-          <CapabilityButton capability={brief} variant="ghost">Redraft AI brief</CapabilityButton>
+          <CapabilityButton capability={brief} variant="ghost">
+            Redraft AI brief
+          </CapabilityButton>
         </div>
       )}
       {(scalars.length > 0 || Object.keys(nested).length > 0) && (
@@ -563,7 +621,7 @@ function ConflictBody({ detail }: { detail: ConflictDetail }) {
         </p>
       )}
       <ResolutionHistory detail={detail} />
-      <ResolveDialog conflict={conflict} open={resolving} onOpenChange={setResolving} />
+      <ResolveDialog conflict={conflict} requirements={detail.requirements} open={resolving} onOpenChange={setResolving} />
     </div>
   );
 }
@@ -601,15 +659,20 @@ function AiBriefView({ brief }: { brief: NonNullable<MarketConflict["aiBrief"]> 
         </>
       )}
       {!!brief.citations.length && (
-        <ul>
-          {brief.citations.map((c, i) => (
-            <li key={`${c.evidenceId}-${i}`}>
-              “{c.quote}” <SourceLinks refs={[{ type: "evidence", id: c.evidenceId }]} market={c.market} />
-            </li>
-          ))}
-        </ul>
+        <>
+          <h4>Cited evidence</h4>
+          <ul>
+            {brief.citations.map((c, i) => (
+              <li key={`${c.evidenceId}-${i}`}>
+                “{c.quote}” <SourceLinks refs={[{ type: "evidence", id: c.evidenceId }]} market={c.market} />
+              </li>
+            ))}
+          </ul>
+        </>
       )}
-      <small className="muted">{brief.label ?? "Drafted from the recorded metrics. The templated rationale above is authoritative; the PM decides."}</small>
+      <small className="muted">
+        {brief.label ?? "Drafted from the recorded metrics. The templated rationale above is authoritative; the PM decides."}
+      </small>
     </section>
   );
 }
@@ -639,26 +702,38 @@ function ResolutionHistory({ detail }: { detail: ConflictDetail }) {
   if (!detail.resolutions.length) return <p className="muted text-xs">No resolution recorded yet.</p>;
   return (
     <div className="audit-timeline">
-      {[...detail.resolutions].sort((a, b) => b.created_at.localeCompare(a.created_at)).map((r) => (
-        <article key={r.id || r.created_at}>
-          <span className="timeline-dot" />
-          <div>
-            <div className="audit-event-title">
-              <strong>{readable(r.decision)}</strong>
-              <span className="mono muted">{shortId(r.id)}</span>
+      {[...detail.resolutions]
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .map((r) => (
+          <article key={r.id || r.created_at}>
+            <span className="timeline-dot" />
+            <div>
+              <div className="audit-event-title">
+                <strong>{readable(r.decision)}</strong>
+                <span className="mono muted">{shortId(r.id)}</span>
+              </div>
+              <p>{r.rationale}</p>
+              <small>
+                {r.actor} · {date(r.created_at)}
+                {!!r.requirement_ids.length && ` · ${r.requirement_ids.length} requirements`}
+              </small>
             </div>
-            <p>{r.rationale}</p>
-            <small>
-              {r.actor} · {date(r.created_at)}
-              {!!r.requirement_ids.length && ` · ${r.requirement_ids.length} requirements`}
-            </small>
-          </div>
-        </article>
-      ))}
+          </article>
+        ))}
     </div>
   );
 }
-function ResolveDialog({ conflict, open, onOpenChange }: { conflict: MarketConflict; open: boolean; onOpenChange: (open: boolean) => void }) {
+function ResolveDialog({
+  conflict,
+  requirements,
+  open,
+  onOpenChange,
+}: {
+  conflict: MarketConflict;
+  requirements: ConflictDetail["requirements"];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const client = useQueryClient();
   const [decision, setDecision] = useState(RECOMMENDED_DECISION[conflict.recommendation] ?? "");
   const [linked, setLinked] = useState<string[]>(conflict.requirement_ids);
@@ -685,18 +760,20 @@ function ResolveDialog({ conflict, open, onOpenChange }: { conflict: MarketConfl
       ready={!!decision}
       onSubmit={(actor, rationale) => resolve.mutate({ actor, rationale })}
     >
-      <PmSelect
-        aria-label="Resolution"
-        value={decision}
-        onValueChange={setDecision}
-        options={[
-          { value: "", label: "Choose a resolution" },
-          ...CONFLICT_DECISIONS.map((value) => ({
-            value,
-            label: `${readable(value)}${RECOMMENDED_DECISION[conflict.recommendation] === value ? " · matches the recommendation" : ""}`,
-          })),
-        ]}
-      />
+      <Field label="Resolution">
+        <PmSelect
+          aria-label="Resolution"
+          value={decision}
+          onValueChange={setDecision}
+          options={[
+            { value: "", label: "Choose a resolution" },
+            ...CONFLICT_DECISIONS.map((value) => ({
+              value,
+              label: `${readable(value)}${RECOMMENDED_DECISION[conflict.recommendation] === value ? " · matches the recommendation" : ""}`,
+            })),
+          ]}
+        />
+      </Field>
       {!!conflict.requirement_ids.length && (
         <fieldset className="checkbox-list">
           <legend className="muted text-xs">Requirements this resolution applies to</legend>
@@ -707,7 +784,12 @@ function ResolveDialog({ conflict, open, onOpenChange }: { conflict: MarketConfl
                 checked={linked.includes(rid)}
                 onChange={(e) => setLinked(e.target.checked ? [...linked, rid] : linked.filter((x) => x !== rid))}
               />{" "}
-              <span className="mono">{rid}</span>
+              <span className="mono">
+                {(() => {
+                  const r = requirements.find((item) => item.id === rid);
+                  return r ? `${r.market ?? ""} · ${r.key ?? rid}${r.title ? ` · ${r.title}` : ""}` : rid;
+                })()}
+              </span>
             </label>
           ))}
         </fieldset>

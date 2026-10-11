@@ -155,8 +155,9 @@ blockquote.signal-excerpt { padding: 10px 12px; background: var(--muted); max-he
 .conflict-rationale > .method-label { align-self: flex-start; }
 .conflict-metrics .record-details { grid-template-columns: 200px 1fr; }
 .conflict-evidence-grid { display: grid; grid-template-columns: repeat(var(--market-count, 2), minmax(0, 1fr)); gap: 1px; background: var(--border); }
-.conflict-evidence-grid > section { display: flex; flex-direction: column; gap: 1px; background: var(--muted); min-width: 0; }
-.conflict-evidence-grid h3 { padding: 10px 14px; font: 500 11px var(--font-plex-mono), monospace; background: var(--card); }
+.conflict-evidence-grid > section { display: flex; flex-direction: column; background: var(--card); min-width: 0; }
+.conflict-evidence-grid .evidence-card + .evidence-card { border-top: 1px solid var(--border); }
+.conflict-evidence-grid h3 { padding: 10px 14px; font: 500 11px var(--font-plex-mono), monospace; background: var(--muted); }
 .conflict-evidence-grid .evidence-card blockquote { margin: 6px 0 10px; font-size: 12px; max-height: 220px; overflow: auto; }
 .conflict-evidence-grid .market-missing { padding: 12px 14px; background: var(--card); }
 mark.mention { background: color-mix(in srgb, var(--primary), transparent 82%); color: inherit; padding: 0 1px; }
@@ -265,3 +266,12 @@ mark.mention { background: color-mix(in srgb, var(--primary), transparent 82%); 
   .factor-bar .not-measured-flag { grid-column: 2 / -1; }
   .platform-toolbar > .pm-component-select { flex: 1 1 45%; }
 }
+.request-row > .chip, .link-meta > .ai-label, .link-meta > .source-links { align-self: flex-start; }
+.preserve-warning { flex-wrap: nowrap; }
+.preserve-warning > span { flex: 1 1 auto; }
+.preserve-warning > svg { flex-shrink: 0; }
+.rubric-derived { flex-basis: 100%; font-size: 11px; }
+.topic-tiles { background: transparent; gap: 8px; }
+.topic-tile { border: 1px solid var(--border); }
+.usage-summary { background: transparent; gap: 8px; }
+.usage-cell { border: 1px solid var(--border); }
