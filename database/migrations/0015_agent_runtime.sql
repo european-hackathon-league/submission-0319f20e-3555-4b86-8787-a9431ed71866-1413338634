@@ -1,0 +1,3 @@
+-- Pod F: reserved so migration numbers stay consecutive on every pod branch (PLATFORM_BUILD_PLAN.md).
+-- Pod F replaces this file on codex/platform-agents with its schema additions, or with
+-- `-- Pod F: no schema changes beyond 0009.`

@@ -1,0 +1,3 @@
+-- Pod D: reserved so migration numbers stay consecutive on every pod branch (PLATFORM_BUILD_PLAN.md).
+-- Pod D replaces this file on codex/platform-priorities with its schema additions, or with
+-- `-- Pod D: no schema changes beyond 0009.`

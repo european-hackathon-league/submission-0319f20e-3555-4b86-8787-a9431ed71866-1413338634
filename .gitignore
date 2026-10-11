@@ -15,3 +15,6 @@ __pycache__/
 !/database/local/.gitkeep
 /database/snapshots/*
 !/database/snapshots/.gitkeep
+
+# Local coding-agent checkouts
+.claude/worktrees/

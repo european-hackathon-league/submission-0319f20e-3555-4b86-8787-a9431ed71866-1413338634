@@ -1,0 +1,3 @@
+-- Pod E: reserved so migration numbers stay consecutive on every pod branch (PLATFORM_BUILD_PLAN.md).
+-- Pod E replaces this file on codex/platform-market-data with its schema additions, or with
+-- `-- Pod E: no schema changes beyond 0009.`
