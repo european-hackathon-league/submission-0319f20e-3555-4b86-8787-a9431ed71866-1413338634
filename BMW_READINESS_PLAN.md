@@ -1,6 +1,6 @@
 # BMW presentation readiness plan
 
-**Working plan — 11 October 2026.** This plan starts after integration of the existing [platform build](PLATFORM_BUILD_PLAN.md), rather than restarting its eight pods. It covers the remaining product, data, agent, assurance and presentation work needed to show BMW a credible G60 / US product-planning system. The presentation is expected **12 October around midday, Europe/Madrid**; the schedule below assumes 12:00 until the exact start time is confirmed and uses the [pitch plan's](notes/pitch-plan.md) T-minus freeze.
+**Working plan — 11 October 2026.** The BMW deadline is **today, Sunday 11 October at 11:30, Europe/Madrid**. This plan protects the presentation first, then defines the remaining product, data, agent and enterprise work after the challenge. It builds on the existing [platform build](PLATFORM_BUILD_PLAN.md) without restarting its eight pods. The immediate schedule uses the [pitch plan's](notes/pitch-plan.md) T-minus freeze.
 
 ## 1. Outcome and boundaries
 
@@ -45,30 +45,35 @@ The live story follows [the pitch plan](notes/pitch-plan.md). The deck and trail
 
 ## 4. Priority tiers and release gates
 
+At 03:30 Madrid time, about eight hours remain and the T-6h feature freeze is at **05:30**. **Start the orchestrator now.** It should finish the existing platform integration, assign bounded work to five coding streams in waves, and admit each result into the demo only after verification. The full enterprise backlog remains executable after the presentation. Use the committed G60 / US core as the fallback if integration misses the freeze.
+
 ### P0 — presentation blockers
 
-- Complete platform integration and one full Compose/browser/API/MCP journey. Fix contract drift, migration ordering and UI responses before adding features.
-- Produce a **reviewed G60 / US demo dataset** from a local copy: real OpenAI run if configured, exact source checks for the hero requirement, SMART wording, a truthful preserve attribute, and a clearly labelled simulated update. Snapshot it locally and make reset reproducible.
-- Show a **real** orchestrator-to-worker chain: task created, capability invoked through governed API/MCP, result grounded or rejected, score calculated by code, PM decision required. The activity view must display actual run IDs/status/errors, not a scripted animation.
+- Decide by **04:30** whether the platform integration branch is green enough to demo. Require a committed build, consecutive migrations, full Python/web checks and one Compose/browser/API/MCP journey. If it misses this gate, demonstrate the already verified core from committed `main`.
+- Produce a **reviewed G60 / US demo dataset** from a local copy: exact source checks for the hero requirement, SMART wording, a truthful preserve attribute, and a clearly labelled simulated update. Use a real OpenAI run only if it finishes and is reviewed before the freeze; otherwise label the reference run. Snapshot locally and make reset reproducible.
+- Show an agent chain only if it is real and verified by the freeze: task, governed capability call, grounded or rejected result, deterministic score and PM decision gate, with actual run IDs/status/errors. Otherwise show the current pipeline honestly and explain the orchestrator/worker design as the next phase.
 - Keep trace and human gates intact across new sources and agents. No BMW data or verbatims go to public-web search; no agent or MCP tool may impersonate an approval.
-- Freeze the feature set at **T-6 hours**. Complete two timed runs under three minutes, a Q&A rehearsal, projector check and recorded fallback before presenting.
+- Freeze new capabilities at **05:30 (T-6h)**. After that, fix only a presentation blocker, re-run its journey, and update the deck/recording to match. Complete two timed runs under three minutes, a Q&A rehearsal, projector check and recorded fallback.
 
-### P1 — valuable if P0 is green before the freeze
+### P1 — include only if already integrated and verified before 05:30
 
 - Add a second market with checked evidence, a resolved conflict and explicit global-versus-market-specific rationale.
 - Add a small, source-labelled public competitor/trend set and a market request with source/date/selection metadata. Show how these alter or fail to alter a priority.
-- Show five distinct product-agent roles operating in the same task/run model, a morning brief, a challenger objection and a compact queue. Every visible role must perform a real, logged capability.
-- Add a local, identity-bound demonstration mode and permission tests for human gates; show the production SSO/RBAC boundary honestly. Improve error recovery, run budgets and operator visibility.
+- Show five distinct product-agent roles only if each performs a real, logged capability. A morning brief, challenger objection and queue are optional.
+- Add a local, identity-bound demonstration mode only if permission tests pass. State the production SSO/RBAC boundary honestly.
 
-### P2 — enterprise pilot work after the presentation
+### P2 — full refinement and enterprise pilot work, continuing after 11:30
 
+- Complete W1–W5 below: wider sources, semantic quality, the full orchestrator/worker loop, decision-first UX, evaluation and operational controls.
 - BMW-approved identity/role mapping, data classification, retention and deletion policy, model/region/egress agreement, security review and connector permissions.
 - Production database choice and migration, backup/restore drills, observability and availability targets, load tests at the expected data volume, disaster recovery and operating ownership.
 - Governed integrations to BMW-approved research, request and downstream requirements systems, including Codebeamer **only if BMW confirms the interface and ownership**. Live mail/Teams/Jira ingestion and outbound messaging need explicit scope and human send controls.
 
-**Cut order when time runs short:** remove 3D and trailer polish first, then extra markets/sources, then the full agent dashboard. Keep the grounded requirement, score explanation, human decision, update comparison, audit trail and a working fallback. Do not use invented metrics to fill gaps.
+**Cut order before 11:30:** remove 3D and trailer polish first, then extra markets/sources, then the full agent dashboard. Keep the grounded requirement, score explanation, human decision, update comparison, audit trail and a working fallback. Do not use invented metrics to fill gaps.
 
-## 5. Work packages after R0
+## 5. Work packages for remaining implementation
+
+W1–W5 are independently reviewable work after the platform's R0 integration gate. The orchestrator can assign each stream immediately for inspection and preparation; implementation branches start from the committed R0 base. Before today's feature freeze, merge only small verified slices. The full exit criteria remain the target for the continuing build; they are not claims about what will be delivered by 11:30.
 
 ### W1 — Source coverage and data quality
 
@@ -114,23 +119,23 @@ Supply the deck owner a **claim ledger** (`claim → exact source or run → scr
 
 ## 6. One orchestrator and five coding streams
 
-The *coding team* below is separate from the five **product-agent roles** in W3. The coding orchestrator owns contracts, integration, tests and the release decision. Each worker gets a distinct branch and worktree from R0, one bounded brief, and no overlapping file edits. Current Codex collaboration has four concurrent slots including the orchestrator: run at most **three workers at once**, then the other two in a second wave. If another runtime permits more slots, the same ownership rules still apply.
+The *coding team* below is separate from the five **product-agent roles** in W3. The coding orchestrator owns contracts, integration, tests and the release decision. Each worker gets a distinct branch and worktree from R0, one bounded brief, and no overlapping file edits. Current Codex collaboration has four concurrent slots including the orchestrator: run at most **three workers at once**, then the other two in a second wave. If another runtime permits more slots, the same ownership rules still apply. Start the orchestrator immediately; it can use available worker slots for R0 triage and source/demo review while the integration base is finalized, then issue W1–W5 briefs from that base.
 
-| Coding worker | Primary package | Owned files / boundaries | Deliverable |
-| --- | --- | --- | --- |
-| A Data and sources | W1 | `server/importers.py`, `server/market_data.py`, `server/signals.py`, their MCP modules and tests, `notes/bmw-data-coverage.md` and new source-ledger docs. | Reconciled source inventory, provenance and selected new sources. |
-| B Pipeline quality | W2 | `server/analysis_engine.py`, `server/grounding.py`, `server/requirements.py`, `server/prioritization.py`, `server/workflows.py`, related tests and evaluation scripts. | Reviewed G60 / US path, score derivations and update behavior. |
-| C Agent execution | W3 | `server/agent_runtime.py`, new agent-loop modules, `mcp_server/agent_tools.py`, agent tests and runtime docs. | Genuine orchestrator/worker run with retry and human stop. |
-| D Enterprise seam | W4 | New auth/policy modules, `database/` migrations and integrity code, security tests and runbook docs. | Permission boundary, failure controls and pilot gap register. |
-| E PM experience | W5 | `web/` except generated API types, browser tests and presentation claim-ledger docs. | Decision-first UI, verified screens and deck handoff. |
+| Coding worker | Branch and wave | Primary package | Owned files / boundaries | Deliverable |
+| --- | --- | --- | --- | --- |
+| A Data and sources | `codex/bmw-data`, wave 1 | W1 | `server/importers.py`, `server/market_data.py`, `server/signals.py`, their MCP modules and tests, `notes/bmw-data-coverage.md` and new source-ledger docs. | Reconciled source inventory, provenance and selected new sources. |
+| B Pipeline quality | `codex/bmw-pipeline`, wave 1 | W2 | `server/analysis_engine.py`, `server/grounding.py`, `server/requirements.py`, `server/prioritization.py`, `server/workflows.py`, related tests and evaluation scripts. | Reviewed G60 / US path, score derivations and update behavior. |
+| C Agent execution | `codex/bmw-agents`, wave 1 | W3 | `server/agent_runtime.py`, new agent-loop modules, `mcp_server/agent_tools.py`, agent tests and runtime docs. | Genuine orchestrator/worker run with retry and human stop. |
+| D Enterprise seam | `codex/bmw-governance`, wave 2 | W4 | New auth/policy modules, `database/` migrations and integrity code, security tests and runbook docs. | Permission boundary, failure controls and pilot gap register. |
+| E PM experience | `codex/bmw-experience`, wave 2 | W5 | `web/` except generated API types, browser tests and presentation claim-ledger docs. | Decision-first UI, verified screens and deck handoff. |
 
-**Shared files belong to the orchestrator:** `server/main.py`, `mcp_server/main.py`, `compose.yml`, `.env.example`, `web/lib/generated-api.ts`, root plans/README and live verifier. The orchestrator freezes response shapes, actor/scope contract, event schema, capability names and migration numbering before workers branch. If a worker needs a shared change, they provide a patch request in their report; they do not edit the shared file. Reserve consecutive migration numbers from the actual R0 schema, with one owner per migration. Reconcile conflicts in a dedicated integration worktree, not in a worker checkout.
+**Shared files belong to the orchestrator:** `server/main.py`, `mcp_server/main.py`, `compose.yml`, `.env.example`, `web/lib/generated-api.ts`, root plans/README and live verifier. The orchestrator freezes response shapes, actor/scope contract, event schema, capability names and migration numbering before workers branch. If a worker needs a shared change, they provide a patch request in their report; they do not edit the shared file. Reserve consecutive migration numbers from the actual R0 schema, with one owner per migration. A stream that needs a new table or column waits for D's schema contract or uses an existing R0 table; it does not edit `database/` itself. Reconcile conflicts in a dedicated integration worktree, not in a worker checkout.
 
 **Worker brief template:**
 
 > Read `AGENTS.md`, `IMPLEMENTATION_PLAN.md`, `PLATFORM_BUILD_PLAN.md`, `BMW_READINESS_PLAN.md` and the R0 contract snapshot. Work only in your assigned branch/worktree and files. Preserve source-to-decision IDs, human gates and data boundaries. Implement your work package with the stated exit evidence. Run relevant checks, commit reviewable milestones locally, and report branch/hash, endpoints/schema, checks/results, measured limitations and requests to the orchestrator. Do not push or merge to `main`.
 
-**Integration order:** R0 → shared contracts → D's policy/schema foundations as needed → A source model → B pipeline → C agent execution → E UI → cross-package verifier/evaluation → freeze. Work can overlap within this order where contracts are stable. The orchestrator reviews the staged diff, merges one branch at a time, runs Python checks after each backend merge, regenerates API types, then runs web and isolated Compose checks. Do not stop an existing stack owned by another worker.
+**Integration order:** R0 → orchestrator-owned shared contracts and migration reservations → A source model → B pipeline → C agent execution → D policy controls → E UI → cross-package verifier/evaluation → freeze. Work can overlap within this order where contracts are stable. Use `codex/bmw-integration` for this merge train. The orchestrator reviews the staged diff, merges one branch at a time, runs Python checks after each backend merge, regenerates API types, then runs web and isolated Compose checks. Do not stop an existing stack owned by another worker.
 
 ## 7. Verification and evidence package
 
@@ -147,26 +152,64 @@ Stop a release candidate if the hero's material claim lacks a verified source, a
 
 ## 8. Timing, freeze and handoff
 
-The time budget is roughly one day. Treat the dates below as latest gates, not promises that every P1 item fits. If R0 slips, keep the existing verified G60 / US story and cut unintegrated platform features; never let a late merge invalidate the demo snapshot or deck. If the presentation starts at another time on 12 October, move the T-minus gates with it.
+The deadline is **Sunday 11 October, 11:30 Madrid time**. Treat the gates as latest times. If R0 slips, keep the existing verified G60 / US story and cut unintegrated platform features; never let a late merge invalidate the demo snapshot or deck.
 
-| Gate | Provisional Madrid deadline | Owner | Evidence |
+| Gate | Madrid deadline | Owner | Evidence |
 | --- | --- | --- | --- |
-| R0 integrated platform | **11 Oct, 16:00** target; cut scope if still red by 20:00 | Existing platform integrator | Commit, migration, checks, pod report, open failures. |
-| R1 golden G60 / US story | **12 Oct, 00:00** | Orchestrator + A/B/C/D | Verified source pack, real run, human gate, update, audit. |
-| R2 product and deck lock | **12 Oct, 06:00 (T-6h)** | Orchestrator + E + deck owner | Frozen build/snapshot, claim ledger, captures, recorded backup. |
-| R3 rehearsal | **12 Oct, 06:00–09:00** | Presenter + driver | Two consecutive <3:00 runs; 3-minute Q&A practice. |
-| R4 venue fallback | **12 Oct, 11:00 (T-1h)** | Presenter + driver | Offline recording, external display/audio check, snapshot reset. |
+| R0 platform go/no-go | **04:30** | Existing platform integrator | Green committed build and live journey; otherwise select committed core. |
+| R1 golden G60 / US story | **05:15** | Orchestrator + data/pipeline owners | Verified source pack, PM decision, update, audit, demo reset. |
+| R2 product and deck lock | **05:30 (T-6h)** | Orchestrator + deck owner | Frozen build/snapshot, claim ledger, captures, recorded backup plan. |
+| R3 rehearsal and recording | **05:30–08:30** | Presenter + driver | Two consecutive <3:00 runs; 3-minute Q&A practice; recorded fallback. |
+| R4 final deck and venue check | **08:30–10:30** | Deck owner + presenter | Claims match frozen build; offline playback, display/audio, snapshot reset. |
+| BMW deadline | **11:30** | Presenter | Product, deck and fallback ready. |
 
-The next orchestrator should update these times once the exact start and available people are confirmed. A short handoff at each gate should report: latest green integration hash, open blockers, next merge, demo-state checksum and scope cuts. The deck owner needs the claim ledger at R1 and final captures at R2.
+A short handoff at each gate should report: latest green integration hash, open blockers, next merge, demo-state checksum and scope cuts. The deck owner needs the claim ledger at R1 and final captures at R2.
 
 ## 9. Decisions to obtain from the team or BMW
 
 These are **decision inputs**, not reasons to delay independent implementation:
 
-1. Exact start time on 12 October, presenter/driver/Q&A roles, and whether the venue permits a live network call.
+1. Presenter/driver/Q&A roles and whether the venue permits a live network call.
 2. Product name and final demo beat (market conflict or 3D), chosen only after verification.
 3. Which BMW data classes may leave the laptop for the configured model, and whether a BMW-hosted model endpoint is available for a later pilot.
 4. BMW's actual identity, role, retention, region, connector and downstream system requirements for a pilot. The challenge diagram and public research do not settle these.
 5. Whether BMW wants a proof of a particular market/derivative beyond G60 / US. Do not sacrifice the verified first slice for extra breadth.
 
-**Immediate next action for execution:** finish R0 in the existing integration worktree, publish its commit and contract snapshot, then open the five coding streams against that commit. Keep the deck owner informed through the claim ledger and freeze gate.
+**Immediate next action for today:** launch the orchestrator with the prompt below. It gets the platform go/no-go result, freezes a source-checked G60 / US story, gives the claim ledger to the deck owner and starts the five coding streams from the committed R0 base. Work that misses the freeze continues as the enterprise backlog.
+
+## 10. Copy-paste prompt to launch the orchestrator
+
+Use this in a new Codex coding task rooted at `/Users/troy/Desktop/ehl-final`. The task should read this plan from branch `codex/bmw-readiness-plan` (commit recorded in the handoff), or from its attached worktree at `/Users/troy/.codex/worktrees/bmw-readiness-plan/ehl-final/BMW_READINESS_PLAN.md` if the branch has not been integrated. The plan is the brief; the following prompt starts execution:
+
+```text
+You are the coding orchestrator for BMW presentation readiness. The deadline is Sunday
+11 October 2026 at 11:30 Europe/Madrid. Read AGENTS.md, IMPLEMENTATION_PLAN.md,
+PLATFORM_BUILD_PLAN.md, notes/challenge.md, notes/bmw-guidance.md, notes/pitch-plan.md,
+and BMW_READINESS_PLAN.md from branch codex/bmw-readiness-plan before changing files.
+
+Start now by inspecting git status/worktrees and the owners of all uncommitted changes.
+Continue the existing platform integration in codex/platform-integration-main; do not
+duplicate its pod work or touch the deck owner's codex/pitch-deck files. Establish a
+committed, checked R0 base and a frozen API/MCP/schema contract. Use distinct worktrees
+and branches for the five coding streams W1–W5 in BMW_READINESS_PLAN.md, with no file
+overlap. In this Codex runtime use at most three workers concurrently plus yourself;
+queue the other streams for wave two. Give each worker the work-package exit criteria,
+ownership row, data boundaries, human gates and deadline. Own shared files and merge
+their verified commits one at a time on an integration branch.
+
+By 04:30 Madrid time, decide whether the platform integration is demo-ready. If not,
+use the committed G60 / US core for the presentation. By 05:15, verify the hero's exact
+sources, SMART requirement, score, human decision, simulated update and audit trace in
+a resettable local database. Freeze new demo capabilities at 05:30. Keep working on
+critical fixes, deck claim ledger, recording and rehearsals through the 11:30 deadline.
+Only show a multi-agent chain or extra market/source when its real run and browser path
+pass end-to-end. Record every cut and all unmeasured claims honestly.
+
+Run relevant Ruff/pytest, web and isolated Docker Compose checks, inspect service logs,
+and preserve source-to-decision trace across API, MCP and database. Keep BMW data,
+database/local and database/snapshots out of Git. Commit reviewable milestones locally;
+do not push or merge to main. Report the integrated hash, checks, demo snapshot ID,
+claim ledger, slide/recording handoff, limitations, and remaining W1–W5 work.
+Do not stop at a proposal: execute the verified slices that fit before the freeze and
+continue the remaining implementation as separate reviewable milestones.
+```
