@@ -5,6 +5,7 @@ whole evaluation in-process against the API on a temporary database.
 """
 
 import json
+from collections import Counter
 
 import httpx
 import pytest
@@ -238,7 +239,14 @@ def test_fixtures_match_the_brief_and_are_labelled_simulated():
     assert categories.count("negation") >= 5 and categories.count("contrast") >= 5
     assert len(conflicts["markets"]) == 3 and len(conflicts["gold_conflicts"]) == 3
     assert len(requests["requests"]) == 30 and len(ranking["gold"]["top3"]) == 3
-    records = sentiment["items"] + conflicts["records"] + requests["requests"] + ranking["requirements"]
+    coverage = fixtures["coverage"]
+    assert coverage["gold"]["dominance_markets"] == ["US"]
+    for market, share in coverage["gold"]["dominant_share"].items():   # the gold shares follow from the records
+        provenances = Counter(row["provenance"] for row in coverage["records"] if row["market"] == market)
+        assert max(provenances.values()) / sum(provenances.values()) == share
+        assert (share > coverage["dominance_threshold"]) == (market in coverage["gold"]["dominance_markets"])
+    records = (sentiment["items"] + conflicts["records"] + requests["requests"] + ranking["requirements"]
+               + coverage["records"])
     assert all(record["simulated"] is True for record in records)
     assert {flag for request in requests["requests"] for flag in request["gold"]["scope_flags"]} <= set(ev.SCOPE_FLAGS)
     assert len({request["title"] for request in requests["requests"]}) == 30   # titles map API rows back to fixture ids
@@ -293,8 +301,31 @@ def test_sensitivity_accepts_a_list_and_rejects_an_empty_answer():
         ev.priority_sensitivity(api, "V", "US")
 
 
+def test_priority_ranking_reads_items_and_rubric_versions():
+    body = {"rubric": {"rubric_version": "customer-priority-v2"},
+            "items": [{"requirement_id": "q1", "rank": 1, "rubric_version": "customer-priority-v1"}]}
+    api = mock_api(lambda request: httpx.Response(200, json=body))
+    ranking = ev.priority_ranking(api, "V", "US")
+    assert ranking["items"] == body["items"]
+    assert ranking["rubric_versions"] == ["customer-priority-v1", "customer-priority-v2"]
+
+
+def test_score_sentiment_requests_evidence_and_falls_back_to_the_listing():
+    seen = []
+
+    def handler(request):
+        seen.append((request.method, request.url.path))
+        if request.method == "POST":
+            assert json.loads(request.content)["subject_type"] == "evidence"
+            return httpx.Response(200, json={"items": [], "created": 0})
+        return httpx.Response(200, json={"items": [{"subject_id": "e1", "label": "positive"}], "total": 1})
+
+    assert ev.score_sentiment(mock_api(handler), "V", "US", "deterministic") == [{"subject_id": "e1", "label": "positive"}]
+    assert seen == [("POST", "/signals/sentiment/score"), ("GET", "/signals/sentiment/scores")]
+
+
 def test_render_markdown_separates_not_measured_from_not_applicable():
-    report = {"providers": ["deterministic", "openai"], "token": "T", "comparison": {"ranking_v2_identical_across_providers": True},
+    report = {"providers": ["deterministic", "openai"], "token": "T", "comparison": {"ranks_unchanged_by_every_explanation": True},
               "audit_chain": {"status": "measured", "ok": True, "events": 3},
               "metrics": {"sentiment": {"deterministic": ev.measured(accuracy=0.75, scored=4, n=4),
                                         "openai": {"status": "not_available", "reason": "503 provider"}},
@@ -305,7 +336,7 @@ def test_render_markdown_separates_not_measured_from_not_applicable():
     assert "| Ranking v1 top-3 exact (deterministic code) | yes | not applicable |" in text
     assert "Not measured:\n- sentiment (openai): 503 provider" in text
     assert "Not applicable:\n- ranking_v1 (openai): deterministic code" in text
-    assert "Ranking v2 identical across providers: yes." in text and "Audit hash chain: verified (3 events)." in text
+    assert "Ranks unchanged by every explanation: yes." in text and "Audit hash chain: verified (3 events)." in text
 
 
 def test_parse_providers_rejects_unknown_names():
@@ -323,12 +354,15 @@ def test_evaluation_runs_in_process_and_never_crashes(client, monkeypatch):
     allowed = {"measured", "not_available", "failed", "not_applicable"}
     assert all(result["status"] in allowed for group in report["metrics"].values() for result in group.values())
     assert set(report["metrics"]) >= {"sentiment", "conflicts", "clustering", "scope_flags", "request_topics", "ranking_v1",
-                                      "ranking_v2", "ranking_v2_stability", "coverage", "trace_coverage", "run_audit"}
+                                      "ranking_v2", "ranking_explanation", "ranking_v2_stability", "coverage",
+                                      "trace_coverage", "run_audit"}
     v1 = report["metrics"]["ranking_v1"]
     assert v1["deterministic"]["status"] == "measured" and v1["deterministic"]["top3_exact"] is True
     assert v1["deterministic"]["top3_stable"] is True and v1["deterministic"]["recomputed_matches_api"] is True
     assert v1["openai"]["status"] == "not_applicable"
+    # Every new record observed carries its links; a gap here is a platform traceability gap, not noise.
     assert report["metrics"]["trace_coverage"]["deterministic"]["coverage"] == 1.0
+    assert report["metrics"]["coverage"]["openai"]["status"] == "not_applicable"
     assert report["audit_chain"]["ok"] is True and report["simulated"] is True
     assert all(entry["contract"] in ("verified", "assumed") for calls in report["endpoints"].values() for entry in calls)
     json.dumps(report)                                   # the JSON report is serialisable

@@ -11,8 +11,9 @@ results never mix with BMW data or with each other. Setup always uses the determ
 pipeline; only the capability under test changes provider. A missing endpoint (404/405) or an
 unavailable provider (503) marks that metric not_available with the reason, any other API error marks
 it failed, and the run continues. Nothing is estimated, substituted or retried with another provider.
-Deterministic code without a provider (ranking v1, sensitivity, coverage) is measured once, in the
-deterministic pass, and reported not_applicable for openai. The report lists every endpoint it calls and
+Deterministic code without a provider (ranking v1 and v2, sensitivity, coverage) is measured once, in
+the deterministic pass, and reported not_applicable for openai; Pod D's provider step is the ranking
+explanation, which runs in both passes and must leave the ranks unchanged. The report lists every endpoint it calls and
 whether its contract was verified against merged pod code or assumed from PLATFORM_BUILD_PLAN.md §5.3.
 Fixture records stay in the database afterwards as auditable simulated records (rows are never deleted).
 
@@ -50,7 +51,7 @@ from database.store import AUDIT_HASH_FIELDS, encode  # noqa: E402
 EVALUATION = "platform-eval-v1"
 FIXTURES = ROOT / "tests" / "fixtures" / "eval"
 FIXTURE_FILES = {"sentiment": "sentiment.json", "market_conflicts": "market_conflicts.json",
-                 "requests": "requests.json", "ranking": "ranking.json"}
+                 "requests": "requests.json", "ranking": "ranking.json", "coverage": "coverage.json"}
 ACTOR = "Synthetic evaluator"   # a human actor: the evaluator stands in for a PM on simulated scopes only
 FIXTURE_DATE = "2026-09-01"
 PROVIDERS = ("deterministic", "openai")
@@ -74,24 +75,25 @@ TRACE_LINKS = {
     "request_triage": (("run_id",), ("request_id",), ("factors",)),
     "priority_inputs": (("run_id",), ("version_id", "requirement_id"), ("derivation",)),
 }
-# Every endpoint the evaluation calls. 'verified' = read in the merged pod code (core API, Pods B, C, F);
-# 'assumed' = coded against PLATFORM_BUILD_PLAN.md §5.3/§8 before the pod finished (Pods A, D, E).
+# Every endpoint the evaluation calls. 'verified' = read in the pod code (core API and Pods A-F);
+# 'assumed' = coded against PLATFORM_BUILD_PLAN.md §5.3/§8 only.
 ENDPOINTS = {
     "setup": [("GET /health", "verified"), ("GET /workspace", "verified"), ("POST /imports/records", "verified"),
               ("GET /evidence", "verified"), ("POST /pipeline/run", "verified"), ("GET /requirements", "verified"),
               ("GET|PATCH /requirements/{id}", "verified"), ("GET /metrics", "verified"), ("GET /audit", "verified")],
-    "sentiment": [("POST /signals/sentiment/score", "assumed"), ("GET /signals/sentiment/scores", "assumed")],
+    "sentiment": [("POST /signals/sentiment/score", "verified"), ("GET /signals/sentiment/scores", "verified")],
     "conflicts": [("POST /markets/conflicts/detect", "verified"), ("GET /markets/conflicts", "verified")],
     "requests": [("POST /requests", "verified"), ("POST /requests/classify", "verified"),
                  ("POST /requests/cluster", "verified"), ("POST /requests/triage", "verified"), ("GET /requests", "verified")],
-    "ranking_v2": [("POST /priorities/inputs/derive", "assumed"), ("POST /priorities/rubric", "assumed"),
-                   ("GET /priorities/ranking", "assumed"), ("POST /priorities/sensitivity", "assumed")],
-    "coverage": [("POST /market-data/coverage", "assumed")],
+    "ranking_v2": [("POST /priorities/inputs/derive", "verified"), ("GET /priorities/inputs", "verified"),
+                   ("POST /priorities/rubric", "verified"), ("GET /priorities/ranking", "verified"),
+                   ("POST /priorities/explain", "verified"), ("POST /priorities/sensitivity", "verified")],
+    "coverage": [("POST /market-data/coverage", "verified")],
     "run_audit": [("GET /runs", "verified"), ("GET /runs/{id}", "verified")],
 }
 LIMITATIONS = (
     "Fixtures are small synthetic sets written by the evaluation pod (40 sentences, 3 gold conflicts, 30 requests, "
-    "8 ranked requirements); gold labels are ours, not BMW's, and results do not establish performance on BMW or real customer data.",
+    "8 ranked requirements, 20 coverage records); gold labels are ours, not BMW's, and results do not establish performance on BMW or real customer data.",
     "Small n: one sentence changes sentiment accuracy by 2.5 points; precision/recall over 3 conflicts move in thirds.",
     "Scenarios exercise the specified rules (thresholds, tension pairs, keyword tables); passing shows the rules are implemented as "
     "specified on designed inputs, not that the rules are the right product decisions.",
@@ -99,8 +101,8 @@ LIMITATIONS = (
     "Trace coverage checks that link fields are present, not that the linked evidence supports the record.",
     "Clustering is measured downstream of the same provider's classification (clusters form within a topic and exclude "
     "flagged requests), so a topic or flag error also costs cluster pairs.",
-    "Ranking v1, sensitivity and coverage are deterministic code without a provider; they are measured once, in the "
-    "deterministic pass. The coverage check matches 'dominance'/'single source' in the warning text.",
+    "Ranking v1 and v2, sensitivity and coverage are deterministic code without a provider; they are measured once, "
+    "in the deterministic pass. Coverage is checked on two simulated markets only (one dominated, one not).",
     "The evaluator acts as a human PM (PATCH factors, rubric switch) only on its own simulated EVAL-* scopes.",
 )
 
@@ -452,7 +454,7 @@ def import_records(api: Api, vehicle: str, market: str, title: str, records: Seq
     """POST /imports/records. Each record is located by its fixture id; gold labels are never sent."""
     rows = [{"content": record["text"], "location": {"fixture_id": record["id"], "row": row}, "observed_at": FIXTURE_DATE,
              "metadata": {"simulated": True, "fixture_id": record["id"],
-                          **{key: record[key] for key in ("topic", "sentiment") if key in record}}}
+                          **{key: record[key] for key in ("topic", "sentiment", "record_type", "provenance") if key in record}}}
             for row, record in enumerate(records, 2)]
     return api("POST", "/imports/records", json={
         "vehicle": vehicle, "market": market, "title": f"{title} (simulated)", "kind": "feedback", "actor": ACTOR,
@@ -493,20 +495,14 @@ def requirement_traceability(api: Api, vehicle: str, market: str) -> dict:
 
 
 def score_sentiment(api: Api, vehicle: str, market: str, provider: str) -> list[dict]:
-    """Assumed (Pod A): POST /signals/sentiment/score {vehicle, market, provider, actor} scores the scope's evidence.
+    """POST /signals/sentiment/score {vehicle, market, provider, subject_type: evidence} (Pod A, verified).
 
-    Per-subject rows ({subject_type, subject_id, label, method_version, run_id}) are read from the response
-    (scores|items|results); without them, from GET /signals/sentiment/scores, which §5.3 does not list.
+    `items` holds one row per subject (created and reused): {subject_type, subject_id, label, method_version,
+    run_id}. If the response carries none, GET /signals/sentiment/scores lists the scope's stored scores.
     """
-    body = api("POST", "/signals/sentiment/score", json={"vehicle": vehicle, "market": market, "provider": provider, "actor": ACTOR})
-    scores = records_in(body, "scores", "items", "results")
-    if scores:
-        return scores
-    try:
-        return all_items(api, "/signals/sentiment/scores", vehicle=vehicle, market=market)
-    except Unavailable:
-        raise Unavailable("POST /signals/sentiment/score returned no per-subject scores and "
-                          "GET /signals/sentiment/scores is not available") from None
+    body = api("POST", "/signals/sentiment/score", json={"vehicle": vehicle, "market": market, "provider": provider,
+                                                          "subject_type": "evidence", "actor": ACTOR})
+    return records_in(body, "items") or all_items(api, "/signals/sentiment/scores", vehicle=vehicle, market=market)
 
 
 def detect_conflicts(api: Api, vehicle: str, provider: str) -> dict:
@@ -554,34 +550,45 @@ def list_requests(api: Api, vehicle: str) -> list[dict]:
     return all_items(api, "/requests", vehicle=vehicle)
 
 
-def derive_priority_inputs(api: Api, vehicle: str, market: str) -> list[dict]:
-    """Assumed (Pod D): POST /priorities/inputs/derive {vehicle, market, actor} -> {items|inputs: [priority_inputs]}."""
-    body = api("POST", "/priorities/inputs/derive", json={"vehicle": vehicle, "market": market, "actor": ACTOR})
-    return records_in(body, "items", "inputs", "priority_inputs")
+def derive_priority_inputs(api: Api, vehicle: str, market: str) -> dict:
+    """POST /priorities/inputs/derive {vehicle, market} (Pod D, verified): per-requirement summaries plus run_id."""
+    return api("POST", "/priorities/inputs/derive", json={"vehicle": vehicle, "market": market, "actor": ACTOR})
+
+
+def priority_inputs(api: Api, vehicle: str, market: str) -> list[dict]:
+    """GET /priorities/inputs (Pod D, verified): the stored priority_inputs rows (run_id, version_id, derivation)."""
+    return all_items(api, "/priorities/inputs", vehicle=vehicle, market=market)
 
 
 def switch_rubric(api: Api, vehicle: str, market: str) -> dict:
-    """Assumed (Pod D): POST /priorities/rubric, the human rubric switch, on the evaluation's own simulated scope only."""
+    """POST /priorities/rubric (Pod D, verified): the human rubric switch, on the evaluation's own simulated scope only."""
     return api("POST", "/priorities/rubric", json={
         "vehicle": vehicle, "market": market, "rubric_version": RUBRIC_V2, "actor": ACTOR,
         "rationale": "Simulated evaluation scope: measure the v2 ranking on the labelled ranking case"})
 
 
-def priority_ranking(api: Api, vehicle: str, market: str, provider: str) -> dict:
-    """Assumed (Pod D): GET /priorities/ranking?vehicle&market -> {items: [...], rubric_version?}.
+def priority_ranking(api: Api, vehicle: str, market: str) -> dict:
+    """GET /priorities/ranking?vehicle&market (Pod D, verified): {rubric, items: [{requirement_id, rank, total, ...}]}.
 
-    `provider` is passed for the AI explanation only; ranks are deterministic and must not depend on it.
+    Deterministic; it takes no provider. Pod D's AI step is POST /priorities/explain.
     """
-    body = api("GET", "/priorities/ranking", params={"vehicle": vehicle, "market": market, "provider": provider})
-    items = records_in(body, "items", "ranking", "requirements")
+    body = api("GET", "/priorities/ranking", params={"vehicle": vehicle, "market": market, "limit": 1000})
+    items = records_in(body, "items")
     versions = {str(item.get("rubric_version")) for item in items if item.get("rubric_version")}
-    if isinstance(body, dict) and body.get("rubric_version"):
-        versions.add(str(body["rubric_version"]))
+    rubric = body.get("rubric") if isinstance(body, dict) else None
+    if isinstance(rubric, dict) and rubric.get("rubric_version"):
+        versions.add(str(rubric["rubric_version"]))
     return {"items": items, "rubric_versions": sorted(versions)}
 
 
+def explain_ranking(api: Api, vehicle: str, market: str, provider: str) -> dict:
+    """POST /priorities/explain {vehicle, market, provider, limit} (Pod D, verified): OpenAI or the labelled template."""
+    return api("POST", "/priorities/explain", json={"vehicle": vehicle, "market": market, "provider": provider,
+                                                     "limit": 25, "actor": ACTOR})
+
+
 def priority_sensitivity(api: Api, vehicle: str, market: str) -> dict[str, dict]:
-    """Assumed (Pod D): POST /priorities/sensitivity -> {results: {requirement_id: {rank, min_rank, max_rank, stable}}}."""
+    """POST /priorities/sensitivity (Pod D, verified) -> {results: {requirement_id: {rank, min_rank, max_rank, stable}}}."""
     body = api("POST", "/priorities/sensitivity", json={"vehicle": vehicle, "market": market, "actor": ACTOR})
     results = body.get("results") if isinstance(body, dict) else body
     if isinstance(results, list):
@@ -592,7 +599,11 @@ def priority_sensitivity(api: Api, vehicle: str, market: str) -> dict[str, dict]
 
 
 def coverage_report(api: Api, vehicle: str, market: str) -> dict:
-    """Assumed (Pod E): POST /market-data/coverage {vehicle, market, actor} -> {metrics, warnings, run_id}."""
+    """POST /market-data/coverage {vehicle, market} (Pod E, read in codex/platform-market-data).
+
+    Returns the capability outputs {run_id, method_version, items: [{market, metrics, warnings: [{code, ...}]}]};
+    dominance is computed over evidence with metadata.record_type 'customer_feedback', grouped by metadata.provenance.
+    """
     body = api("POST", "/market-data/coverage", json={"vehicle": vehicle, "market": market, "actor": ACTOR})
     if not isinstance(body, dict):
         raise Failed("POST /market-data/coverage returned no object")
@@ -793,6 +804,7 @@ def evaluate_ranking(ctx: Context, fixture: Mapping) -> dict:
     names = {requirement_id: topic for topic, requirement_id in ids.items()}
     order = [names[row["id"]] for row in requirement_rows(ctx.api, vehicle, market)]
     deterministic = ctx.provider == "deterministic"
+    no_provider = "deterministic code without a provider; measured in the deterministic pass"
     results = {}
     if deterministic:
         versions = {names[requirement_id]: requirement_version(ctx.api, requirement_id) for requirement_id in names}
@@ -809,30 +821,44 @@ def evaluate_ranking(ctx: Context, fixture: Mapping) -> dict:
             top3_max_rank_range=max(ranges[topic]["range"] for topic in gold["top3"]), rank_ranges=ranges,
             perturbations=len(perturbed), vehicle=vehicle)
     else:
-        results["ranking_v1"] = not_applicable("customer-priority-v1 is deterministic code without a provider; "
-                                               "measured in the deterministic pass")
-    try:
-        ctx.trace["priority_inputs"].extend(derive_priority_inputs(ctx.api, vehicle, market))
-        try:
-            switch_rubric(ctx.api, vehicle, market)
-            switch = "applied"
-        except Unavailable as exc:
-            switch = f"not available ({exc}); ranking read as served"
-        first = priority_ranking(ctx.api, vehicle, market, ctx.provider)
-        repeat = priority_ranking(ctx.api, vehicle, market, ctx.provider)
-        ordered, again = ranking_order(first["items"], names), ranking_order(repeat["items"], names)
+        results["ranking_v1"] = not_applicable(f"customer-priority-v1 is {no_provider}")
+    try:   # every pass needs the v2 scope: the explanation under test explains the v2 ranking
+        derive_priority_inputs(ctx.api, vehicle, market)
+        switch_rubric(ctx.api, vehicle, market)
+        ctx.trace["priority_inputs"].extend(priority_inputs(ctx.api, vehicle, market))
+        first = priority_ranking(ctx.api, vehicle, market)
+        ordered = ranking_order(first["items"], names)
         if not ordered:
             raise Failed("GET /priorities/ranking returned no ranked requirements")
+    except (Unavailable, Failed) as exc:
+        failed = outcome(exc)
+        return {**results, "ranking_v2": failed if deterministic else not_applicable(f"Ranking v2 is {no_provider}"),
+                "ranking_explanation": failed,
+                "ranking_v2_stability": failed if deterministic else not_applicable(f"Sensitivity is {no_provider}")}
+    if deterministic:
+        again = ranking_order(priority_ranking(ctx.api, vehicle, market)["items"], names)
+        not_measured = sorted({flag for item in first["items"] for flag in item.get("not_measured") or []})
         results["ranking_v2"] = measured(
             order=ordered, top3_exact=ordered[:3] == gold["top3"], top3_overlap=top_k_overlap(gold["top3"], ordered, 3),
             repeat_identical=ordered == again, kendall_tau_vs_v1=kendall_tau(order, ordered),
-            rubric_versions=first["rubric_versions"], rubric_switch=switch, vehicle=vehicle)
+            rubric_versions=first["rubric_versions"], not_measured_factors=not_measured, vehicle=vehicle)
+    else:
+        results["ranking_v2"] = not_applicable(f"Ranking v2 is {no_provider}")
+    try:   # the provider drafts explanations only; the ranks must be identical before and after
+        body = explain_ranking(ctx.api, vehicle, market, ctx.provider)
+        method = require_provider(body.get("method_version"), ctx.provider, "POST /priorities/explain")
+        explained = records_in(body, "items")
+        after = ranking_order(priority_ranking(ctx.api, vehicle, market)["items"], names)
+        results["ranking_explanation"] = measured(
+            explained_share=ratio(len({row.get("requirement_id") for row in explained}), len(ordered)),
+            cites_score_share=ratio(sum(row.get("score_id") in (row.get("cited_ids") or []) for row in explained),
+                                    len(explained)),
+            ranks_unchanged=after == ordered, method_version=method, ai_generated=body.get("ai_generated"),
+            model=body.get("model"), vehicle=vehicle)
     except (Unavailable, Failed) as exc:
-        results["ranking_v2"] = outcome(exc)
+        results["ranking_explanation"] = outcome(exc)
     if not deterministic:
-        reason = "deterministic code without a provider; measured in the deterministic pass"
-        return {**results, "ranking_v2_stability": not_applicable(f"Sensitivity is {reason}"),
-                "coverage": not_applicable(f"Coverage is {reason}")}
+        return {**results, "ranking_v2_stability": not_applicable(f"Sensitivity is {no_provider}")}
     try:
         sensitivity = {names.get(key, key): value for key, value in priority_sensitivity(ctx.api, vehicle, market).items()}
         results["ranking_v2_stability"] = measured(
@@ -841,18 +867,37 @@ def evaluate_ranking(ctx: Context, fixture: Mapping) -> dict:
             stable_share=ratio(sum(row.get("stable") is True for row in sensitivity.values()), len(sensitivity)), vehicle=vehicle)
     except (Unavailable, Failed) as exc:
         results["ranking_v2_stability"] = outcome(exc)
-    try:   # the ranking scope has one simulated source holding 100 % of its evidence: Pod E must flag dominance (> 60 %)
-        report = coverage_report(ctx.api, vehicle, market)
-        warnings = report.get("warnings") or []
-        results["coverage"] = measured(
-            dominance_flagged=any(re.search(r"domin|single[ -]source", json.dumps(item, ensure_ascii=False), re.I)
-                                  for item in warnings),
-            warnings=warnings, method_version=report.get("method_version"),
-            expected="a single-source dominance warning (one simulated source holds 100 % of the scope's evidence)",
-            vehicle=vehicle)
-    except (Unavailable, Failed) as exc:
-        results["coverage"] = outcome(exc)
     return results
+
+
+def evaluate_coverage(ctx: Context, fixture: Mapping) -> dict:
+    """Pod E coverage-v1 on two simulated markets: single-source dominance must be flagged where gold says so."""
+    if ctx.provider != "deterministic":
+        return {"coverage": not_applicable("Coverage is deterministic code without a provider; measured in the "
+                                           "deterministic pass")}
+    markets = sorted({row["market"] for row in fixture["records"]})
+    vehicle = ctx.fresh_scope("COV", markets)
+    for market in markets:
+        import_records(ctx.api, vehicle, market, "Coverage case", [row for row in fixture["records"] if row["market"] == market])
+    flagged, shares, codes, method = set(), {}, {}, None
+    for market in markets:
+        body = coverage_report(ctx.api, vehicle, market)
+        method = body.get("method_version") or method
+        for item in records_in(body, "items"):
+            if item.get("market") != market:
+                continue
+            warnings = [w for w in item.get("warnings") or [] if isinstance(w, dict)]
+            codes[market] = sorted({str(w.get("code")) for w in warnings})
+            dominance = [w for w in warnings if w.get("code") == "single_source_dominance"]
+            if dominance:
+                flagged.add(market)
+                shares[market] = dominance[0].get("share")
+    if not codes:
+        raise Failed("POST /market-data/coverage returned no report for the simulated markets")
+    gold = set(fixture["gold"]["dominance_markets"])
+    return {"coverage": measured(**precision_recall(gold, flagged), dominance_correct=flagged == gold,
+                                 flagged_markets=sorted(flagged), gold_markets=sorted(gold), dominant_shares=shares,
+                                 warning_codes=codes, method_version=method, vehicle=vehicle)}
 
 
 def evaluate_trace(ctx: Context) -> dict:
@@ -912,7 +957,8 @@ SCENARIOS: tuple[tuple[str, Callable[[Context, Mapping], dict], tuple[str, ...]]
     ("sentiment", evaluate_sentiment, ("sentiment",)),
     ("market_conflicts", evaluate_conflicts, ("conflicts",)),
     ("requests", evaluate_requests, ("clustering", "scope_flags", "request_topics")),
-    ("ranking", evaluate_ranking, ("ranking_v1", "ranking_v2", "ranking_v2_stability", "coverage")),
+    ("ranking", evaluate_ranking, ("ranking_v1", "ranking_v2", "ranking_explanation", "ranking_v2_stability")),
+    ("coverage", evaluate_coverage, ("coverage",)),
 )
 
 
@@ -957,10 +1003,10 @@ def evaluate(client: httpx.Client, providers: Sequence[str] = PROVIDERS, token: 
             metrics[group][provider] = guarded((group,), lambda check=check, group=group: {group: check(ctx)})[group]
         scopes[provider] = ctx.vehicles
     chain = guarded(("audit_chain",), lambda: {"audit_chain": measured(**verify_chain(audit_events(Api(client))))})["audit_chain"]
-    comparison = {}
-    for group in ("ranking_v1", "ranking_v2"):
-        orders = [metrics[group][p]["order"] for p in providers if metrics[group].get(p, {}).get("status") == "measured"]
-        comparison[f"{group}_identical_across_providers"] = all(o == orders[0] for o in orders) if len(orders) > 1 else None
+    measured_explanations = [metrics["ranking_explanation"][p] for p in providers
+                             if metrics["ranking_explanation"].get(p, {}).get("status") == "measured"]
+    comparison = {"ranks_unchanged_by_every_explanation": all(row["ranks_unchanged"] for row in measured_explanations)
+                  if measured_explanations else None}
     return {"evaluation": EVALUATION, "simulated": True,
             "description": "Labelled synthetic scenarios measured through the public API; not a BMW validation.",
             "base_url": str(client.base_url), "token": token, "providers": list(providers), "started_at": started_at,
@@ -990,8 +1036,10 @@ ROWS = (
     ("Ranking v1 top-3 stable (+/-20% weights)", "ranking_v1", "top3_stable"),
     ("Ranking v2 top-3 exact", "ranking_v2", "top3_exact"),
     ("Ranking v2 repeat identical", "ranking_v2", "repeat_identical"),
+    ("Ranking explanation covers every requirement", "ranking_explanation", "explained_share"),
+    ("Ranking unchanged after explanation", "ranking_explanation", "ranks_unchanged"),
     ("Ranking v2 top-3 stable (sensitivity)", "ranking_v2_stability", "top3_stable"),
-    ("Single-source dominance flagged (coverage)", "coverage", "dominance_flagged"),
+    ("Coverage dominance flags as gold (2 markets)", "coverage", "dominance_correct"),
     ("Trace coverage (new records)", "trace_coverage", "coverage"),
     ("Runs with outcome audit event", "run_audit", "completeness"),
     ("OpenAI calls recorded in runs", "run_audit", "llm_calls"),

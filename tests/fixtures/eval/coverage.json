@@ -1,0 +1,29 @@
+{
+  "fixture": "eval-coverage-v1",
+  "simulated": true,
+  "description": "Simulated customer feedback in two markets of one synthetic vehicle, labelled with an invented provenance per record. In US one provenance holds 8 of 10 feedback IDs (80 %), in EU no provenance holds more than half. Pod E's coverage-v1 must flag single-source dominance (> 60 %) in US only. Not BMW data.",
+  "dominance_threshold": 0.6,
+  "gold": {"dominance_markets": ["US"], "dominant_share": {"US": 0.8, "EU": 0.5}},
+  "records": [
+    {"id": "C-US-01", "simulated": true, "market": "US", "record_type": "customer_feedback", "provenance": "Simulated dealer survey", "text": "The seats are comfortable on long drives."},
+    {"id": "C-US-02", "simulated": true, "market": "US", "record_type": "customer_feedback", "provenance": "Simulated dealer survey", "text": "Wireless CarPlay drops on longer trips."},
+    {"id": "C-US-03", "simulated": true, "market": "US", "record_type": "customer_feedback", "provenance": "Simulated dealer survey", "text": "The climate menus are hard to find."},
+    {"id": "C-US-04", "simulated": true, "market": "US", "record_type": "customer_feedback", "provenance": "Simulated dealer survey", "text": "Road noise is low on the freeway."},
+    {"id": "C-US-05", "simulated": true, "market": "US", "record_type": "customer_feedback", "provenance": "Simulated dealer survey", "text": "The trunk opening is narrow."},
+    {"id": "C-US-06", "simulated": true, "market": "US", "record_type": "customer_feedback", "provenance": "Simulated dealer survey", "text": "Public charging sessions are hard to start."},
+    {"id": "C-US-07", "simulated": true, "market": "US", "record_type": "customer_feedback", "provenance": "Simulated dealer survey", "text": "The head-up display is clear."},
+    {"id": "C-US-08", "simulated": true, "market": "US", "record_type": "customer_feedback", "provenance": "Simulated dealer survey", "text": "Rear legroom is tight for adults."},
+    {"id": "C-US-09", "simulated": true, "market": "US", "record_type": "customer_feedback", "provenance": "Simulated online panel", "text": "The exterior styling is sharp."},
+    {"id": "C-US-10", "simulated": true, "market": "US", "record_type": "customer_feedback", "provenance": "Simulated online panel", "text": "The infotainment system starts slowly."},
+    {"id": "C-EU-01", "simulated": true, "market": "EU", "record_type": "customer_feedback", "provenance": "Simulated dealer survey", "text": "The seats are comfortable on the motorway."},
+    {"id": "C-EU-02", "simulated": true, "market": "EU", "record_type": "customer_feedback", "provenance": "Simulated dealer survey", "text": "Touch controls on the steering wheel are too sensitive."},
+    {"id": "C-EU-03", "simulated": true, "market": "EU", "record_type": "customer_feedback", "provenance": "Simulated dealer survey", "text": "The navigation guides me well through city traffic."},
+    {"id": "C-EU-04", "simulated": true, "market": "EU", "record_type": "customer_feedback", "provenance": "Simulated dealer survey", "text": "Tyre noise on concrete motorways is noticeable."},
+    {"id": "C-EU-05", "simulated": true, "market": "EU", "record_type": "customer_feedback", "provenance": "Simulated dealer survey", "text": "The interior design is calm and well made."},
+    {"id": "C-EU-06", "simulated": true, "market": "EU", "record_type": "customer_feedback", "provenance": "Simulated online panel", "text": "Over-the-air updates installed without trouble."},
+    {"id": "C-EU-07", "simulated": true, "market": "EU", "record_type": "customer_feedback", "provenance": "Simulated online panel", "text": "The dashboard design looks cluttered."},
+    {"id": "C-EU-08", "simulated": true, "market": "EU", "record_type": "customer_feedback", "provenance": "Simulated online panel", "text": "Acceleration is smooth when merging."},
+    {"id": "C-EU-09", "simulated": true, "market": "EU", "record_type": "customer_feedback", "provenance": "Simulated online panel", "text": "The lumbar support could be better."},
+    {"id": "C-EU-10", "simulated": true, "market": "EU", "record_type": "customer_feedback", "provenance": "Simulated online panel", "text": "The digital key sometimes needs a second try."}
+  ]
+}
