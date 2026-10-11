@@ -101,6 +101,16 @@ def requirement_brief(connection, snapshot, *, frozen=False):
     }
 
 
+def coverage_warnings(connection, vehicle, market):
+    """Representativeness warnings from the current coverage report (market data, coverage-v1)."""
+    row = connection.execute("SELECT warnings, method_version FROM v_coverage_current WHERE vehicle=? AND market=? "
+                             "ORDER BY created_at DESC, id DESC LIMIT 1", (vehicle, market)).fetchone()
+    if row is None:
+        return []
+    return [f"Data coverage ({row['method_version']}): {warning['message']}" for warning in decode(row, ("warnings",))["warnings"]
+            if isinstance(warning, dict) and warning.get("severity") in ("medium", "high")]
+
+
 def build_brief(connection, workflow):
     frozen = workflow["status"] == "completed"
     snapshots = workflow["requirement_snapshots"]
@@ -121,6 +131,8 @@ def build_brief(connection, workflow):
         warnings.append("Evidence differs from this run's assessed input. Run a cumulative update before completing.")
     if not requirements:
         warnings.append("No requirements are available yet; finish the autonomous stages before review.")
+    if not frozen:
+        warnings += coverage_warnings(connection, workflow["vehicle"], workflow["market"])
     return {
         "workflow_id": workflow["id"], "vehicle": workflow["vehicle"], "market": workflow["market"],
         "status": workflow["status"], "snapshot": "completed" if frozen else "live",
