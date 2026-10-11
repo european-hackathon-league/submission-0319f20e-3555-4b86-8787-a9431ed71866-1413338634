@@ -1,28 +1,26 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import sharp from 'sharp';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const root = path.dirname(here);
 const out = path.join(here, 'output/pitch-bmw-motion.html');
-const fontRoot = '/Users/troy/Desktop/ehl-final/mcp_server/ui/node_modules/@fontsource';
+const fontRoot = path.join(here, 'assets/fonts');
 const b64 = async file => (await fs.readFile(file)).toString('base64');
 const font = async (family, weight, file) => `@font-face{font-family:'${family}';font-style:normal;font-weight:${weight};font-display:swap;src:url(data:font/woff2;base64,${await b64(file)}) format('woff2')}`;
 const fonts = [
-  await font('Barlow', 300, `${fontRoot}/barlow/files/barlow-latin-300-normal.woff2`),
-  await font('Barlow', 400, `${fontRoot}/barlow/files/barlow-latin-400-normal.woff2`),
-  await font('Barlow', 500, `${fontRoot}/barlow/files/barlow-latin-500-normal.woff2`),
-  await font('Barlow', 600, `${fontRoot}/barlow/files/barlow-latin-600-normal.woff2`),
-  await font('IBM Plex Mono', 400, `${fontRoot}/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2`),
+  await font('Barlow', 300, `${fontRoot}/barlow-latin-300-normal.woff2`),
+  await font('Barlow', 400, `${fontRoot}/barlow-latin-400-normal.woff2`),
+  await font('Barlow', 500, `${fontRoot}/barlow-latin-500-normal.woff2`),
+  await font('Barlow', 600, `${fontRoot}/barlow-latin-600-normal.woff2`),
+  await font('IBM Plex Mono', 400, `${fontRoot}/ibm-plex-mono-latin-400-normal.woff2`),
 ].join('\n');
+const editCss = await fs.readFile(path.join(here, 'slide-edit.css'), 'utf8');
+const runtime = await fs.readFile(path.join(here, 'slide-runtime.js'), 'utf8');
 
-const logoWhite = (await fs.readFile(path.join(root, 'web/public/brand/bmw-white.svg'), 'utf8')).replace(/^<\?xml[^>]+>\s*/, '');
-const logoGrey = (await fs.readFile(path.join(root, 'web/public/brand/bmw-grey.svg'), 'utf8')).replace(/^<\?xml[^>]+>\s*/, '');
+const logoWhite = (await fs.readFile(path.join(here, 'assets/bmw-white.svg'), 'utf8')).replace(/^<\?xml[^>]+>\s*/, '');
+const logoGrey = (await fs.readFile(path.join(here, 'assets/bmw-grey.svg'), 'utf8')).replace(/^<\?xml[^>]+>\s*/, '');
 const iconSvgs = await Promise.all([1,2,3,4].map(i => fs.readFile(path.join(here, `assets/reference-icon-${i}.svg`), 'utf8')));
-const car = await sharp(path.join(root, 'assets/vehicles/g60-us/poster.webp'))
-  .extract({ left: 365, top: 225, width: 1035, height: 610 })
-  .webp({ quality: 90 }).toBuffer();
+const car = await fs.readFile(path.join(here, 'assets/g60-car.webp'));
 const carUri = `data:image/webp;base64,${car.toString('base64')}`;
 
 function mark(dark=false) {
@@ -58,6 +56,7 @@ h1,h2,h3,p{margin:0}h1,h2{font-weight:300;letter-spacing:-.022em}h1{font-size:72
 .close .blue-rule{top:185px;height:345px;left:82px}.close h1{position:absolute;left:113px;top:241px;width:530px;font-size:63px}.close .lead{position:absolute;left:113px;top:495px;width:530px;font-size:24px}.car{position:absolute;left:673px;top:186px;width:582px;height:360px;object-fit:cover}.credit{position:absolute;right:47px;bottom:86px;color:#8fa5be;font-size:12px}
 .progress{position:absolute;z-index:10;left:0;bottom:0;height:4px;background:var(--blue);transition:width .45s ease}.nav{position:absolute;z-index:11;right:26px;top:24px;display:flex;gap:7px;opacity:0;transition:opacity .2s}.deck:hover .nav,.nav:focus-within{opacity:1}.nav button{width:35px;height:35px;border:1px solid #7e9abb55;background:#0b1422cc;color:#fff;font:24px Barlow,Arial;cursor:pointer}.nav button:hover{background:var(--blue)}
 @media(prefers-reduced-motion:reduce){.slide.active,.active [data-enter],.active .blue-rule{animation:none!important;opacity:1!important;transform:none!important}.progress{transition:none}}
+${editCss}
 </style></head><body><main class="deck" aria-label="BMW Product Intelligence pitch deck">
 <section class="slide dark opening active" aria-label="Slide 1 of 6">${mark(true)}<div class="blue-rule"></div><h1 data-enter>Every requirement<br>begins with the customer</h1><p class="lead" data-enter style="--d:.15s">Agents read and draft. The product manager decides.</p>${footer(1,true)}</section>
 <section class="slide" aria-label="Slide 2 of 6">${mark()}<div class="light-head"><h2 data-enter>The G60 / US evidence</h2><p class="sub" data-enter style="--d:.1s">The pilot can explain its sample before asking for a decision.</p></div><div class="evidence-grid">
@@ -69,15 +68,7 @@ h1,h2,h3,p{margin:0}h1,h2{font-weight:300;letter-spacing:-.022em}h1{font-size:72
 <section class="slide" aria-label="Slide 4 of 6">${mark()}<div class="decision-head"><h2 data-enter>The PM owns the decision</h2></div><article class="identity" data-enter style="--d:.12s">${icon(0)}<div class="id">REQ-G60-US-001</div><h3>Charging</h3><p>G60 / i5 M60 / US</p></article><div class="steps"><div class="step" data-enter style="--d:.18s"><b>01</b><div><strong>AI draft</strong><p>A linked proposal the PM can inspect</p></div></div><div class="step" data-enter style="--d:.3s"><b>02</b><div><strong>PM assumption</strong><p>An unsupported target stays labelled</p></div></div><div class="step" data-enter style="--d:.42s"><b>03</b><div><strong>Approval record</strong><p>The PM edits, explains and approves a version</p></div></div></div>${footer(4)}</section>
 <section class="slide" aria-label="Slide 5 of 6">${mark()}<span class="sim-tag">SIMULATED UPDATE</span><div class="update-head"><h2 data-enter>Only affected decisions return</h2><p class="sub" data-enter style="--d:.1s">New evidence arrives during the two-year development cycle.</p></div><div class="update-grid"><article class="tile" data-enter style="--d:.15s"><em>01</em><h3>New feedback</h3><p>A new batch enters the same evidence pipeline</p></article><article class="tile" data-enter style="--d:.28s"><em>02</em><h3>Charging returns</h3><p>The affected requirement reopens beside its approved version</p></article><article class="tile" data-enter style="--d:.41s"><em>03</em><h3>PM review</h3><p>The PM sees the delta and decides whether to update</p></article></div>${footer(5)}</section>
 <section class="slide dark close" aria-label="Slide 6 of 6">${mark(true)}<div class="blue-rule"></div><h1 data-enter>Agents read.<br>The PM decides.</h1><p class="lead" data-enter style="--d:.15s">Every requirement is one click from the customer’s own words.</p><img class="car" data-enter style="--d:.25s" src="${carUri}" alt="BMW i5 M60 artist model"><span class="credit">2023 BMW i5 M60 by Nazh Design / Sketchfab · CC BY 4.0</span>${footer(6,true)}</section>
-<div class="progress" id="progress"></div><nav class="nav" aria-label="Slide controls"><button id="prev" aria-label="Previous slide">‹</button><button id="next" aria-label="Next slide">›</button></nav>
-</main><script>
-const slides=[...document.querySelectorAll('.slide')];let current=0;let frame=0;
-function fit(){document.querySelector('.deck').style.setProperty('--scale',Math.min(innerWidth/1280,innerHeight/720))}fit();addEventListener('resize',fit);
-function countOn(slide){cancelAnimationFrame(frame);if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;const nodes=[...slide.querySelectorAll('[data-count]')];const start=performance.now();function tick(now){const p=Math.min((now-start)/900,1);const eased=1-Math.pow(1-p,3);nodes.forEach(n=>{const goal=Number(n.dataset.count);const value=goal*eased;n.textContent=goal%1?value.toFixed(1):Math.round(value).toLocaleString('en-US')});if(p<1)frame=requestAnimationFrame(tick)}frame=requestAnimationFrame(tick)}
-function show(i){if(i<0||i>=slides.length)return;slides[current].classList.remove('active');current=i;void slides[current].offsetWidth;slides[current].classList.add('active');document.getElementById('progress').style.width=((current+1)/slides.length*100)+'%';countOn(slides[current]);}
-document.getElementById('next').onclick=()=>show(current+1);document.getElementById('prev').onclick=()=>show(current-1);
-addEventListener('keydown',e=>{if(['ArrowRight',' ','PageDown','Enter'].includes(e.key)){e.preventDefault();show(current+1)}else if(['ArrowLeft','PageUp','Backspace'].includes(e.key)){e.preventDefault();show(current-1)}else if(e.key==='Home'){show(0)}else if(e.key==='End'){show(slides.length-1)}else if(e.key.toLowerCase()==='f'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}else if(e.key.toLowerCase()==='r'){show(current)}});
-show(0);
-</script></body></html>`;
+<div class="progress" id="progress"></div><div class="toolbar" aria-label="Slide controls"><button id="prev" aria-label="Previous slide">‹</button><span class="page-count" id="page-count">1 / 6</span><button id="next" aria-label="Next slide">›</button><button id="edit">Edit text</button><button id="save">Save HTML</button><button id="print">Print PDF</button></div>
+</main><script>${runtime}</script></body></html>`;
 await fs.writeFile(out, html);
 console.log(out);
