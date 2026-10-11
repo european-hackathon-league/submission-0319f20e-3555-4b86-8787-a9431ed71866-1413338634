@@ -16,6 +16,8 @@ The prepared state has 4,365 G60 / US evidence rows, 11 proposed requirements, a
 
 ## Live path after the deck's opening
 
+**Three-minute target without a trailer:** show deck slide 1 for at most 15 seconds, run the 2:30 live path below, then use slide 6 for a 15-second close. Slides 2–5 are static backup and Q&A material; do not flip through all six before the live journey. This timing is a target until two human presenter runs confirm it.
+
 | Approx. live time | Driver action | Presenter wording |
 | --- | --- | --- |
 | 0:00–0:20 | Overview, G60 / US | “These are 4,365 imported feedback rows, not market prevalence. About 72.7% of unique feedback IDs come from one source.” |
