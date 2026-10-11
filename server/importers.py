@@ -450,6 +450,52 @@ def parse_file(filename: str, data: bytes, vehicle: str = "G60", market: str = "
     Raises ValueError for empty, unsupported, malformed or excessive input.
     Caller must preserve original bytes and add file/source identity to locations.
     """
+    vehicle, market, result = _parse_all(filename, data, vehicle, market)
+    return [item for item in result if item["vehicle"] == vehicle and item["market"] == market]
+
+
+def _declared(record: dict) -> tuple[tuple[str, ...], str | None]:
+    """The vehicles and market a record's own source declares; () / None where the import request decides."""
+    basis = record["metadata"]["scope_basis"]
+    vehicles = tuple(record["metadata"].get("vehicle_scope", ())) if basis["vehicle"] == "source" else ()
+    return vehicles, record["market"] if basis["market"] == "source" else None
+
+
+def file_scopes(filename: str, data: bytes) -> list[dict]:
+    """Every scope a file declares, with record counts, so no vehicle or market in it is missed.
+
+    Combined vehicle sheets (G60_G68) appear once per vehicle. vehicle or market is None where the source
+    does not declare it (option-list PDFs declare a vehicle but no market); the caller chooses those scopes.
+    """
+    counts: dict[tuple[str | None, str | None], int] = {}
+    for record in _parse_all(filename, data, "G60", "US")[2]:
+        vehicles, market = _declared(record)
+        for vehicle in vehicles or (None,):
+            counts[vehicle, market] = counts.get((vehicle, market), 0) + 1
+    return [{"vehicle": vehicle, "market": market, "records": count}
+            for (vehicle, market), count in sorted(counts.items(), key=lambda item: (item[0][0] or "", item[0][1] or ""))]
+
+
+def parse_scopes(filename: str, data: bytes, scopes) -> dict[tuple[str, str], list[dict]]:
+    """For each (vehicle, market), exactly what parse_file(filename, data, vehicle, market) returns, parsing once.
+
+    A record belongs to a scope when its declared vehicles include the vehicle (or it declares none) and its
+    declared market is the market (or it declares none), as in parse_file.
+    """
+    records = _parse_all(filename, data, "G60", "US")[2]
+    declared = [_declared(record) for record in records]
+    result = {}
+    for vehicle, market in scopes:
+        vehicle, market = vehicle.strip().upper(), normalize_market(market)
+        result[vehicle, market] = [
+            {**record, "vehicle": vehicle, "market": market, "metadata": json.loads(json.dumps(record["metadata"]))}
+            for record, (vehicles, source_market) in zip(records, declared)
+            if (not vehicles or vehicle in vehicles) and source_market in (None, market)]
+    return result
+
+
+def _parse_all(filename: str, data: bytes, vehicle: str, market: str) -> tuple[str, str, list[dict]]:
+    """Validated scope and every record of the file, before filtering to the requested scope."""
     if not isinstance(data, bytes) or not data or len(data) > MAX_FILE_BYTES:
         raise ValueError("File must contain between 1 byte and 32 MiB")
     if not all(isinstance(value, str) and value.strip() for value in (filename, vehicle, market)):
@@ -477,7 +523,7 @@ def parse_file(filename: str, data: bytes, vehicle: str = "G60", market: str = "
             raise ValueError("File contains no readable records")
         if len(result) > MAX_RECORDS or sum(len(item["content"]) for item in result) > MAX_TEXT_CHARS:
             raise ValueError("File exceeds record or extracted text limits")
-        return [item for item in result if item["vehicle"] == vehicle and item["market"] == market]
+        return vehicle, market, result
     except ValueError:
         raise
     except Exception as exc:
