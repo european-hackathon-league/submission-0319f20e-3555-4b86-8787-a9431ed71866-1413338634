@@ -6,7 +6,7 @@ import { Info, Scale } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { allPages, date, readable } from "@/lib/api";
-import { platform } from "@/lib/platform-api";
+import { coverageWarnings, platform } from "@/lib/platform-api";
 import {
   CONFLICT_DECISIONS,
   MARKETS,
@@ -19,7 +19,7 @@ import {
 } from "@/lib/platform-types";
 import type { Requirement } from "@/lib/types";
 import { useWorkspace } from "./context";
-import { PmSelect } from "./pm-select";
+import { PmMultiSelect, PmSelect } from "./pm-select";
 import {
   CapabilityButton,
   GateDialog,
@@ -51,6 +51,8 @@ export function Markets() {
   const { scope } = useWorkspace();
   const { params, set } = useUrlState();
   const conflictId = params.get("conflict") || "";
+  const markets = (params.get("cmarkets") || "").split(",").filter(Boolean);
+  const setMarkets = (next: string[]) => set({ cmarkets: next.length ? [...next].sort().join(",") : undefined });
   return (
     <>
       <Heading
@@ -64,52 +66,127 @@ export function Markets() {
           is missing data, not evidence of no customer need.
         </span>
       </div>
-      <ComparisonPanel />
-      <ConflictsPanel selected={conflictId} onSelect={(id) => set({ conflict: id || undefined })} />
+      <ComparisonPanel markets={markets} setMarkets={setMarkets} />
+      <ConflictsPanel markets={markets} selected={conflictId} onSelect={(id) => set({ conflict: id || undefined })} />
       {conflictId && <ConflictDetailPanel key={conflictId} id={conflictId} onClose={() => set({ conflict: undefined })} />}
     </>
   );
 }
 
-function ComparisonPanel() {
+/** Pod E coverage reports: representativeness warnings per market (single-source dominance, gaps, undated evidence). */
+function CoverageWarnings({ markets }: { markets: string[] | undefined }) {
+  const { scope } = useWorkspace();
+  const state = usePlatformQuery("coverage", {
+    queryKey: ["market-coverage", scope.vehicle],
+    queryFn: ({ signal }) => platform.coverage(scope.vehicle, signal),
+  });
+  if (state.unavailable || state.query.error || !state.query.data) return null;
+  const all = coverageWarnings(state.query.data.items);
+  if (!all.length) return null;
+  const compared = new Set(markets?.length ? markets : [scope.market]);
+  const shown = all.filter((w) => compared.has(w.market));
+  const others = all.filter((w) => !compared.has(w.market));
+  const method = state.query.data.items[0]?.methodVersion ?? null;
+  return (
+    <Panel
+      title="Data coverage warnings"
+      description={`How representative the evidence is for the compared markets (${[...compared].join(", ")}). Read counts as a sample, not market prevalence.`}
+    >
+      <p className="chart-meta">
+        <MethodLabel methodVersion={method} runId={state.query.data.items[0]?.runId} />
+      </p>
+      {shown.length ? <CoverageList warnings={shown} /> : <p className="muted text-xs">No coverage warnings for the compared markets.</p>}
+      {!!others.length && (
+        <details>
+          <summary>
+            {others.length} warnings for {new Set(others.map((w) => w.market)).size} other markets
+          </summary>
+          <CoverageList warnings={others} />
+        </details>
+      )}
+    </Panel>
+  );
+}
+function CoverageList({ warnings }: { warnings: ReturnType<typeof coverageWarnings> }) {
+  return (
+    <ul className="coverage-list">
+      {warnings.map((w, i) => (
+        <li key={`${w.market}-${w.code}-${i}`}>
+          <span className={`severity severity-${w.severity}`}>{w.severity}</span>
+          <span className="mono">{w.market}</span>
+          <span>{w.message}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+function ComparisonPanel({ markets, setMarkets }: { markets: string[]; setMarkets: (markets: string[]) => void }) {
   const { scope, actor } = useWorkspace();
   const weights = usePlatformQuery("weights", {
     queryKey: ["market-weights", scope.vehicle],
     queryFn: ({ signal }) => platform.weights(scope.vehicle, signal),
   });
   const compare = usePlatformQuery("compare", {
-    queryKey: ["market-compare", scope.vehicle],
-    queryFn: () => platform.compare(scope.vehicle, actor?.id),
+    queryKey: ["market-compare", scope.vehicle, markets.join(",")],
+    queryFn: () => platform.compare(scope.vehicle, actor?.id, markets.length >= 2 ? markets : undefined),
     staleTime: Infinity,
   });
   return (
-    <Panel
-      title="Topic × market comparison"
-      description="Per topic and market: requirement score and rank, evidence count and grade, BMW-evidence sentiment, request pressure and targets. Columns carry the market weight."
-      action={
-        !compare.unavailable && (
-          <Button variant="outline" size="sm" disabled={compare.query.isFetching} onClick={() => void compare.query.refetch()}>
-            {compare.query.isFetching ? "Comparing…" : "Recompute"}
-          </Button>
-        )
-      }
-    >
-      <WeightsStrip state={weights} />
-      {compare.unavailable ? (
-        <>
-          <Unavailable endpoint="compare" compact />
-          <RequirementScoresByMarket />
-        </>
-      ) : (
-        <PlatformView
-          state={compare}
-          isEmpty={(data) => !data.rows.length}
-          empty={<Empty title="Nothing to compare yet" description="Import market evidence and run the pipeline for at least one market." />}
-        >
-          {(data) => <ComparisonMatrix data={data} />}
-        </PlatformView>
-      )}
-    </Panel>
+    <>
+      <CoverageWarnings markets={compare.query.data?.markets.map((m) => m.market)} />
+      <Panel
+        title="Topic × market comparison"
+        description="Per topic and market: requirement score and rank, evidence count and grade, BMW-evidence sentiment, request pressure and targets. Columns carry the market weight."
+        action={
+          !compare.unavailable && (
+            <Button variant="outline" size="sm" disabled={compare.query.isFetching} onClick={() => void compare.query.refetch()}>
+              {compare.query.isFetching ? "Comparing…" : "Recompute"}
+            </Button>
+          )
+        }
+      >
+        <WeightsStrip state={weights} />
+        {!compare.unavailable && (
+          <div className="platform-toolbar">
+            <PmMultiSelect
+              aria-label="Markets to compare"
+              value={markets}
+              onValueChange={setMarkets}
+              options={[
+                ...new Set([
+                  ...(weights.query.data?.items.map((w) => w.market) ?? []),
+                  ...(compare.query.data?.markets.map((m) => m.market) ?? []),
+                  ...MARKETS,
+                  ...markets,
+                ]),
+              ]
+                .sort()
+                .map((m) => ({ value: m, label: m }))}
+              summary={(selected) =>
+                selected.length >= 2 ? `Comparing ${selected.join(", ")}` : selected.length ? "Pick at least two markets" : "All markets with data"
+              }
+            />
+            {markets.length === 1 && (
+              <span className="attention-text text-xs">Choose a second market; until then every market with data is compared.</span>
+            )}
+          </div>
+        )}
+        {compare.unavailable ? (
+          <>
+            <Unavailable endpoint="compare" compact />
+            <RequirementScoresByMarket />
+          </>
+        ) : (
+          <PlatformView
+            state={compare}
+            isEmpty={(data) => !data.rows.length}
+            empty={<Empty title="Nothing to compare yet" description="Import market evidence and run the pipeline for at least one market." />}
+          >
+            {(data) => <ComparisonMatrix data={data} />}
+          </PlatformView>
+        )}
+      </Panel>
+    </>
   );
 }
 function WeightsStrip({ state }: { state: PlatformState<MarketWeights> }) {
@@ -365,7 +442,7 @@ function RequirementScoresByMarket() {
   );
 }
 
-function ConflictsPanel({ selected, onSelect }: { selected: string; onSelect: (id: string) => void }) {
+function ConflictsPanel({ markets, selected, onSelect }: { markets: string[]; selected: string; onSelect: (id: string) => void }) {
   const { scope } = useWorkspace();
   const [status, setStatus] = useState("open");
   const [provider, setProvider] = useState<Provider>("openai");
@@ -373,10 +450,11 @@ function ConflictsPanel({ selected, onSelect }: { selected: string; onSelect: (i
     queryKey: ["market-conflicts", scope.vehicle, status],
     queryFn: ({ signal }) => platform.conflicts(scope.vehicle, status === "all" ? "" : status, signal),
   });
-  const detect = useCapability("detectConflicts", (actor) => platform.detectConflicts(scope.vehicle, { actor, provider }), [
-    ["market-conflicts"],
-    ["market-compare"],
-  ]);
+  const detect = useCapability(
+    "detectConflicts",
+    (actor) => platform.detectConflicts(scope.vehicle, { actor, provider, ...(markets.length >= 2 ? { markets } : {}) }),
+    [["market-conflicts"], ["market-compare"]],
+  );
   return (
     <Panel
       title="Market conflicts"
@@ -550,7 +628,12 @@ function ConflictBody({ detail }: { detail: ConflictDetail }) {
               ))}
             </dl>
           )}
-          {Object.keys(nested).length > 0 && <pre className="json-record">{JSON.stringify(nested, null, 2)}</pre>}
+          {Object.keys(nested).length > 0 && (
+            <details>
+              <summary>Rule inputs ({Object.keys(nested).map(readable).join(", ")})</summary>
+              <pre className="json-record">{JSON.stringify(nested, null, 2)}</pre>
+            </details>
+          )}
         </details>
       )}
       <div className="conflict-evidence-grid" style={{ "--market-count": Math.max(1, markets.length) } as React.CSSProperties}>

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
 import { date, readable } from "@/lib/api";
-import { platform, toSentimentChart } from "@/lib/platform-api";
+import { gateError, platform, toSentimentChart } from "@/lib/platform-api";
 import {
   TOPICS,
   type DomainGroup,
@@ -15,6 +15,7 @@ import {
   type SentimentChart,
   type SentimentPoint,
   type SignalItem,
+  type SignalsDigest,
   type SourceClass,
   type TopicSummary,
   type Watchlist,
@@ -27,6 +28,7 @@ import {
   MethodLabel,
   PROVIDER_OPTIONS,
   PlatformView,
+  ProvenanceLabel,
   SourceLinks,
   percent,
   shortId,
@@ -34,7 +36,7 @@ import {
   useCapability,
   usePlatformQuery,
 } from "./platform-shared";
-import { Empty, Field, Heading, Panel, Status, useUrlState } from "./shared";
+import { Empty, ErrorMessage, Field, Heading, Panel, Status, useUrlState } from "./shared";
 
 const SERIES: Record<SourceClass, { label: string; color: string; dash?: string }> = {
   bmw_evidence: { label: "BMW evidence", color: "var(--series-bmw)" },
@@ -70,11 +72,12 @@ export function Signals() {
       <div className="pm-alert">
         <Info size={16} />
         <span>
-          Monitoring searches publicly indexed pages through Exa; it is not a social firehose. Queries are built only from watchlist terms,
-          public model names, topic keywords, market and competitor names. BMW records and customer verbatims are never sent.
+          Monitoring searches publicly indexed pages through Exa; it is not a social firehose. Queries are built only from watchlist terms, public
+          model names, topic keywords, market and competitor names. BMW records and customer verbatims are never sent.
         </span>
       </div>
       <TopicSummaries topic={topic} onSelect={(next) => set({ topic: next })} />
+      <WhatChanged topic={topic} />
       <SentimentPanel topic={topic} setTopic={(next) => set({ topic: next })} />
       <Watchlists />
       <SignalInbox topic={topic} />
@@ -90,7 +93,10 @@ function TopicSummaries({ topic, onSelect }: { topic: string; onSelect: (topic: 
     queryFn: ({ signal }) => platform.summary(scope, signal),
   });
   return (
-    <Panel title="Sentiment by topic" description="Mean polarity per topic with its 8-week momentum (least-squares slope of the weekly mean, weighted by n).">
+    <Panel
+      title="Sentiment by topic"
+      description="Mean polarity per topic with its 8-week momentum (least-squares slope of the weekly mean, weighted by n)."
+    >
       <PlatformView
         state={state}
         isEmpty={(items) => !items.length}
@@ -110,7 +116,13 @@ function TopicSummaries({ topic, onSelect }: { topic: string; onSelect: (topic: 
                       <span>{row.sourceClass ? seriesOf(row.sourceClass).label : "All sources"}</span>
                       <span className="tabular-nums">{signed(row.meanPolarity)}</span>
                       <Momentum value={row.momentum} />
-                      <small className={row.lowN ? "low-n-flag" : "muted"}>n {row.n}{row.lowN ? " · low n" : ""}</small>
+                      <small className={row.lowN ? "low-n-flag" : "muted"}>
+                        n {row.n}
+                        {row.lowN ? " · low n" : ""}
+                        {row.recentN !== null &&
+                          ` · last ${row.momentumWeeks ?? 0} wk: ${signed(row.recentMeanPolarity)} (n ${row.recentN}${row.recentLowN ? ", low n" : ""})`}
+                        {row.undatedN > 0 && ` · ${row.undatedN} dated by retrieval`}
+                      </small>
                     </span>
                   ))}
                   {rows[0]?.methodVersion && <MethodLabel methodVersion={rows[0].methodVersion} compact />}
@@ -123,8 +135,78 @@ function TopicSummaries({ topic, onSelect }: { topic: string; onSelect: (topic: 
     </Panel>
   );
 }
+/** POST /signals/summary: OpenAI drafts grounded observations; the deterministic provider returns the metrics only. */
+function WhatChanged({ topic }: { topic: string }) {
+  const { scope } = useWorkspace();
+  const [provider, setProvider] = useState<Provider>("openai");
+  const [onlyTopic, setOnlyTopic] = useState(false);
+  const run = useCapability("summarise", (actor) => platform.summarise(scope, { actor, provider, ...(onlyTopic ? { topic } : {}) }), []);
+  const digest = run.mutation.data as SignalsDigest | undefined;
+  return (
+    <Panel
+      title="What changed"
+      description="Observations about the recorded weekly series. OpenAI must cite an exact quote from a scored text for every claim; the deterministic baseline returns the metrics only and writes no text."
+    >
+      <div className="platform-toolbar">
+        <PmSelect
+          aria-label="Summary scope"
+          value={onlyTopic ? "topic" : "all"}
+          onValueChange={(value) => setOnlyTopic(value === "topic")}
+          options={[
+            { value: "all", label: "All topics" },
+            { value: "topic", label: `Only ${topicLabel(topic)}` },
+          ]}
+        />
+        <span className="toolbar-spacer" />
+        <PmSelect
+          aria-label="Summary provider"
+          value={provider}
+          onValueChange={(value) => setProvider(value as Provider)}
+          options={PROVIDER_OPTIONS}
+        />
+        <CapabilityButton capability={run}>Summarise series</CapabilityButton>
+      </div>
+      {run.mutation.error ? <ErrorMessage error={gateError(run.mutation.error)} /> : null}
+      {!digest ? (
+        <p className="muted text-xs">Nothing drafted in this session. Each run is recorded with its provider, model and token use.</p>
+      ) : digest.provenance.generated ? (
+        <section className="ai-brief">
+          <ProvenanceLabel value={digest.provenance} />
+          {digest.claims.length ? (
+            <ul>
+              {digest.claims.map((c, i) => (
+                <li key={`${c.subjectId}-${i}`}>
+                  {c.text}
+                  <small className="muted">
+                    {" "}
+                    “{c.quote}” · <span className="mono">{shortId(c.subjectId)}</span>
+                  </small>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="muted text-xs">The model returned no grounded observation for these {digest.rows.length} series.</p>
+          )}
+          <small className="muted">
+            Untrusted model text about recorded metrics; quotes were located in the cited texts by the server. Not a decision.
+          </small>
+        </section>
+      ) : (
+        <p className="muted text-xs">
+          <MethodLabel methodVersion={digest.provenance.methodVersion} runId={digest.runId} /> Deterministic baseline: {digest.rows.length} series
+          summarised as metrics (see the topic tiles); no text is generated.
+        </p>
+      )}
+    </Panel>
+  );
+}
 function Momentum({ value }: { value: number | null }) {
-  if (value === null) return <span className="muted text-xs" title="Momentum not measured">–</span>;
+  if (value === null)
+    return (
+      <span className="muted text-xs" title="Momentum not measured">
+        –
+      </span>
+    );
   const Icon = value > 0.005 ? ArrowUpRight : value < -0.005 ? ArrowDownRight : Minus;
   return (
     <span className="momentum" title="8-week momentum: weekly change in mean polarity">
@@ -155,37 +237,67 @@ function SentimentPanel({ topic, setTopic }: { topic: string; setTopic: (topic: 
       description="Weekly mean polarity (−1 to +1). BMW evidence and public monitoring are separate series and never pooled; one method version per chart."
     >
       <div className="platform-toolbar">
-        <PmSelect aria-label="Topic" value={topic} onValueChange={(value) => { setTopic(value); setSelected(null); }} options={topicOptions} />
+        <PmSelect
+          aria-label="Topic"
+          value={topic}
+          onValueChange={(value) => {
+            setTopic(value);
+            setSelected(null);
+          }}
+          options={topicOptions}
+        />
         {chart && chart.methodVersions.length > 0 && (
           <PmSelect
             aria-label="Method version"
             value={chart.methodVersion || ""}
-            onValueChange={(value) => { setMethod(value); setSelected(null); }}
+            onValueChange={(value) => {
+              setMethod(value);
+              setSelected(null);
+            }}
             options={chart.methodVersions.map((value) => ({ value, label: value }))}
           />
         )}
         <div className="segmented-control">
-          <button type="button" aria-pressed={view === "chart"} onClick={() => setView("chart")}>Chart</button>
-          <button type="button" aria-pressed={view === "table"} onClick={() => setView("table")}>Table</button>
+          <button type="button" aria-pressed={view === "chart"} onClick={() => setView("chart")}>
+            Chart
+          </button>
+          <button type="button" aria-pressed={view === "table"} onClick={() => setView("table")}>
+            Table
+          </button>
         </div>
         <span className="toolbar-spacer" />
-        <PmSelect aria-label="Sentiment provider" value={provider} onValueChange={(value) => setProvider(value as Provider)} options={PROVIDER_OPTIONS} />
+        <PmSelect
+          aria-label="Sentiment provider"
+          value={provider}
+          onValueChange={(value) => setProvider(value as Provider)}
+          options={PROVIDER_OPTIONS}
+        />
         <CapabilityButton capability={score}>Score sentiment</CapabilityButton>
       </div>
       <PlatformView
         state={state}
         isEmpty={(points) => !points.length}
-        empty={<Empty title="No weekly sentiment for this topic" description="Score evidence or refresh a watchlist; weeks without scored items stay empty rather than zero." />}
+        empty={
+          <Empty
+            title="No weekly sentiment for this topic"
+            description="Score evidence or refresh a watchlist; weeks without scored items stay empty rather than zero."
+          />
+        }
       >
         {() =>
           chart && (
             <>
               {chart.methodVersion && (
                 <p className="chart-meta">
-                  <MethodLabel methodVersion={chart.methodVersion} /> <span className="muted text-xs">Hollow points have fewer than 5 scored items. Select a point to open its sources.</span>
+                  <MethodLabel methodVersion={chart.methodVersion} />{" "}
+                  <span className="muted text-xs">Hollow points have fewer than 5 scored items. Select a point to open its sources.</span>
                 </p>
               )}
-              {view === "chart" ? <SentimentLines chart={chart} onSelect={setSelected} selected={selected} /> : <SentimentTable chart={chart} onSelect={setSelected} />}
+              {view === "chart" ? (
+                <SentimentLines chart={chart} onSelect={setSelected} selected={selected} />
+              ) : (
+                <SentimentTable chart={chart} onSelect={setSelected} />
+              )}
               {selected && <PointSources point={selected} topic={topic} onClose={() => setSelected(null)} />}
             </>
           )
@@ -195,13 +307,20 @@ function SentimentPanel({ topic, setTopic }: { topic: string; setTopic: (topic: 
   );
 }
 type DotProps = { cx?: number; cy?: number; payload?: { week?: string }; dataKey?: unknown; index?: number };
-function SentimentLines({ chart, selected, onSelect }: { chart: SentimentChart; selected: SentimentPoint | null; onSelect: (p: SentimentPoint) => void }) {
+function SentimentLines({
+  chart,
+  selected,
+  onSelect,
+}: {
+  chart: SentimentChart;
+  selected: SentimentPoint | null;
+  onSelect: (p: SentimentPoint) => void;
+}) {
   const config: ChartConfig = Object.fromEntries(chart.sourceClasses.map((c) => [c, { label: seriesOf(c).label, color: seriesOf(c).color }]));
   const dot = ({ cx, cy, payload, dataKey, index }: DotProps, active: boolean) => {
     const sourceClass = String(dataKey);
     const point = payload?.week ? chart.points[`${payload.week}|${sourceClass}`] : undefined;
-    if (typeof cx !== "number" || typeof cy !== "number" || !point || point.meanPolarity === null)
-      return <g key={`${sourceClass}-${index}-empty`} />;
+    if (typeof cx !== "number" || typeof cy !== "number" || !point || point.meanPolarity === null) return <g key={`${sourceClass}-${index}-empty`} />;
     const color = seriesOf(sourceClass).color;
     const isSelected = selected?.week === point.week && selected.sourceClass === point.sourceClass;
     return (
@@ -209,7 +328,7 @@ function SentimentLines({ chart, selected, onSelect }: { chart: SentimentChart; 
         key={`${sourceClass}-${index}`}
         className="sentiment-dot"
         role="button"
-        aria-label={`${seriesOf(sourceClass).label}, ${point.week}: mean ${signed(point.meanPolarity)}, n ${point.n}${point.lowN ? ", low n" : ""}`}
+        aria-label={`${seriesOf(sourceClass).label}, ${point.label}: mean ${signed(point.meanPolarity)}, n ${point.n}${point.lowN ? ", low n" : ""}`}
         onClick={() => onSelect(point)}
       >
         <circle cx={cx} cy={cy} r={11} fill="transparent" />
@@ -231,7 +350,10 @@ function SentimentLines({ chart, selected, onSelect }: { chart: SentimentChart; 
         <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} minTickGap={18} />
         <YAxis domain={[-1, 1]} ticks={[-1, -0.5, 0, 0.5, 1]} tickLine={false} axisLine={false} width={38} />
         <ReferenceLine y={0} stroke="var(--border)" />
-        <ChartTooltip cursor={{ strokeDasharray: "3 3" }} content={(props) => <SentimentTooltip chart={chart} week={(props.payload?.[0]?.payload as { week?: string } | undefined)?.week} />} />
+        <ChartTooltip
+          cursor={{ strokeDasharray: "3 3" }}
+          content={(props) => <SentimentTooltip chart={chart} week={(props.payload?.[0]?.payload as { week?: string } | undefined)?.week} />}
+        />
         <ChartLegend content={<ChartLegendContent />} />
         {chart.sourceClasses.map((c) => (
           <Line
@@ -290,7 +412,10 @@ function SentimentTable({ chart, onSelect }: { chart: SentimentChart; onSelect: 
             <tr key={`${p.week}|${p.sourceClass}`}>
               <td className="mono">{chart.rows.find((r) => r.week === p.week)?.label ?? p.week}</td>
               <td>{seriesOf(p.sourceClass).label}</td>
-              <td className={p.lowN ? "low-n-flag" : ""}>{p.n}{p.lowN ? " · low n" : ""}</td>
+              <td className={p.lowN ? "low-n-flag" : ""}>
+                {p.n}
+                {p.lowN ? " · low n" : ""}
+              </td>
               <td className="tabular-nums">{signed(p.meanPolarity)}</td>
               <td>{percent(p.negativeShare)}</td>
               <td>{p.undatedN}</td>
@@ -320,14 +445,16 @@ function PointSources({ point, topic, onClose }: { point: SentimentPoint; topic:
       <div className="point-sources-heading">
         <div>
           <strong>
-            {seriesOf(point.sourceClass).label} · {point.week}
+            {seriesOf(point.sourceClass).label} · {point.label}
           </strong>
           <span className="muted text-xs">
             n {point.n} · mean {signed(point.meanPolarity)} · negative {percent(point.negativeShare)} · {point.methodVersion}
             {point.undatedN > 0 && ` · ${point.undatedN} of ${point.n} dated by retrieval or import, not publication`}
           </span>
         </div>
-        <Button variant="ghost" size="sm" onClick={onClose}>Close</Button>
+        <Button variant="ghost" size="sm" onClick={onClose}>
+          Close
+        </Button>
       </div>
       {!point.subjectIds.length ? (
         <p className="muted text-xs">The server did not return the record ids behind this point.</p>
@@ -346,8 +473,11 @@ function PointSources({ point, topic, onClose }: { point: SentimentPoint; topic:
                           <ExternalLink size={12} />
                         </a>
                         <small className="muted">
-                          {item.domain} · {item.date_basis === "published" ? `published ${date(item.published_at)}` : `retrieved ${date(item.retrieved_at)} (no publication date)`} ·{" "}
-                          <Status value={item.review_status} />
+                          {item.domain} ·{" "}
+                          {item.date_basis === "published"
+                            ? `published ${date(item.published_at)}`
+                            : `retrieved ${date(item.retrieved_at)} (no publication date)`}{" "}
+                          · <Status value={item.review_status} />
                         </small>
                       </>
                     ) : (
@@ -398,7 +528,11 @@ function Watchlists() {
                 ))}
               </tbody>
             </table>
-            {page.total > page.items.length && <p className="muted text-xs">Showing {page.items.length} of {page.total} watchlists.</p>}
+            {page.total > page.items.length && (
+              <p className="muted text-xs">
+                Showing {page.items.length} of {page.total} watchlists.
+              </p>
+            )}
           </div>
         )}
       </PlatformView>
@@ -424,12 +558,22 @@ function WatchlistRow({ watchlist: w }: { watchlist: Watchlist }) {
     <tr>
       <td>
         <strong>{w.label}</strong>
-        <small>{topicLabel(w.topic)} · every {w.cadence_days} days · ≤ {w.max_results} results</small>
+        <small>
+          {topicLabel(w.topic)} · every {w.cadence_days} days · ≤ {w.max_results} results
+        </small>
       </td>
       <td>
         <span className="chip-list">
-          {w.query_terms.map((t) => <span key={t} className="chip">{t}</span>)}
-          {w.competitors.map((c) => <span key={c} className="chip is-muted">vs {c}</span>)}
+          {w.query_terms.map((t) => (
+            <span key={t} className="chip">
+              {t}
+            </span>
+          ))}
+          {w.competitors.map((c) => (
+            <span key={c} className="chip is-muted">
+              vs {c}
+            </span>
+          ))}
         </span>
       </td>
       <td>
@@ -456,7 +600,11 @@ function WatchlistRow({ watchlist: w }: { watchlist: Watchlist }) {
           open={toggling}
           onOpenChange={setToggling}
           title={`${w.status === "active" ? "Pause" : "Resume"} “${w.label}”`}
-          description={w.status === "active" ? "Pausing stops scheduled searches; items already found stay." : "Resuming re-authorises scheduled public searches for this watchlist."}
+          description={
+            w.status === "active"
+              ? "Pausing stops scheduled searches; items already found stay."
+              : "Resuming re-authorises scheduled public searches for this watchlist."
+          }
           submitLabel={w.status === "active" ? "Pause watchlist" : "Resume watchlist"}
           role="run"
           pending={toggle.isPending}
@@ -521,7 +669,13 @@ function WatchlistDialog({ open, onOpenChange, topic }: { open: boolean; onOpenC
       onSubmit={(actor, rationale) => create.mutate({ actor, rationale })}
     >
       <Field label="Label">
-        <input className="pm-input" value={label} maxLength={120} onChange={(e) => setLabel(e.target.value)} placeholder="US forums on driving feel" />
+        <input
+          className="pm-input"
+          value={label}
+          maxLength={120}
+          onChange={(e) => setLabel(e.target.value)}
+          placeholder="US forums on driving feel"
+        />
       </Field>
       <div className="form-grid">
         <Field label="Topic">
@@ -536,24 +690,47 @@ function WatchlistDialog({ open, onOpenChange, topic }: { open: boolean; onOpenC
           />
         </Field>
         <Field label="Cadence (days)">
-          <input className="pm-input" type="number" min={1} max={90} value={cadence} onChange={(e) => setCadence(Math.min(90, Math.max(1, Number(e.target.value) || 1)))} />
+          <input
+            className="pm-input"
+            type="number"
+            min={1}
+            max={90}
+            value={cadence}
+            onChange={(e) => setCadence(Math.min(90, Math.max(1, Number(e.target.value) || 1)))}
+          />
         </Field>
       </div>
       <Field label="Query terms (comma-separated, public keywords only)">
         <input className="pm-input" value={terms} onChange={(e) => setTerms(e.target.value)} placeholder="steering feel, exhaust sound" />
       </Field>
       <Field label="Competitors (optional)">
-        <input className="pm-input" value={competitors} onChange={(e) => setCompetitors(e.target.value)} placeholder="Mercedes-Benz E-Class, Audi A6" />
+        <input
+          className="pm-input"
+          value={competitors}
+          onChange={(e) => setCompetitors(e.target.value)}
+          placeholder="Mercedes-Benz E-Class, Audi A6"
+        />
       </Field>
       <div className="form-grid">
         <Field label="Extra domains (optional)">
           <input className="pm-input" value={domains} onChange={(e) => setDomains(e.target.value)} placeholder="example.com" />
         </Field>
         <Field label="Results per search (1–10)">
-          <input className="pm-input" type="number" min={1} max={10} value={maxResults} onChange={(e) => setMaxResults(Math.min(10, Math.max(1, Number(e.target.value) || 1)))} />
+          <input
+            className="pm-input"
+            type="number"
+            min={1}
+            max={10}
+            value={maxResults}
+            onChange={(e) => setMaxResults(Math.min(10, Math.max(1, Number(e.target.value) || 1)))}
+          />
         </Field>
       </div>
-      {!!tooLong.length && <p className="muted text-xs" role="alert">Terms must be at most 60 characters: {tooLong.join(", ")}</p>}
+      {!!tooLong.length && (
+        <p className="muted text-xs" role="alert">
+          Terms must be at most 60 characters: {tooLong.join(", ")}
+        </p>
+      )}
       <label className="muted text-xs">
         <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} /> These terms are public and nonpersonal. They
         contain no BMW records or customer verbatims (the server also rejects terms found in imported evidence).
@@ -595,7 +772,10 @@ function SignalInbox({ topic }: { topic: string }) {
           aria-label="Topic filter"
           value={allTopics ? "all" : "topic"}
           onValueChange={(value) => setAllTopics(value === "all")}
-          options={[{ value: "all", label: "All topics" }, { value: "topic", label: `Only ${topicLabel(topic)}` }]}
+          options={[
+            { value: "all", label: "All topics" },
+            { value: "topic", label: `Only ${topicLabel(topic)}` },
+          ]}
         />
       </div>
       <PlatformView
@@ -605,10 +785,16 @@ function SignalInbox({ topic }: { topic: string }) {
       >
         {(page) => (
           <div className="signal-inbox">
-            {[...page.items].sort((a, b) => Number(b.id === focus) - Number(a.id === focus)).map((item) => (
-              <SignalCard key={item.id} item={item} focused={item.id === focus} />
-            ))}
-            {page.total > page.items.length && <p className="muted text-xs">Showing {page.items.length} of {page.total} items.</p>}
+            {[...page.items]
+              .sort((a, b) => Number(b.id === focus) - Number(a.id === focus))
+              .map((item) => (
+                <SignalCard key={item.id} item={item} focused={item.id === focus} />
+              ))}
+            {page.total > page.items.length && (
+              <p className="muted text-xs">
+                Showing {page.items.length} of {page.total} items.
+              </p>
+            )}
           </div>
         )}
       </PlatformView>
@@ -649,11 +835,26 @@ function SignalCard({ item, focused }: { item: SignalItem; focused: boolean }) {
         {item.evidence_id && <SourceLinks refs={[{ type: "evidence", id: item.evidence_id }]} />}
         {item.review_status === "unreviewed" && (
           <>
-            <Button size="sm" variant="outline" onClick={() => { setConfirmed(false); setAction("import"); }}>Import</Button>
-            <Button size="sm" variant="ghost" onClick={() => setAction("dismiss")}>Dismiss</Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setConfirmed(false);
+                setAction("import");
+              }}
+            >
+              Import
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setAction("dismiss")}>
+              Dismiss
+            </Button>
           </>
         )}
-        {item.reviewed_by && <small className="muted">by {item.reviewed_by} · {date(item.reviewed_at)}</small>}
+        {item.reviewed_by && (
+          <small className="muted">
+            by {item.reviewed_by} · {date(item.reviewed_at)}
+          </small>
+        )}
       </div>
       <GateDialog
         open={action !== null}

@@ -2,13 +2,11 @@
  * Platform API contract used by the web workspace (Pod G).
  *
  * Status per pod (read-only review of the pod branches; nothing is merged into this branch):
- * - VERIFIED against the finished backends: markets (codex/platform-markets-complete:server/markets.py),
- *   requests (codex/platform-intake-complete:server/intake.py) and runs (codex/platform-runtime-complete:
- *   server/agent_runtime.py). Their transforms are tested with fixtures that mirror the server's response
- *   construction.
- * - ASSUMED for signals (Pod A), priorities (Pod D) and market weights rows (Pod E): PLATFORM_BUILD_PLAN.md
- *   §5.1/§5.3/§8 plus the in-progress pod branches. Their transforms tolerate the documented alternatives;
- *   the integrator reconciles them here and in lib/platform-api.ts only.
+ * - VERIFIED against the real backends: markets (codex/platform-markets-complete:server/markets.py),
+ *   requests (codex/platform-intake-complete:server/intake.py), runs (codex/platform-runtime-complete:
+ *   server/agent_runtime.py), and signals, priorities and market data (codex/platform-integration-main:
+ *   server/signals.py, server/prioritization.py, server/market_data.py). Transforms are tested with fixtures
+ *   that mirror the server's response construction. They still tolerate older alternatives, never invent data.
  *
  * Conventions (notes/platform-foundation.md "Response conventions"): a record is its §5.1 row with JSON
  * decoded plus computed fields; lists are {items, total, limit, offset}; writes return the record plus
@@ -24,16 +22,17 @@
  *
  * | Endpoint                                   | Body / query sent                                         | Status   |
  * | ------------------------------------------ | --------------------------------------------------------- | -------- |
- * | GET    /signals/watchlists                 | vehicle, market, limit, offset                            | assumed  |
- * | POST   /signals/watchlists                 | scope, topic, label, query_terms, competitors, domain_group, domains, cadence_days, max_results, actor, rationale | assumed |
- * | PATCH  /signals/watchlists/{id}            | {status, actor, rationale}                                | assumed  |
- * | POST   /signals/watchlists/{id}/refresh    | {actor}                                                   | assumed  |
- * | POST   /signals/watchlists/{id}/backfill   | {actor, weeks}                                            | assumed  |
- * | GET    /signals/items                      | vehicle, market, topic?, review_status?                   | assumed  |
- * | POST   /signals/items/{id}/import|dismiss  | {actor, rationale}                                        | assumed  |
- * | POST   /signals/sentiment/score            | {vehicle, market, provider, actor}                        | assumed  |
- * | GET    /signals/sentiment/timeseries       | vehicle, market, topic → v_sentiment_weekly rows          | assumed  |
- * | GET    /signals/summary                    | vehicle, market → per topic × source_class × method rows  | assumed  |
+ * | GET    /signals/watchlists                 | vehicle, market, limit, offset                            | verified |
+ * | POST   /signals/watchlists                 | scope, topic, label, query_terms, competitors, domain_group, domains, cadence_days, max_results, actor, rationale | verified |
+ * | PATCH  /signals/watchlists/{id}            | {status, actor, rationale}                                | verified |
+ * | POST   /signals/watchlists/{id}/refresh    | {actor}                                                   | verified |
+ * | POST   /signals/watchlists/{id}/backfill   | {actor, weeks}                                            | verified |
+ * | GET    /signals/items                      | vehicle, market, topic?, review_status?                   | verified |
+ * | POST   /signals/items/{id}/import|dismiss  | {actor, rationale}                                        | verified |
+ * | POST   /signals/sentiment/score            | {vehicle, market, provider, actor}                        | verified |
+ * | GET    /signals/sentiment/timeseries       | vehicle, market, topic → v_sentiment_weekly rows          | verified |
+ * | GET    /signals/summary                    | vehicle, market → per topic × source_class × method rows  | verified |
+ * | POST   /signals/summary                    | {vehicle, market, provider, topic?, actor} → rows + claims | verified |
  * | POST   /markets/compare                    | {vehicle, actor}                                          | verified |
  * | POST   /markets/conflicts/detect           | {vehicle, provider, actor}                                | verified |
  * | GET    /markets/conflicts                  | vehicle, status?                                          | verified |
@@ -53,12 +52,14 @@
  * | POST   /requests/positions                 | {vehicle, market?, request_ids?, provider, actor}         | verified |
  * | POST   /requests/{id}/decide               | {decision, actor, rationale, requirement_id (link only)}  | verified |
  * | POST   /requests/fixtures/simulated        | {actor}                                                   | verified |
- * | GET    /priorities/rubrics                 | vehicle, market → items, active, history                  | assumed  |
- * | POST   /priorities/rubric                  | {vehicle, market, rubric_version, weights, actor, rationale} | assumed |
- * | POST   /priorities/inputs/derive           | {vehicle, market, actor}                                  | assumed  |
- * | GET    /priorities/ranking                 | vehicle, market                                           | assumed  |
- * | POST   /priorities/sensitivity             | {vehicle, market, actor}                                  | assumed  |
- * | POST   /priorities/explain                 | {vehicle, market, provider, limit, actor}                 | assumed  |
+ * | GET    /priorities/rubrics                 | vehicle, market → items, active, history                  | verified |
+ * | POST   /priorities/rubric                  | {vehicle, market, rubric_version, weights, actor, rationale} | verified |
+ * | POST   /priorities/inputs/derive           | {vehicle, market, actor}                                  | verified |
+ * | GET    /priorities/ranking                 | vehicle, market                                           | verified |
+ * | POST   /priorities/sensitivity             | {vehicle, market, actor}                                  | verified |
+ * | POST   /priorities/explain                 | {vehicle, market, provider, limit, actor}                 | verified |
+ * | GET    /priorities/portfolio               | vehicle                                                   | verified |
+ * | GET    /market-data/coverage               | vehicle, status=current                                   | verified |
  * | GET    /runs                               | vehicle, market?, capability?, status?, limit=50          | verified |
  */
 import type { Scope } from "./types";
@@ -95,7 +96,7 @@ export type Provenance = {
   runId: string | null;
 };
 
-// Signals (Pod A) -------------------------------------------------------------------------------
+// Signals (Pod A) – verified against codex/platform-integration-main:server/signals.py --------------------
 export type DomainGroup = "press" | "forums" | "social" | "video" | "all";
 export type Watchlist = Scope & {
   id: string;
@@ -148,13 +149,17 @@ export type SignalItem = Scope & {
 export type SourceClass = "bmw_evidence" | "public_monitoring" | "public_imported";
 export const SOURCE_CLASSES: SourceClass[] = ["bmw_evidence", "public_monitoring", "public_imported"];
 export type SentimentPoint = {
+  /** Sort key: the Monday `week_start` (0010), else the legacy `week` label. */
   week: string;
+  /** Display label: the ISO 8601 week (e.g. 2026-W38) when the server sends it. */
+  label: string;
   sourceClass: SourceClass;
   methodVersion: string;
   n: number;
   meanPolarity: number | null;
   negativeShare: number | null;
   positiveShare: number | null;
+  mixedShare: number | null;
   lowN: boolean;
   undatedN: number;
   subjectIds: string[];
@@ -172,9 +177,27 @@ export type TopicSummary = {
   methodVersion: string | null;
   n: number;
   meanPolarity: number | null;
+  negativeShare: number | null;
+  /** n-weighted least-squares slope of the weekly mean (polarity per week) over the last 8 ISO weeks with data. */
   momentum: number | null;
+  momentumWeeks: number | null;
+  windowStart: string | null;
+  lastWeek: string | null;
+  weeks: number | null;
+  recentN: number | null;
+  recentLowN: boolean | null;
+  recentMeanPolarity: number | null;
+  recentNegativeShare: number | null;
+  undatedN: number;
   lowN: boolean;
   sampleIds: string[];
+};
+/** POST /signals/summary: the deterministic series rows plus, for OpenAI, grounded "what changed" claims. */
+export type SignalsDigest = {
+  claims: { text: string; subjectId: string; quote: string }[];
+  rows: TopicSummary[];
+  provenance: Provenance;
+  runId: string | null;
 };
 
 // Markets (Pod B) – verified against codex/platform-markets-complete:server/markets.py -----------------
@@ -433,7 +456,7 @@ export type RequestCluster = {
   members: { id: string; key: string; market: string; title: string; status: string }[];
 };
 
-// Priorities (Pod D) – ASSUMED: §5.3 plus the in-progress Pod D branch (not merged, not verified) ---------
+// Priorities (Pod D) – verified against codex/platform-integration-main:server/prioritization.py ----------
 export type SourceRef = { type: string; id: string };
 export type RubricDefinition = {
   version: string;
@@ -494,6 +517,53 @@ export type Ranking = {
   warnings: string[];
 };
 export type RankingExplanation = { summary: string | null; provenance: Provenance; items: Record<string, ExplanationText> };
+
+/** GET /priorities/portfolio: topic × market v2 totals with the global demand index (priority-portfolio-v1). */
+export type PortfolioCell = {
+  requirementId: string;
+  key: string | null;
+  status: string | null;
+  rubricVersion: string | null;
+  total: number | null;
+  v2Total: number | null;
+  v2Basis: string | null;
+  notMeasured: string[];
+};
+export type PortfolioTopic = {
+  topic: string;
+  label: string | null;
+  cells: Record<string, PortfolioCell>;
+  globalDemandIndex: number | null;
+  demandMeasured: boolean;
+  demandFlags: string[];
+  demandMarkets: { market: string; share: number | null; normalisedPriority: number | null }[];
+  pattern: string | null;
+  conflicts: { id: string; conflictType: string; severity: string; recommendation: string | null; markets: string[] }[];
+};
+export type Portfolio = {
+  vehicle: string;
+  methodVersion: string | null;
+  markets: string[];
+  marketShares: Record<string, number>;
+  shareBasis: string | null;
+  sharesPeriod: string | null;
+  rubrics: Record<string, string>;
+  topics: PortfolioTopic[];
+  patternRule: string | null;
+  warnings: string[];
+};
+
+// BMW data (Pod E) – verified against codex/platform-integration-main:server/market_data.py -------------
+export type CoverageWarning = { market: string; code: string; severity: string; message: string };
+export type CoverageReport = {
+  id: string;
+  vehicle: string;
+  market: string;
+  methodVersion: string | null;
+  runId: string | null;
+  createdAt: string | null;
+  warnings: CoverageWarning[];
+};
 
 // Runs (Pod F) ----------------------------------------------------------------------------------
 export type LlmUsage = {

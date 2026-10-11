@@ -9,6 +9,9 @@ import type {
   AiBrief,
   CapabilityUsage,
   ComparisonCell,
+  CoverageReport,
+  Portfolio,
+  SignalsDigest,
   ComparisonRow,
   ConflictDetail,
   EvidenceSnippet,
@@ -192,6 +195,7 @@ export const ENDPOINTS = {
   scoreSentiment: "POST /signals/sentiment/score",
   timeseries: "GET /signals/sentiment/timeseries",
   summary: "GET /signals/summary",
+  summarise: "POST /signals/summary",
   compare: "POST /markets/compare",
   detectConflicts: "POST /markets/conflicts/detect",
   conflicts: "GET /markets/conflicts",
@@ -217,6 +221,8 @@ export const ENDPOINTS = {
   ranking: "GET /priorities/ranking",
   sensitivity: "POST /priorities/sensitivity",
   explain: "POST /priorities/explain",
+  portfolio: "GET /priorities/portfolio",
+  coverage: "GET /market-data/coverage",
   runs: "GET /runs",
 } as const;
 export type EndpointName = keyof typeof ENDPOINTS;
@@ -298,7 +304,7 @@ export function toFactors(
   });
 }
 
-// Signals (Pod A) -------------------------------------------------------------------------------
+// Signals (Pod A) – verified against codex/platform-integration-main:server/signals.py --------------------
 export function toWatchlist(value: unknown): Watchlist {
   const o = obj(value);
   return {
@@ -347,18 +353,20 @@ export function toSignalItem(value: unknown): SignalItem {
 }
 function toSentimentPoint(value: unknown, inherited: Json = {}): SentimentPoint | null {
   const p = { ...inherited, ...obj(value) };
-  const week = str(p.week) ?? str(p.period);
+  const week = str(p.week_start) ?? str(p.week) ?? str(p.period);
   const sourceClass = str(p.source_class);
   if (!week || !sourceClass) return null;
   const n = num(p.n) ?? 0;
   return {
     week,
+    label: weekLabel(str(p.iso_week) ?? str(p.week) ?? week),
     sourceClass: sourceClass as SourceClass,
     methodVersion: str(p.method_version) ?? "unrecorded",
     n,
     meanPolarity: num(p.mean_polarity ?? p.mean),
     negativeShare: num(p.negative_share),
     positiveShare: num(p.positive_share),
+    mixedShare: num(p.mixed_share),
     lowN: bool(p.low_n) ?? bool(p.lowN) ?? n < 5,
     undatedN: num(p.undated_n) ?? 0,
     subjectIds: strs(p.subject_ids ?? p.ids ?? p.sample_ids),
@@ -399,11 +407,48 @@ export function toSentimentChart(points: SentimentPoint[], methodVersion?: strin
   const rows = unique(chosen.map((p) => p.week))
     .sort()
     .map((week) => {
-      const row: SentimentChart["rows"][number] = { week, label: weekLabel(week) };
+      const row: SentimentChart["rows"][number] = { week, label: chosen.find((p) => p.week === week)?.label ?? weekLabel(week) };
       for (const c of sourceClasses) row[c] = lookup[`${week}|${c}`]?.meanPolarity ?? null;
       return row;
     });
   return { methodVersion: selected, methodVersions, sourceClasses, rows, points: lookup };
+}
+function toTopicSummary(s: Json, topic: string, n: number): TopicSummary {
+  return {
+    topic,
+    sourceClass: (str(s.source_class) as SourceClass | null) ?? null,
+    methodVersion: str(s.method_version),
+    n,
+    meanPolarity: num(s.mean_polarity ?? s.mean),
+    negativeShare: num(s.negative_share),
+    momentum: num(s.momentum ?? s.momentum_8w ?? s.slope),
+    momentumWeeks: num(s.momentum_weeks),
+    windowStart: str(s.window_start),
+    lastWeek: str(s.last_week),
+    weeks: num(s.weeks),
+    recentN: num(s.recent_n),
+    recentLowN: bool(s.recent_low_n),
+    recentMeanPolarity: num(s.recent_mean_polarity),
+    recentNegativeShare: num(s.recent_negative_share),
+    undatedN: num(s.undated_n) ?? 0,
+    lowN: bool(s.low_n) ?? n < 5,
+    sampleIds: strs(s.sample_ids ?? s.subject_ids),
+  };
+}
+/** POST /signals/summary: `items` (series rows), `claims` [{text, subject_id, quote, span}], provider, model. */
+export function toSignalsDigest(value: unknown): SignalsDigest {
+  const o = obj(value);
+  const generated = str(o.provider) === "openai" || parseMethodVersion(str(o.method_version)).provider === "openai";
+  const base = provenance(o);
+  return {
+    claims: arr(o.claims)
+      .map((c) => obj(c))
+      .filter((c) => str(c.text) && str(c.subject_id))
+      .map((c) => ({ text: str(c.text)!, subjectId: str(c.subject_id)!, quote: str(c.quote) ?? "" })),
+    rows: toTopicSummaries({ items: o.items }),
+    provenance: { ...base, generated, provider: generated ? "openai" : "deterministic" },
+    runId: str(o.run_id),
+  };
 }
 /** GET /signals/summary: `items`, `topics`, a bare array, or a {topic: summary} map. */
 export function toTopicSummaries(value: unknown): TopicSummary[] {
@@ -423,16 +468,7 @@ export function toTopicSummaries(value: unknown): TopicSummary[] {
       const topic = str(s.topic);
       if (!topic) return null;
       const n = num(s.n) ?? 0;
-      return {
-        topic,
-        sourceClass: (str(s.source_class) as SourceClass | null) ?? null,
-        methodVersion: str(s.method_version),
-        n,
-        meanPolarity: num(s.mean_polarity ?? s.mean),
-        momentum: num(s.momentum ?? s.momentum_8w ?? s.slope),
-        lowN: bool(s.low_n) ?? n < 5,
-        sampleIds: strs(s.sample_ids ?? s.subject_ids),
-      };
+      return toTopicSummary(s, topic, n);
     })
     .filter((s): s is TopicSummary => !!s);
 }
@@ -962,7 +998,7 @@ export function toAggregates(value: unknown): RequestAggregates {
   };
 }
 
-// Priorities (Pod D) – ASSUMED: §5.3 plus the in-progress Pod D branch (not merged, not verified) ---------
+// Priorities (Pod D) – verified against codex/platform-integration-main:server/prioritization.py ----------
 function toScopeRubric(value: unknown): ScopeRubric | null {
   if (!isObj(json(value))) return null;
   const o = obj(value);
@@ -1113,6 +1149,97 @@ export function mergeExplanation(rows: RankingRow[], explanation: RankingExplana
   return rows.map((row) => (explanation.items[row.requirementId] ? { ...row, explanation: explanation.items[row.requirementId] } : row));
 }
 
+/** GET /priorities/portfolio (verified): topics[].cells keyed by market, global demand index, pattern hint, open conflicts. */
+export function toPortfolio(value: unknown, vehicle: string): Portfolio {
+  const o = obj(value);
+  return {
+    vehicle: str(o.vehicle) ?? vehicle,
+    methodVersion: str(o.method_version),
+    markets: strs(o.markets),
+    marketShares: numMap(o.market_shares),
+    shareBasis: str(o.share_basis),
+    sharesPeriod: str(obj(o.market_weights).period),
+    rubrics: Object.fromEntries(
+      Object.entries(obj(o.rubrics))
+        .map(([market, r]) => [market, str(obj(r).rubric_version)] as const)
+        .filter((entry): entry is [string, string] => !!entry[1]),
+    ),
+    topics: arr(o.topics)
+      .map((t) => obj(t))
+      .filter((t) => str(t.topic))
+      .map((t) => ({
+        topic: str(t.topic)!,
+        label: str(t.label),
+        cells: Object.fromEntries(
+          Object.entries(obj(t.cells))
+            .filter(([, c]) => str(obj(c).requirement_id))
+            .map(([market, c]) => {
+              const x = obj(c);
+              return [
+                market,
+                {
+                  requirementId: str(x.requirement_id)!,
+                  key: str(x.key),
+                  status: str(x.status),
+                  rubricVersion: str(x.rubric_version),
+                  total: num(x.total),
+                  v2Total: num(x.v2_total),
+                  v2Basis: str(x.v2_basis),
+                  notMeasured: strs(x.not_measured),
+                },
+              ];
+            }),
+        ),
+        globalDemandIndex: num(t.global_demand_index),
+        demandMeasured: t.demand_measured === true,
+        demandFlags: strs(t.demand_flags),
+        demandMarkets: arr(t.demand_markets).map((m) => ({
+          market: str(obj(m).market) ?? "",
+          share: num(obj(m).share),
+          normalisedPriority: num(obj(m).normalised_priority),
+        })),
+        pattern: str(t.pattern),
+        conflicts: arr(t.conflicts)
+          .map((c) => obj(c))
+          .filter((c) => str(c.id))
+          .map((c) => ({
+            id: str(c.id)!,
+            conflictType: str(c.conflict_type) ?? "",
+            severity: str(c.severity) ?? "",
+            recommendation: str(c.recommendation),
+            markets: strs(c.markets),
+          })),
+      })),
+    patternRule: str(o.pattern_rule),
+    warnings: strs(o.warnings),
+  };
+}
+
+// BMW data (Pod E) – verified against codex/platform-integration-main:server/market_data.py -------------
+/** GET /market-data/coverage items: coverage_reports rows with `warnings` [{code, severity, message, …}]. */
+export function toCoverageReport(value: unknown): CoverageReport {
+  const o = obj(value);
+  const market = str(o.market) ?? "";
+  return {
+    id: need(o, "id", "coverage report"),
+    vehicle: str(o.vehicle) ?? "",
+    market,
+    methodVersion: str(o.method_version),
+    runId: str(o.run_id),
+    createdAt: str(o.created_at),
+    warnings: arr(o.warnings).map((w) => {
+      if (typeof w === "string") return { market, code: "warning", severity: "medium", message: w };
+      const x = obj(w);
+      return { market, code: str(x.code) ?? "warning", severity: str(x.severity) ?? "medium", message: str(x.message) ?? str(x.code) ?? "" };
+    }),
+  };
+}
+const SEVERITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
+export const coverageWarnings = (reports: CoverageReport[]) =>
+  reports
+    .flatMap((r) => r.warnings)
+    .sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 3) - (SEVERITY_ORDER[b.severity] ?? 3) || a.market.localeCompare(b.market));
+
 // Runs (Pod F) ----------------------------------------------------------------------------------
 export function toRun(value: unknown): Run {
   const o = obj(value);
@@ -1219,9 +1346,15 @@ export const platform = {
     api<unknown>(`/signals/sentiment/timeseries?${params({ ...scope, topic })}`, { signal }).then(toSentimentPoints),
   summary: (scope: Scope, signal?: AbortSignal) =>
     api<unknown>(`/signals/summary?${params(scope)}`, { signal }).then(toTopicSummaries),
-  compare: (vehicle: string, actor?: string) =>
-    write<unknown>("/markets/compare", actor ? { vehicle, actor } : { vehicle }).then((v) => toComparison(v, vehicle)),
-  detectConflicts: (vehicle: string, body: Actor & { provider: Provider }) =>
+  summarise: (scope: Scope, body: Actor & { provider: Provider; topic?: string }) =>
+    write<unknown>("/signals/summary", { ...scope, ...body }).then(toSignalsDigest),
+  portfolio: (vehicle: string, signal?: AbortSignal) =>
+    api<unknown>(`/priorities/portfolio?${params({ vehicle })}`, { signal }).then((v) => toPortfolio(v, vehicle)),
+  coverage: (vehicle: string, signal?: AbortSignal) =>
+    collect(`/market-data/coverage?${params({ vehicle, status: "current" })}`, toCoverageReport, signal),
+  compare: (vehicle: string, actor?: string, markets?: string[]) =>
+    write<unknown>("/markets/compare", { vehicle, ...(actor ? { actor } : {}), ...(markets ? { markets } : {}) }).then((v) => toComparison(v, vehicle)),
+  detectConflicts: (vehicle: string, body: Actor & { provider: Provider; markets?: string[] }) =>
     write<unknown>("/markets/conflicts/detect", { vehicle, ...body }).then(raw),
   conflicts: (vehicle: string, status: string, signal?: AbortSignal) =>
     collect(`/markets/conflicts?${params({ vehicle, status })}`, toConflict, signal),

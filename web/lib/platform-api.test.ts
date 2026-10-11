@@ -17,6 +17,10 @@ import {
   toComparison,
   toConflict,
   toConflictDetail,
+  toCoverageReport,
+  coverageWarnings,
+  toPortfolio,
+  toSignalsDigest,
   toCluster,
   toExplanation,
   mergeExplanation,
@@ -148,7 +152,25 @@ describe("signals transforms (simulated)", () => {
       items: [{ vehicle: "G60", market: "US", topic: "driving-experience", week: "2026-38", source_class: "public_monitoring", method_version: "lexicon-v1", n: 3, mean_polarity: 0.2, negative_share: 0.33, positive_share: 0.66, undated_n: 1, subject_ids: '["si1","si2","si3"]', week_start: "2026-09-14", iso_week: "2026-W38", mixed_share: 0, low_n: true, provider: "deterministic" }],
       total: 1, limit: 1000, offset: 0, method_version: "sentiment-summary-v1",
     });
-    expect(points[0]).toMatchObject({ week: "2026-38", sourceClass: "public_monitoring", n: 3, lowN: true, undatedN: 1, subjectIds: ["si1", "si2", "si3"] });
+    expect(points[0]).toMatchObject({ week: "2026-09-14", label: "2026 W38", sourceClass: "public_monitoring", n: 3, lowN: true, undatedN: 1, mixedShare: 0, subjectIds: ["si1", "si2", "si3"] });
+  });
+  it("reads GET /signals/summary rows with the 8-week momentum window and recent level", () => {
+    const [row] = toTopicSummaries({
+      items: [{ vehicle: "G60", market: "US", topic: "driving-experience", source_class: "bmw_evidence", method_version: "lexicon-v1", aggregation_method_version: "sentiment-summary-v1", provider: "deterministic",
+        n: 40, mean_polarity: 0.2, negative_share: 0.25, positive_share: 0.5, momentum: 0.031, low_n: false, momentum_weeks: 6, window_start: "2026-08-03", recent_n: 30, recent_low_n: false,
+        recent_mean_polarity: 0.24, recent_negative_share: 0.2, undated_n: 2, sample_ids: ["e1"], last_week: "2026-09-14", weeks: 9 }],
+      total: 1, limit: 1000, offset: 0, method_version: "sentiment-summary-v1",
+    });
+    expect(row).toMatchObject({ momentum: 0.031, momentumWeeks: 6, windowStart: "2026-08-03", recentN: 30, recentLowN: false, recentMeanPolarity: 0.24, negativeShare: 0.25, undatedN: 2, weeks: 9 });
+  });
+  it("labels the POST /signals/summary digest by provider and keeps grounded claims", () => {
+    const ai = toSignalsDigest({ items: [{ topic: "comfort", n: 3 }], claims: [{ text: "Simulated observation", subject_id: "si1", quote: "steering feel", span: [0, 13] }], provider: "openai", model: "gpt-sim", method_version: "openai:gpt-sim:signal-changes-v1", run_id: "r1", audit_event_id: "a1" });
+    expect(ai.provenance).toMatchObject({ generated: true, provider: "openai", model: "gpt-sim", runId: "r1" });
+    expect(ai.claims).toEqual([{ text: "Simulated observation", subjectId: "si1", quote: "steering feel" }]);
+    expect(ai.rows).toHaveLength(1);
+    const baseline = toSignalsDigest({ items: [], claims: [], provider: "deterministic", model: null, method_version: "sentiment-summary-v1", run_id: "r2" });
+    expect(baseline.provenance).toMatchObject({ generated: false, provider: "deterministic" });
+    expect(baseline.claims).toEqual([]);
   });
   it("never mixes method versions in one chart and keeps series separate", () => {
     const points = toSentimentPoints([
@@ -547,11 +569,51 @@ describe("priority transforms (simulated)", () => {
     expect(merged[0].total).toBe(66);
     expect(mergeExplanation(rows, undefined)).toBe(rows);
   });
+  it("reads the cross-market portfolio without computing totals", () => {
+    const data = toPortfolio(
+      {
+        vehicle: "G60", method_version: "priority-portfolio-v1", markets: ["CN", "US"], market_shares: { CN: 0.4, US: 0.6 },
+        market_weights: { period: "2025", method_version: "sales-share-v1" }, share_basis: "market_weights",
+        rubrics: { CN: { rubric_version: "customer-priority-v1" }, US: { rubric_version: "customer-priority-v2" } },
+        topics: [{
+          topic: "comfort", label: "Cabin comfort",
+          cells: {
+            CN: { requirement_id: "q9", key: "REQ-CN", status: "proposed", version_id: "v9", score_id: "s9", rubric_version: "customer-priority-v1", total: 70, v2_total: 66.5, v2_basis: "preview", v2_preview: {}, not_measured: ["sentiment_momentum"] },
+            US: { requirement_id: "q1", key: "REQ-US", status: "approved", rubric_version: "customer-priority-v2", total: 64, v2_total: 64, v2_basis: "current_score", not_measured: [] },
+          },
+          global_demand_index: 0.82, demand_measured: true, demand_flags: [], demand_markets: [{ market: "CN", share: 0.4, normalised_priority: 1 }],
+          pattern: "global_candidate", conflicts: [{ id: "c1", topic: "comfort", related_topic: null, markets: ["CN", "US"], conflict_type: "priority_divergence", severity: "medium", recommendation: "pm_tradeoff", status: "open" }],
+        }],
+        pattern_rule: "global_candidate: …", warnings: [],
+      },
+      "G60",
+    );
+    expect(data.rubrics).toEqual({ CN: "customer-priority-v1", US: "customer-priority-v2" });
+    expect(data.sharesPeriod).toBe("2025");
+    expect(data.topics[0].cells.CN).toMatchObject({ v2Total: 66.5, v2Basis: "preview", total: 70, notMeasured: ["sentiment_momentum"] });
+    expect(data.topics[0]).toMatchObject({ globalDemandIndex: 0.82, demandMeasured: true, pattern: "global_candidate" });
+    expect(data.topics[0].conflicts[0]).toMatchObject({ id: "c1", conflictType: "priority_divergence", markets: ["CN", "US"] });
+  });
   it("collects typed source references from derivations", () => {
     expect(toSourceRefs({ source_ids: [{ type: "evidence", id: "e1" }, "x"], evidence_ids: ["e1", "e2"] })).toEqual([
       { type: "evidence", id: "e1" },
       { type: "record", id: "x" },
       { type: "evidence", id: "e2" },
+    ]);
+  });
+});
+
+describe("market data transforms (verified shapes, simulated values)", () => {
+  it("reads coverage warnings as objects and orders them by severity", () => {
+    const reports = [
+      toCoverageReport({ id: "cr1", vehicle: "G60", market: "US", metrics: {}, method_version: "coverage-v1", run_id: "r1", status: "current",
+        warnings: [{ code: "single_source_dominance", severity: "high", source: "x", share: 0.727, message: "72.7% of US feedback IDs come from one source" }, { code: "undated_evidence", severity: "medium", message: "30% undated" }] }),
+      toCoverageReport({ id: "cr2", vehicle: "G60", market: "CN", warnings: [{ code: "no_sales", severity: "low", message: "No units" }] }),
+    ];
+    expect(coverageWarnings(reports).map((w) => [w.market, w.code, w.severity])).toEqual([
+      ["US", "single_source_dominance", "high"],
+      ["US", "undated_evidence", "medium"],
+      ["CN", "no_sales", "low"],
     ]);
   });
 });

@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { HeartHandshake, Info, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
@@ -7,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { date, readable } from "@/lib/api";
 import { describeWrite, mergeExplanation, mergeSensitivity, platform } from "@/lib/platform-api";
-import type { FactorView, Provider, Ranking, RankingExplanation, RankingRow, RubricState, Stability } from "@/lib/platform-types";
+import type { FactorView, Portfolio, Provider, Ranking, RankingExplanation, RankingRow, RubricState, Stability } from "@/lib/platform-types";
 import { useWorkspace } from "./context";
 import { PmSelect } from "./pm-select";
 import {
@@ -53,10 +54,14 @@ export function Priorities() {
           never zero. AI explanations are labelled and never change a value.
         </span>
       </div>
-      <Panel title="Rubric in force" description="Which rubric this scope uses, who switched it and why. Switching rescores current versions and opens reviews for approved requirements whose score changes.">
+      <Panel
+        title="Rubric in force"
+        description="Which rubric this scope uses, who switched it and why. Switching rescores current versions and opens reviews for approved requirements whose score changes."
+      >
         <PlatformView state={rubrics}>{(state) => <RubricSummary state={state} />}</PlatformView>
       </Panel>
       <RankingPanel />
+      <PortfolioPanel />
       {rubrics.query.data && <RubricDialog state={rubrics.query.data} open={switching} onOpenChange={setSwitching} />}
     </>
   );
@@ -102,7 +107,8 @@ function RubricSummary({ state }: { state: RubricState }) {
           </details>
         ))}
       <small className="muted">
-        {state.available.length} rubric{state.available.length === 1 ? "" : "s"} available · {state.history.length} recorded switch{state.history.length === 1 ? "" : "es"}
+        {state.available.length} rubric{state.available.length === 1 ? "" : "s"} available · {state.history.length} recorded switch
+        {state.history.length === 1 ? "" : "es"}
       </small>
     </div>
   );
@@ -127,7 +133,12 @@ function RankingPanel() {
         <span className="row-actions">
           <CapabilityButton capability={derive}>Derive inputs</CapabilityButton>
           <CapabilityButton capability={sensitivity}>Run sensitivity</CapabilityButton>
-          <PmSelect aria-label="Explanation provider" value={provider} onValueChange={(value) => setProvider(value as Provider)} options={PROVIDER_OPTIONS} />
+          <PmSelect
+            aria-label="Explanation provider"
+            value={provider}
+            onValueChange={(value) => setProvider(value as Provider)}
+            options={PROVIDER_OPTIONS}
+          />
           <CapabilityButton capability={explain}>Explain top 10</CapabilityButton>
         </span>
       }
@@ -238,7 +249,11 @@ function RankingItem({ row, position, count }: { row: RankingRow; position: numb
 }
 function StabilityBand({ stability, count }: { stability: Stability | null; count: number }) {
   if (!stability || stability.minRank === null || stability.maxRank === null)
-    return <small className="muted stability-label" title={stability?.reason ?? undefined}>{stability?.reason ? "Stability outdated" : "Stability not computed"}</small>;
+    return (
+      <small className="muted stability-label" title={stability?.reason ?? undefined}>
+        {stability?.reason ? "Stability outdated" : "Stability not computed"}
+      </small>
+    );
   const span = Math.max(1, count - 1);
   const left = ((stability.minRank - 1) / span) * 100;
   const width = Math.max(4, ((stability.maxRank - stability.minRank) / span) * 100);
@@ -246,7 +261,10 @@ function StabilityBand({ stability, count }: { stability: Stability | null; coun
   return (
     <span className="stability" title={`Rank ${stability.minRank}–${stability.maxRank} under weight perturbations`}>
       <span className="stability-track">
-        <span className={`stability-band ${stability.stable ? "is-stable" : "is-sensitive"}`} style={{ left: `${left}%`, width: `${Math.min(100 - left, width)}%` }} />
+        <span
+          className={`stability-band ${stability.stable ? "is-stable" : "is-sensitive"}`}
+          style={{ left: `${left}%`, width: `${Math.min(100 - left, width)}%` }}
+        />
         {dot !== null && <span className="stability-dot" style={{ left: `${dot}%` }} />}
       </span>
       <small className={stability.stable ? "stability-label" : "stability-label attention-text"}>
@@ -269,7 +287,10 @@ function DerivationPopover({ factor: f }: { factor: FactorView }) {
         <dl className="record-details">
           <div>
             <dt>Value (0–5)</dt>
-            <dd>{f.value === null ? "Not recorded" : f.value.toFixed(2)}{f.notMeasured && " · neutral, not measured"}</dd>
+            <dd>
+              {f.value === null ? "Not recorded" : f.value.toFixed(2)}
+              {f.notMeasured && " · neutral, not measured"}
+            </dd>
           </div>
           <div>
             <dt>Weight</dt>
@@ -310,7 +331,8 @@ function RubricDialog({ state, open, onOpenChange }: { state: RubricState; open:
     onSuccess: (value) => {
       toast.success(`Rubric switched. ${describeWrite(value)}`);
       onOpenChange(false);
-      for (const key of [["priority-rubrics"], ["priority-ranking"], ["requirements"], ["metrics"], ["workspace"]]) void client.invalidateQueries({ queryKey: key });
+      for (const key of [["priority-rubrics"], ["priority-ranking"], ["requirements"], ["metrics"], ["workspace"]])
+        void client.invalidateQueries({ queryKey: key });
     },
   });
   return (
@@ -366,5 +388,122 @@ function RubricDialog({ state, open, onOpenChange }: { state: RubricState; open:
         </p>
       )}
     </GateDialog>
+  );
+}
+
+/** GET /priorities/portfolio: which topics look global and which market-specific (a hint, not a decision). */
+function PortfolioPanel() {
+  const { scope } = useWorkspace();
+  const state = usePlatformQuery("portfolio", {
+    queryKey: ["priority-portfolio", scope.vehicle],
+    queryFn: ({ signal }) => platform.portfolio(scope.vehicle, signal),
+  });
+  return (
+    <Panel
+      title={`Cross-market portfolio · ${scope.vehicle}`}
+      description="customer-priority-v2 totals per topic and market (current score, or an unstored preview where a market still uses v1) with the sales-weighted global demand index and open market conflicts."
+    >
+      <PlatformView
+        state={state}
+        isEmpty={(data) => !data.topics.length}
+        empty={<Empty title="No requirements for this vehicle" description="Generate requirements in at least one market to see the portfolio." />}
+      >
+        {(data) => <PortfolioTable data={data} />}
+      </PlatformView>
+    </Panel>
+  );
+}
+function PortfolioTable({ data }: { data: Portfolio }) {
+  return (
+    <>
+      <p className="chart-meta">
+        <MethodLabel methodVersion={data.methodVersion} />
+        <span className="muted">
+          Shares:{" "}
+          {data.shareBasis === "market_weights" ? `sales weights${data.sharesPeriod ? ` ${data.sharesPeriod}` : ""}` : "equal (no sales weights)"}
+        </span>
+      </p>
+      {data.warnings.map((warning) => (
+        <div key={warning} className="pm-alert attention">
+          <Info size={16} />
+          <span>{warning}</span>
+        </div>
+      ))}
+      <div className="pm-table-wrap">
+        <table className="pm-table market-table portfolio-table">
+          <thead>
+            <tr>
+              <th className="pin-column">Topic</th>
+              {data.markets.map((m) => (
+                <th key={m}>
+                  {m}
+                  <small>
+                    {data.marketShares[m] !== undefined ? `share ${(data.marketShares[m] * 100).toFixed(0)}%` : "no sales share"}
+                    {data.rubrics[m] && ` · ${data.rubrics[m]}`}
+                  </small>
+                </th>
+              ))}
+              <th>Global demand</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.topics.map((t) => (
+              <tr key={t.topic}>
+                <td className="pin-column">
+                  <strong>{t.label ?? readable(t.topic)}</strong>
+                  {t.pattern && <small>Pattern hint: {readable(t.pattern)}</small>}
+                  {!!t.conflicts.length && (
+                    <small>
+                      {t.conflicts.map((c) => (
+                        <Link
+                          key={c.id}
+                          className="text-link"
+                          href={`/${data.vehicle.toLowerCase()}/${(data.markets[0] ?? "us").toLowerCase()}/markets?conflict=${encodeURIComponent(c.id)}`}
+                        >
+                          {c.severity} {readable(c.conflictType)} ({c.markets.join("/")})
+                        </Link>
+                      ))}
+                    </small>
+                  )}
+                </td>
+                {data.markets.map((m) => {
+                  const cell = t.cells[m];
+                  return (
+                    <td key={m}>
+                      {cell ? (
+                        <Link
+                          className="market-cell"
+                          href={`/${data.vehicle.toLowerCase()}/${m.toLowerCase()}/requirements?requirement=${encodeURIComponent(cell.requirementId)}`}
+                        >
+                          <span className="tabular-nums portfolio-total">{fixed(cell.v2Total)}</span>
+                          <small>
+                            {cell.v2Basis === "preview"
+                              ? `v2 preview · stored ${cell.rubricVersion ?? "score"} ${fixed(cell.total)}`
+                              : "current v2 score"}
+                            {!!cell.notMeasured.length && ` · not measured: ${cell.notMeasured.map(readable).join(", ")}`}
+                          </small>
+                          {cell.status && <Status value={cell.status} />}
+                        </Link>
+                      ) : (
+                        <span className="market-missing">No requirement</span>
+                      )}
+                    </td>
+                  );
+                })}
+                <td>
+                  {t.demandMeasured && t.globalDemandIndex !== null ? (
+                    <span className="tabular-nums">{fixed(t.globalDemandIndex, 2)}</span>
+                  ) : (
+                    <span className="market-missing">Not measured</span>
+                  )}
+                  {!!t.demandFlags.length && <small className="muted">{t.demandFlags.map(readable).join(", ")}</small>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {data.patternRule && <p className="muted text-xs">{data.patternRule}</p>}
+    </>
   );
 }

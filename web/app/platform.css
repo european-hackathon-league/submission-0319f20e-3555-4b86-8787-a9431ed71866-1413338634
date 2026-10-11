@@ -275,3 +275,9 @@ mark.mention { background: color-mix(in srgb, var(--primary), transparent 82%); 
 .topic-tile { border: 1px solid var(--border); }
 .usage-summary { background: transparent; gap: 8px; }
 .usage-cell { border: 1px solid var(--border); }
+.coverage-list { display: flex; flex-direction: column; gap: 6px; font-size: 11px; }
+.coverage-list li { display: grid; grid-template-columns: 64px 36px minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.portfolio-table .market-cell { gap: 4px; }
+.portfolio-total { font-size: 17px; }
+.portfolio-table td small, .portfolio-table td.pin-column small { white-space: normal; }
+.portfolio-table td.pin-column small .text-link { display: block; text-transform: none; }
