@@ -9,6 +9,7 @@ import type {
   AiBrief,
   CapabilityUsage,
   ComparisonCell,
+  ComparisonRow,
   ConflictDetail,
   EvidenceSnippet,
   FactorView,
@@ -20,11 +21,14 @@ import type {
   MarketConflict,
   MarketResolution,
   MarketWeight,
+  MarketWeights,
   PositionDraft,
+  PositionPoint,
   PreserveWarning,
   Provenance,
   Provider,
   Ranking,
+  RankingExplanation,
   RankingRow,
   RequestAggregates,
   RequestCluster,
@@ -193,9 +197,15 @@ export const ENDPOINTS = {
   conflicts: "GET /markets/conflicts",
   conflict: "GET /markets/conflicts/{}",
   resolveConflict: "POST /markets/conflicts/{}/resolve",
+  draftBrief: "POST /markets/conflicts/{}/brief",
   weights: "GET /markets/weights",
   requests: "GET /requests",
   request: "GET /requests/{}",
+  editRequest: "PATCH /requests/{}",
+  clusters: "GET /requests/clusters",
+  classify: "POST /requests/classify",
+  proposeLinks: "POST /requests/links/propose",
+  positions: "POST /requests/positions",
   triage: "POST /requests/triage",
   cluster: "POST /requests/cluster",
   decideRequest: "POST /requests/{}/decide",
@@ -206,6 +216,7 @@ export const ENDPOINTS = {
   deriveInputs: "POST /priorities/inputs/derive",
   ranking: "GET /priorities/ranking",
   sensitivity: "POST /priorities/sensitivity",
+  explain: "POST /priorities/explain",
   runs: "GET /runs",
 } as const;
 export type EndpointName = keyof typeof ENDPOINTS;
@@ -225,6 +236,8 @@ const SOURCE_KEYS: [string, string][] = [
   ["sample_ids", "record"],
   ["ids", "record"],
 ];
+/** bmw_evidence, public_imported_evidence and sales_evidence ids all open in the evidence explorer. */
+const refType = (type: string) => (/(^|_)evidence$/.test(type) ? "evidence" : type);
 export function toSourceRefs(value: unknown): SourceRef[] {
   const d = obj(value);
   const refs: SourceRef[] = [];
@@ -237,11 +250,15 @@ export function toSourceRefs(value: unknown): SourceRef[] {
     for (const entry of sourceIds)
       if (isObj(entry)) add(str(entry.type) ?? str(entry.entity_type) ?? "record", entry.id);
       else add("record", entry);
-  else for (const [type, ids] of Object.entries(obj(sourceIds))) for (const id of arr(ids)) add(type.replace(/_ids?$|s$/, ""), id);
+  else for (const [type, ids] of Object.entries(obj(sourceIds))) for (const id of arr(ids)) add(refType(type.replace(/_ids?$|s$/, "")), id);
   for (const [key, type] of SOURCE_KEYS) for (const id of arr(d[key])) add(type, id);
   const seen = new Set<string>();
   return refs.filter((ref) => !seen.has(`${ref.type}:${ref.id}`) && !!seen.add(`${ref.type}:${ref.id}`));
 }
+const uniqueRefs = (refs: SourceRef[]) => {
+  const seen = new Set<string>();
+  return refs.filter((ref) => !seen.has(`${ref.type}:${ref.id}`) && !!seen.add(`${ref.type}:${ref.id}`));
+};
 export function toFactors(
   factorsRaw: unknown,
   weightsRaw?: unknown,
@@ -262,7 +279,7 @@ export function toFactors(
   return names.map((name, index) => {
     const entry = list.length ? list[index] : obj(map[name]);
     const d = { ...obj(details[name]), ...obj(entry.derivation), ...entry };
-    const flags = strs(d.flags);
+    const flags = unique([...strs(obj(details[name]).flags), ...strs(obj(entry.derivation).flags), ...strs(entry.flags)]);
     const note = str(d.note) ?? str(d.reason);
     return {
       name,
@@ -273,8 +290,8 @@ export function toFactors(
         notMeasured.has(name) || d.not_measured === true || d.measured === false || flags.includes("not_measured"),
       formula: str(d.formula),
       inputs: obj(d.inputs),
-      sources: toSourceRefs(d),
-      notes: unique([...flags.filter((f) => f !== "not_measured"), ...strs(d.notes), ...(note ? [note] : [])]),
+      sources: uniqueRefs([...toSourceRefs(d), ...toSourceRefs(d.inputs)]),
+      notes: unique([...flags.filter((f) => f !== "not_measured"), ...strs(d.notes), ...(note ? [note] : []), ...(str(d.summary) ? [str(d.summary)!] : [])]),
       methodVersion: str(d.method_version),
       runId: str(d.run_id),
     };
@@ -420,7 +437,7 @@ export function toTopicSummaries(value: unknown): TopicSummary[] {
     .filter((s): s is TopicSummary => !!s);
 }
 
-// Markets (Pod B) -------------------------------------------------------------------------------
+// Markets (Pod B) – verified against codex/platform-markets-complete:server/markets.py -----------------
 export function toMarketWeight(value: unknown): MarketWeight {
   const o = obj(value);
   return {
@@ -434,13 +451,32 @@ export function toMarketWeight(value: unknown): MarketWeight {
     run_id: str(o.run_id),
   };
 }
+/** GET /markets/weights: the recorded rows plus the selection compare/detect use and its warnings. */
+export function toWeights(value: unknown): MarketWeights {
+  const o = obj(value);
+  const selected = obj(o.selected);
+  return {
+    ...toPage(value, toMarketWeight),
+    selected: str(selected.period) ? { period: str(selected.period)!, methodVersion: str(selected.method_version) } : null,
+    warnings: strs(o.warnings),
+  };
+}
+function targetText(t: unknown) {
+  if (typeof t === "string") return t;
+  const x = obj(t);
+  const target = str(first(x.target, x.text, x.value));
+  if (!target) return JSON.stringify(t);
+  return [str(x.metric), target, str(x.unit)].filter(Boolean).join(" ") + (str(x.basis) ? ` (${str(x.basis)})` : "");
+}
 function toCell(market: string, value: unknown): ComparisonCell {
   const c = obj(value);
   const evidence = obj(c.evidence);
   const sentiment = c.sentiment ?? c.bmw_sentiment;
+  const s = obj(sentiment);
   const req = obj(c.requirement);
   const requirementId = str(req.id) ?? str(c.requirement_id);
   const pressure = c.request_pressure;
+  const p = obj(pressure);
   const missing: Record<string, string> = {};
   for (const [key, reason] of Object.entries(obj(c.missing ?? c.reasons))) {
     const text = str(reason);
@@ -452,60 +488,93 @@ function toCell(market: string, value: unknown): ComparisonCell {
     market,
     evidenceCount: num(first(c.evidence_count, evidence.count, c.evidence_n)),
     evidenceGrade: str(first(c.evidence_grade, evidence.grade)),
-    sentiment: num(isObj(sentiment) ? first(sentiment.mean_polarity, sentiment.mean) : sentiment),
+    evidenceIds: strs(first(evidence.evidence_ids, c.evidence_ids)),
+    findingIds: strs(first(evidence.finding_ids, c.finding_ids)),
+    sentiment: num(isObj(sentiment) ? first(s.mean_polarity, s.mean) : sentiment),
+    sentimentN: num(s.n),
+    sentimentLowN: bool(s.low_n) ?? false,
     requirement: requirementId
       ? {
           id: requirementId,
           key: str(first(req.key, c.requirement_key)),
           title: str(first(req.title, c.requirement_title)),
           status: str(first(req.status, c.requirement_status)),
-          score: num(first(req.score, req.priority, req.total, c.score, c.priority)),
-          rank: num(first(req.rank, c.rank)),
+          score: num(first(c.score, req.score, req.priority, req.total, c.priority)),
+          rank: num(first(c.rank, req.rank)),
+          rankOf: num(c.rank_of),
         }
       : null,
-    targets: arr(c.targets).map((t) => str(t) ?? str(obj(t).target) ?? str(obj(t).text) ?? JSON.stringify(t)),
-    requestPressure: num(isObj(pressure) ? first(pressure.value, pressure.index, pressure.count) : pressure),
+    targets: arr(c.targets).map(targetText),
+    requestPressure: num(isObj(pressure) ? first(p.count, p.value, p.index) : pressure),
+    requestMeanTriage: num(p.mean_triage),
+    requestIds: strs(p.request_ids),
     missing,
   };
 }
-/** POST /markets/compare: nested `topics[].cells|markets`, flat `cells|matrix` rows or a topic→market map. */
+/**
+ * POST /markets/compare: `markets[]` (basis, share, weight) and `topics[]` with `cells` keyed by market
+ * (verified); flat `cells|matrix` rows and a topic→market map are tolerated.
+ */
 export function toComparison(value: unknown, vehicle: string): MarketComparison {
   const o = obj(value);
-  const rows = new Map<string, Record<string, ComparisonCell>>();
-  const put = (topic: unknown, market: unknown, cell: unknown) => {
+  const rows = new Map<string, ComparisonRow>();
+  const row = (topic: string, entry: Json = {}) => {
+    if (!rows.has(topic))
+      rows.set(topic, {
+        topic,
+        label: str(entry.label),
+        demandIndex: num(entry.demand_index),
+        demandCoverage: num(entry.demand_coverage),
+        alignment: str(entry.alignment),
+        recommendation: str(entry.recommendation),
+        cells: {},
+      });
+    return rows.get(topic)!;
+  };
+  const put = (topic: unknown, market: unknown, cell: unknown, entry?: Json) => {
     const t = str(topic);
     const m = str(market);
     if (!t || !m) return;
-    if (!rows.has(t)) rows.set(t, {});
-    rows.get(t)![m] = toCell(m, cell);
+    row(t, entry).cells[m] = toCell(m, cell);
   };
   const flat = arr(o.cells).length ? arr(o.cells) : arr(o.matrix);
   if (arr(o.topics).length)
-    for (const entry of arr(o.topics)) {
-      const t = obj(entry);
+    for (const item of arr(o.topics)) {
+      const t = obj(item);
+      if (str(t.topic)) row(str(t.topic)!, t);
       const cells = json(t.cells ?? t.markets);
-      if (Array.isArray(cells)) for (const c of cells) put(t.topic, obj(c).market, c);
-      else for (const [m, c] of Object.entries(obj(cells))) put(t.topic, m, c);
+      if (Array.isArray(cells)) for (const c of cells) put(t.topic, obj(c).market, c, t);
+      else for (const [m, c] of Object.entries(obj(cells))) put(t.topic, m, c, t);
     }
   else if (flat.length) for (const c of flat) put(obj(c).topic, obj(c).market, c);
   else for (const [t, markets] of Object.entries(obj(o.matrix))) for (const [m, c] of Object.entries(obj(markets))) put(t, m, c);
-  const weightMap = numMap(o.weights);
+  const weights = obj(o.weights);
+  const weightMap = numMap(weights);
+  const basis = str(weights.basis);
+  const period = str(weights.period);
   const listed = arr(o.markets).map((m) => {
     const entry = isObj(m) ? m : { market: m };
     const market = str(entry.market) ?? "";
+    const entryBasis = str(first(entry.basis, entry.weight_basis, entry.weight_source));
     return {
       market,
-      share: num(first(entry.share, entry.weight)) ?? weightMap[market] ?? null,
-      equalWeight: entry.equal_weight === true || str(entry.weight_basis) === "equal" || str(entry.weight_source) === "equal",
-      period: str(entry.period),
+      name: str(entry.name),
+      share: num(entry.share),
+      weight: num(entry.weight) ?? weightMap[market] ?? null,
+      units: num(entry.units),
+      equalWeight: entry.equal_weight === true || entryBasis === "equal" || entryBasis === "equal_fallback",
+      period: str(entry.period) ?? period,
     };
   });
-  const cellMarkets = unique([...rows.values()].flatMap((cells) => Object.keys(cells))).sort();
+  const cellMarkets = unique([...rows.values()].flatMap((r) => Object.keys(r.cells))).sort();
   const markets = listed.filter((m) => m.market).length
     ? listed.filter((m) => m.market)
     : unique([...Object.keys(weightMap), ...cellMarkets]).map((market) => ({
         market,
-        share: weightMap[market] ?? null,
+        name: null,
+        share: null,
+        weight: weightMap[market] ?? null,
+        units: null,
         equalWeight: false,
         period: null,
       }));
@@ -513,19 +582,35 @@ export function toComparison(value: unknown, vehicle: string): MarketComparison 
     vehicle: str(o.vehicle) ?? vehicle,
     methodVersion: str(o.method_version),
     runId: str(o.run_id),
+    weightBasis: basis,
+    weightsMethodVersion: str(weights.method_version),
+    sentimentMethodVersion: str(o.sentiment_method_version),
     markets,
-    rows: [...rows.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([topic, cells]) => ({ topic, cells })),
+    rows: [...rows.values()].filter((r) => Object.keys(r.cells).length).sort((a, b) => a.topic.localeCompare(b.topic)),
     warnings: strs(o.warnings),
   };
 }
+/** metrics.ai_brief (markets.draft_conflict_brief): summary, trade-off, options, open questions, grounded citations. */
 function toAiBrief(value: unknown, conflict: Json): AiBrief | null {
   if (value === undefined || value === null) return null;
   const b = obj(value);
-  const text = typeof value === "string" ? value : str(first(b.text, b.summary, b.brief, b.explanation));
-  if (!text) return null;
+  const summary = typeof value === "string" ? value : str(first(b.summary, b.text, b.brief, b.explanation));
+  if (!summary) return null;
   return {
-    text,
-    options: arr(b.options).map((o) => str(o) ?? str(obj(o).label) ?? str(obj(o).text) ?? JSON.stringify(o)),
+    summary,
+    tradeOff: str(b.trade_off),
+    options: arr(b.options).map((o) => {
+      const x = obj(o);
+      return typeof o === "string"
+        ? { option: o, summary: "", benefits: [], risks: [] }
+        : { option: str(first(x.option, x.label)) ?? "option", summary: str(first(x.summary, x.text)) ?? "", benefits: strs(x.benefits), risks: strs(x.risks) };
+    }),
+    openQuestions: strs(b.open_questions),
+    citations: arr(b.citations)
+      .map((c) => obj(c))
+      .filter((c) => str(c.evidence_id))
+      .map((c) => ({ evidenceId: str(c.evidence_id)!, quote: str(c.quote) ?? "", market: str(c.market) })),
+    label: str(b.label),
     provenance: provenance({ run_id: conflict.ai_brief_run_id, ...b }, null, true),
   };
 }
@@ -553,10 +638,12 @@ export function toConflict(value: unknown): MarketConflict {
     status: str(o.status) ?? "open",
     created_at: str(o.created_at) ?? "",
     aiBrief: toAiBrief(first(metrics.ai_brief, o.ai_brief), metrics),
+    latestResolution: isObj(o.latest_resolution) ? toResolution(o.latest_resolution, str(o.id) ?? "") : null,
   };
 }
 function toSnippet(value: unknown, market: string | null): EvidenceSnippet | null {
-  if (typeof value === "string") return { id: value, market, content: null, quote: null, sourceId: null, observedAt: null };
+  if (typeof value === "string")
+    return { id: value, market, content: null, quote: null, sourceId: null, sourceTitle: null, observedAt: null, mentions: [] };
   const e = obj(value);
   const id = str(first(e.id, e.evidence_id));
   if (!id) return null;
@@ -566,10 +653,27 @@ function toSnippet(value: unknown, market: string | null): EvidenceSnippet | nul
     content: str(first(e.content, e.excerpt, e.text)),
     quote: str(first(e.quote, e.span_text)),
     sourceId: str(e.source_id),
+    sourceTitle: str(e.source_title),
     observedAt: str(e.observed_at),
+    mentions: arr(e.mentions)
+      .map((m) => obj(m))
+      .filter((m) => str(m.quote))
+      .map((m) => ({ attribute: str(m.attribute) ?? "", direction: str(m.direction) ?? "", quote: str(m.quote)! })),
   };
 }
-/** GET /markets/conflicts/{id}: conflict fields (or `conflict`), evidence per market, resolutions. */
+function toResolution(r: unknown, conflictId: string): MarketResolution {
+  const x = obj(r);
+  return {
+    id: str(x.id) ?? "",
+    conflict_id: str(x.conflict_id) ?? conflictId,
+    decision: str(x.decision) ?? "",
+    actor: str(x.actor) ?? "",
+    rationale: str(x.rationale) ?? "",
+    requirement_ids: strs(x.requirement_ids),
+    created_at: str(x.created_at) ?? "",
+  };
+}
+/** GET /markets/conflicts/{id}: conflict fields plus `evidence` {market: [...]}, requirements, resolutions, history. */
 export function toConflictDetail(value: unknown): ConflictDetail {
   const o = obj(value);
   const conflict = toConflict(isObj(o.conflict) ? o.conflict : o);
@@ -577,7 +681,7 @@ export function toConflictDetail(value: unknown): ConflictDetail {
   const add = (market: string | null, item: unknown) => {
     const snippet = toSnippet(item, market);
     if (!snippet) return;
-    const key = snippet.market ?? market ?? "unscoped";
+    const key = market ?? snippet.market ?? "unscoped";
     (evidenceByMarket[key] ||= []).push(snippet);
   };
   const evidence = json(first(o.evidence_by_market, o.evidence_per_market, o.evidence));
@@ -588,36 +692,74 @@ export function toConflictDetail(value: unknown): ConflictDetail {
   return {
     conflict,
     evidenceByMarket,
-    resolutions: arr(o.resolutions).map((r): MarketResolution => {
-      const x = obj(r);
-      return {
-        id: str(x.id) ?? "",
-        conflict_id: str(x.conflict_id) ?? conflict.id,
-        decision: str(x.decision) ?? "",
-        actor: str(x.actor) ?? "",
-        rationale: str(x.rationale) ?? "",
-        requirement_ids: strs(x.requirement_ids),
-        created_at: str(x.created_at) ?? "",
-      };
-    }),
+    requirements: arr(o.requirements)
+      .map((r) => obj(r))
+      .filter((r) => str(r.id))
+      .map((r) => ({
+        id: str(r.id)!,
+        key: str(r.key),
+        market: str(r.market),
+        topic: str(r.topic),
+        status: str(r.status),
+        title: str(r.title),
+        score: num(first(r.score_total, r.score)),
+        evidenceGrade: str(r.evidence_grade),
+      })),
+    resolutions: arr(o.resolutions).map((r) => toResolution(r, conflict.id)),
+    history: arr(o.history)
+      .map((h) => obj(h))
+      .filter((h) => str(h.id))
+      .map((h) => ({ id: str(h.id)!, status: str(h.status) ?? "", runId: str(h.run_id), createdAt: str(h.created_at) ?? "" })),
+    supersededBy: str(o.superseded_by),
   };
 }
 
-// Requests (Pod C) ------------------------------------------------------------------------------
+// Requests (Pod C) – verified against codex/platform-intake-complete:server/intake.py ------------------
+/** request-triage-v1 flags name unmeasured factors: `<factor>_not_measured`, and `effort_unknown`. */
+const unmeasured = (flags: string[]) =>
+  flags.flatMap((flag) => (flag === "effort_unknown" ? ["effort"] : flag.endsWith("_not_measured") ? [flag.slice(0, -13)] : []));
+/**
+ * A triage record: the list summary (`factors` values, `flags`, `suggested_action`) or a full
+ * request_triage row whose `explanation.factors` carries value, measured, formula, inputs, weight and
+ * contribution per factor, plus `explanation.scope` (flags, reasons, cap).
+ */
 export function toTriage(value: unknown): Triage | null {
   if (value === undefined || value === null) return null;
   const o = obj(value);
   const explanation = obj(o.explanation);
+  const flags = unique([...strs(o.flags), ...strs(explanation.flags)]);
+  const scope = obj(explanation.scope);
   const capRaw = first(explanation.cap, explanation.capped, explanation.scope_cap, o.cap_reason, o.cap);
+  const scopeCap = num(scope.cap);
+  const cap =
+    scopeCap !== null
+      ? `Capped at ${scopeCap} from ${fixedNumber(num(scope.capped_from))}: ${strs(scope.reasons).join(" ") || "out-of-scope flags"}`
+      : isObj(capRaw)
+        ? str(first(capRaw.reason, capRaw.text))
+        : typeof capRaw === "boolean"
+          ? null
+          : str(capRaw);
+  const suggested = obj(first(o.suggested_action, explanation.suggested_action));
   return {
+    id: str(o.id),
     rubricVersion: str(o.rubric_version),
     total: num(first(o.total, o.score)),
-    factors: toFactors(o.factors, o.weights, isObj(explanation.factors) ? explanation.factors : explanation, o.contributions),
-    cap: isObj(capRaw) ? str(first(capRaw.reason, capRaw.text)) : typeof capRaw === "boolean" ? null : str(capRaw),
+    factors: toFactors(
+      o.factors,
+      o.weights,
+      isObj(explanation.factors) ? explanation.factors : explanation,
+      o.contributions,
+      unmeasured(flags),
+    ).map((f) => ({ ...f, notes: f.notes.filter((note) => !note.endsWith("_not_measured") && note !== "effort_unknown") })),
+    flags,
+    suggestedAction: str(suggested.decision) ? { decision: str(suggested.decision)!, reason: str(suggested.reason) ?? "" } : null,
+    formula: str(explanation.formula),
+    cap,
     runId: str(o.run_id),
     createdAt: str(o.created_at),
   };
 }
+const fixedNumber = (value: number | null) => (value === null ? "–" : String(Math.round(value * 100) / 100));
 export function toRequest(value: unknown): IntakeRequest {
   const o = obj(value);
   const cluster = obj(o.cluster);
@@ -632,17 +774,26 @@ export function toRequest(value: unknown): IntakeRequest {
     title: str(o.title) ?? "Untitled request",
     body: str(o.body) ?? "",
     topic: str(o.topic),
+    attribute: str(o.attribute),
+    effort: str(o.effort),
     requested_at: str(o.requested_at) ?? "",
     simulated: o.simulated === true || o.simulated === 1,
     scope_flags: strs(o.scope_flags),
     status: str(o.status) ?? "new",
     cluster_id: str(first(o.cluster_id, cluster.id)),
     clusterTitle: str(first(o.cluster_title, cluster.canonical_title)),
+    clusterSize: num(cluster.size),
+    ageDays: num(o.age_days),
+    slaBreach: o.sla_breach === true,
+    pmPinned: strs(o.pm_pinned),
     created_by: str(o.created_by) ?? "",
     created_at: str(o.created_at) ?? "",
-    triage: triage === undefined
-      ? num(o.triage_total) === null ? null : { rubricVersion: null, total: num(o.triage_total), factors: [], cap: null, runId: null, createdAt: null }
-      : toTriage(triage),
+    triage:
+      triage === undefined
+        ? num(o.triage_total) === null
+          ? null
+          : { id: null, rubricVersion: null, total: num(o.triage_total), factors: [], flags: [], suggestedAction: null, formula: null, cap: null, runId: null, createdAt: null }
+        : toTriage(triage),
   };
 }
 /** Deterministic display order: triage score (untriaged last), then oldest request, then key. */
@@ -654,6 +805,23 @@ export function sortByTriage(requests: IntakeRequest[]): IntakeRequest[] {
       a.key.localeCompare(b.key),
   );
 }
+/** GET /requests/clusters items: {id, canonical_title, topic, method_version, size, markets, members}. */
+export function toCluster(value: unknown): RequestCluster {
+  const o = obj(value);
+  const members = arr(o.members).map((m) => {
+    const x = obj(m);
+    return { id: str(x.id) ?? "", key: str(x.key) ?? "", market: str(x.market) ?? "", title: str(x.title) ?? "", status: str(x.status) ?? "" };
+  });
+  return {
+    id: need(o, "id", "request cluster"),
+    title: str(first(o.canonical_title, o.title)) ?? `Cluster ${(str(o.id) ?? "").slice(0, 8)}`,
+    topic: str(o.topic),
+    methodVersion: str(o.method_version),
+    markets: strs(o.markets).length ? strs(o.markets) : unique(members.map((m) => m.market)).sort(),
+    members,
+  };
+}
+/** Fallback when GET /requests/clusters is absent: groups the loaded requests by cluster_id. */
 export function clusterRequests(requests: IntakeRequest[]): RequestCluster[] {
   const groups = new Map<string, IntakeRequest[]>();
   for (const r of requests) if (r.cluster_id) groups.set(r.cluster_id, [...(groups.get(r.cluster_id) || []), r]);
@@ -665,53 +833,76 @@ export function clusterRequests(requests: IntakeRequest[]): RequestCluster[] {
         id,
         title: members.find((m) => m.clusterTitle)?.clusterTitle ?? `Cluster ${id.slice(0, 8)}`,
         topic,
-        requests: sortByTriage(members),
+        methodVersion: null,
         markets: unique(members.map((m) => m.market)).sort(),
+        members: sortByTriage(members).map((m) => ({ id: m.id, key: m.key, market: m.market, title: m.title, status: m.status })),
       };
     })
-    .sort((a, b) => b.requests.length - a.requests.length || a.title.localeCompare(b.title));
+    .sort((a, b) => b.members.length - a.members.length || a.title.localeCompare(b.title));
 }
 function toLink(value: unknown): RequestLink {
   const o = obj(value);
   const entity = obj(o.entity);
+  const basis = obj(o.basis);
+  const createdBy = str(o.created_by) ?? "";
   return {
     id: str(o.id) ?? `${str(o.entity_type)}:${str(o.entity_id)}`,
     entity_type: str(o.entity_type) ?? "record",
     entity_id: str(o.entity_id) ?? "",
     relation: str(o.relation) ?? "supports",
     status: str(o.status) ?? "active",
-    created_by: str(o.created_by) ?? "",
+    created_by: createdBy,
     created_at: str(o.created_at) ?? "",
-    summary: str(first(entity.summary, entity.title, entity.content, o.summary)),
+    summary: str(first(entity.summary, entity.title, entity.content, entity.key, o.summary)),
     market: str(first(entity.market, o.market)),
-    quote: str(first(o.quote, o.span_text, entity.quote)),
+    quote: str(first(o.quote, o.span_text, basis.quote, entity.quote)),
+    methodVersion: str(basis.method_version),
+    rationale: str(basis.rationale),
+    aiGenerated: o.ai_generated === true || createdBy.toLowerCase().startsWith("ai:"),
   };
 }
-const texts = (value: unknown) =>
-  arr(value).map((v) => str(v) ?? str(obj(v).text) ?? str(obj(v).point) ?? JSON.stringify(v));
+function toPoints(value: unknown): PositionPoint[] {
+  return arr(value).map((v) => {
+    if (typeof v === "string") return { text: v, evidenceId: null, quote: null };
+    const x = obj(v);
+    return {
+      text: str(first(x.point, x.text)) ?? JSON.stringify(v),
+      evidenceId: str(first(x.evidence_id, strs(x.evidence_ids)[0])),
+      quote: str(x.quote),
+    };
+  });
+}
+/** A position draft message: `positions[]` (thread messages; the latest wins) or a `position` object. */
 function toPosition(value: unknown): PositionDraft | null {
   if (value === undefined || value === null) return null;
   const outer = obj(value);
   const o = { ...outer, ...obj(outer.payload) };
-  const caseFor = texts(first(o.case_for, o.for, o.supporting));
-  const caseAgainst = texts(first(o.case_against, o.against, o.conflicting));
-  const openQuestions = texts(first(o.open_questions, o.questions));
+  const caseFor = toPoints(first(o.case_for, o.for, o.supporting));
+  const caseAgainst = toPoints(first(o.case_against, o.against, o.conflicting));
+  const openQuestions = arr(first(o.open_questions, o.questions)).map((q) => str(q) ?? str(obj(q).text) ?? JSON.stringify(q));
   if (!caseFor.length && !caseAgainst.length && !openQuestions.length) return null;
-  const cited = [first(o.case_for, o.for), first(o.case_against, o.against)].flatMap((list) =>
-    arr(list).flatMap((v) => [...strs(obj(v).evidence_ids), ...(str(obj(v).evidence_id) ? [str(obj(v).evidence_id)!] : [])]),
-  );
+  const cited = [...caseFor, ...caseAgainst].map((p) => p.evidenceId).filter((id): id is string => !!id);
+  const generated = o.ai_generated === false ? false : o.ai_generated === true || parseMethodVersion(str(o.method_version)).provider !== "deterministic";
   return {
+    summary: str(o.summary),
     caseFor,
     caseAgainst,
     openQuestions,
-    citedIds: unique([...cited, ...strs(o.cited_ids)]),
-    provenance: provenance(o, null, true),
+    citedIds: unique([...cited, ...strs(o.cited_ids), ...strs(o.cited_evidence_ids)]),
+    label: str(o.label),
+    createdAt: str(first(outer.created_at, o.created_at)),
+    provenance: { ...provenance({ ...o, run_id: first(o.run_id, outer.run_id) }), generated, ...(generated ? {} : { provider: "deterministic" }) },
   };
 }
+/** GET /requests/{id}: summary fields plus links, decisions, triage_history (newest first) and positions. */
 export function toRequestDetail(value: unknown): RequestDetail {
   const o = obj(value);
+  const request = toRequest(isObj(o.request) ? o.request : o);
+  const triageHistory = arr(first(o.triage_history, o.triages)).map(toTriage).filter((t): t is Triage => !!t);
+  const full = triageHistory.find((t) => t.id && t.id === request.triage?.id) ?? (request.triage ? null : triageHistory[0]);
+  const positions = arr(o.positions).filter((m) => obj(obj(m).payload).kind === undefined || obj(obj(m).payload).kind === "request_position");
   return {
-    request: toRequest(isObj(o.request) ? o.request : o),
+    request: full ? { ...request, triage: { ...full, suggestedAction: full.suggestedAction ?? request.triage?.suggestedAction ?? null } } : request,
     links: arr(o.links).map(toLink),
     decisions: arr(o.decisions).map((d): RequestDecision => {
       const x = obj(d);
@@ -724,8 +915,9 @@ export function toRequestDetail(value: unknown): RequestDetail {
         created_at: str(x.created_at) ?? "",
       };
     }),
-    triageHistory: arr(first(o.triage_history, o.triages)).map(toTriage).filter((t): t is Triage => !!t),
-    position: toPosition(first(o.position, o.position_draft)),
+    triageHistory,
+    position: toPosition(first(o.position, o.position_draft, positions.at(-1))),
+    positionCount: positions.length,
   };
 }
 function countMap(value: unknown, rows: unknown[], key: string): Record<string, number> {
@@ -739,13 +931,14 @@ function countMap(value: unknown, rows: unknown[], key: string): Record<string, 
   }
   return out;
 }
-/** GET /requests/aggregates: `by_*` maps or a list of count rows, plus demand index, aging and SLA. */
+/** GET /requests/aggregates: `by_*` maps (or count rows), demand index list, aging, SLA breaches, weights basis. */
 export function toAggregates(value: unknown): RequestAggregates {
   const o = obj(value);
   const rows = arr(first(o.counts, o.rows));
   const demand = json(o.demand_index);
   const sla = json(o.sla_breaches);
   const aging = obj(o.aging);
+  const weights = obj(o.market_weights);
   return {
     total: num(o.total),
     byMarket: countMap(o.by_market, rows, "market"),
@@ -755,16 +948,21 @@ export function toAggregates(value: unknown): RequestAggregates {
     demandIndex: Array.isArray(demand)
       ? Object.fromEntries(
           demand
-            .map((d) => [str(obj(d).topic), num(first(obj(d).value, obj(d).index))] as const)
+            .map((d) => [str(obj(d).topic), num(first(obj(d).index, obj(d).value))] as const)
             .filter((d): d is [string, number] => !!d[0] && d[1] !== null),
         )
       : numMap(demand),
+    demandMethod: str(o.demand_index_method),
+    weightsMeasured: bool(weights.measured),
     medianAgeDays: num(first(o.median_age_days, aging.median_days, aging.median_age_days)),
-    slaBreaches: Array.isArray(sla) ? sla.length : num(first(sla, obj(sla).count)),
+    slaDays: num(o.sla_days),
+    slaBreaches: num(o.sla_breach_count) ?? (Array.isArray(sla) ? sla.length : num(first(sla, obj(sla).count))),
+    simulatedCount: num(o.simulated_count),
+    methodVersion: str(o.method_version),
   };
 }
 
-// Priorities (Pod D) ----------------------------------------------------------------------------
+// Priorities (Pod D) – ASSUMED: §5.3 plus the in-progress Pod D branch (not merged, not verified) ---------
 function toScopeRubric(value: unknown): ScopeRubric | null {
   if (!isObj(json(value))) return null;
   const o = obj(value);
@@ -779,9 +977,10 @@ function toScopeRubric(value: unknown): ScopeRubric | null {
     actor: str(o.actor) ?? "",
     rationale: str(o.rationale) ?? "",
     created_at: str(o.created_at) ?? "",
+    isDefault: o.default === true || (!str(o.id) && !str(o.actor)),
   };
 }
-/** GET /priorities/rubrics: definitions (`items|rubrics|available` or a bare array) + scope state. */
+/** GET /priorities/rubrics: definitions (`items|rubrics|available` or a bare array) + the scope's active rubric + history. */
 export function toRubricState(value: unknown): RubricState {
   const o = obj(value);
   const definitions = Array.isArray(value) ? value : arr(first(o.items, o.rubrics, o.available));
@@ -791,11 +990,21 @@ export function toRubricState(value: unknown): RubricState {
         const x = obj(r);
         const version = str(first(x.version, x.rubric_version, x.id));
         return version
-          ? { version, weights: numMap(first(x.default_weights, x.weights)), description: str(first(x.description, x.label)) }
+          ? {
+              version,
+              weights: numMap(first(x.default_weights, x.weights)),
+              description: str(first(x.description, x.label)),
+              formula: str(x.formula),
+              derived: Object.entries(obj(x.derived_factors)).map(([factor, d]) => ({
+                factor,
+                methodVersion: str(obj(d).method_version),
+                formula: str(obj(d).formula),
+              })),
+            }
           : null;
       })
       .filter((r): r is RubricState["available"][number] => !!r),
-    current: toScopeRubric(first(o.current, o.scope, o.active)),
+    current: toScopeRubric(first(o.current, o.active, o.scope)),
     history: arr(o.history).map(toScopeRubric).filter((r): r is ScopeRubric => !!r),
   };
 }
@@ -807,7 +1016,11 @@ function toStability(value: unknown): Stability | null {
     maxRank: num(s.max_rank),
     stable: bool(s.stable),
   };
-  return Object.values(result).every((v) => v === null) ? null : result;
+  if (Object.values(result).every((v) => v === null)) {
+    const reason = str(s.reason);
+    return reason ? { ...result, current: false, reason } : null;
+  }
+  return { ...result, current: s.current === false ? false : true, reason: str(s.reason) };
 }
 function toRankingRow(value: unknown): RankingRow {
   const r = obj(value);
@@ -819,6 +1032,7 @@ function toRankingRow(value: unknown): RankingRow {
       : str(explanation.text) && (str(explanation.provider) || str(explanation.model))
         ? explanation
         : null;
+  const preview = obj(r.v2_preview);
   return {
     requirementId: need(r, str(r.requirement_id) ? "requirement_id" : "id", "ranking row"),
     key: str(r.key),
@@ -826,9 +1040,13 @@ function toRankingRow(value: unknown): RankingRow {
     topic: str(r.topic),
     status: str(r.status),
     versionId: str(r.version_id),
+    scoreId: str(r.score_id),
+    rubricVersion: str(r.rubric_version),
     total: num(first(r.total, isObj(r.score) ? r.score.total : r.score)),
     rank: num(r.rank),
     evidenceGrade: str(r.evidence_grade),
+    needsReview: r.needs_review === true,
+    v2PreviewTotal: num(preview.total),
     factors: toFactors(
       r.factors,
       r.weights,
@@ -846,7 +1064,7 @@ function toRankingRow(value: unknown): RankingRow {
       };
     }),
     stability: toStability(first(r.stability, r.sensitivity)),
-    explanation: ai ? { text: str(obj(ai).text) ?? "", provenance: provenance(ai, null, true) } : null,
+    explanation: ai ? { text: str(first(obj(ai).text, obj(ai).explanation)) ?? "", citedIds: strs(obj(ai).cited_ids), provenance: provenance(ai, null, true) } : null,
   };
 }
 /** GET /priorities/ranking: `items|ranking|requirements` (or a bare array) with per-row factors. */
@@ -856,7 +1074,7 @@ export function toRanking(value: unknown, scope: Scope): Ranking {
   return {
     vehicle: str(o.vehicle) ?? scope.vehicle,
     market: str(o.market) ?? scope.market,
-    rubricVersion: str(o.rubric_version),
+    rubricVersion: str(first(o.rubric_version, obj(o.rubric).rubric_version)),
     methodVersion: str(o.method_version),
     runId: str(o.run_id),
     rows: [...rows].sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity) || (b.total ?? -Infinity) - (a.total ?? -Infinity)),
@@ -871,6 +1089,28 @@ export function mergeSensitivity(rows: RankingRow[], value: unknown): RankingRow
     const stability = toStability(results[row.requirementId]);
     return stability ? { ...row, stability } : row;
   });
+}
+/**
+ * POST /priorities/explain → {summary, items: [{requirement_id, explanation, cited_ids}], provider, model,
+ * method_version, prompt_version, ai_generated, run_id}. OpenAI or the labelled deterministic template.
+ */
+export function toExplanation(value: unknown): RankingExplanation {
+  const o = obj(value);
+  const generated = o.ai_generated === false ? false : o.ai_generated === true || parseMethodVersion(str(o.method_version)).provider === "openai";
+  const base = provenance(o);
+  const prov: Provenance = { ...base, generated, provider: generated ? base.provider ?? "openai" : "deterministic" };
+  const items: RankingExplanation["items"] = {};
+  for (const entry of arr(o.items)) {
+    const x = obj(entry);
+    const id = str(x.requirement_id);
+    const text = str(first(x.explanation, x.text));
+    if (id && text) items[id] = { text, citedIds: strs(x.cited_ids), provenance: prov };
+  }
+  return { summary: str(o.summary), provenance: prov, items };
+}
+export function mergeExplanation(rows: RankingRow[], explanation: RankingExplanation | undefined): RankingRow[] {
+  if (!explanation) return rows;
+  return rows.map((row) => (explanation.items[row.requirementId] ? { ...row, explanation: explanation.items[row.requirementId] } : row));
 }
 
 // Runs (Pod F) ----------------------------------------------------------------------------------
@@ -989,17 +1229,30 @@ export const platform = {
     api<unknown>(`/markets/conflicts/${enc(id)}`, { signal }).then(toConflictDetail),
   resolveConflict: (id: string, body: Gate & { decision: string; requirement_ids: string[] }) =>
     write<unknown>(`/markets/conflicts/${enc(id)}/resolve`, body).then(raw),
+  draftBrief: (id: string, body: Actor) =>
+    write<unknown>(`/markets/conflicts/${enc(id)}/brief`, { ...body, provider: "openai" }).then(raw),
   weights: (vehicle: string, signal?: AbortSignal) =>
-    collect(`/markets/weights?${params({ vehicle })}`, toMarketWeight, signal),
+    api<unknown>(`/markets/weights?${params({ vehicle, limit: 200 })}`, { signal }).then(toWeights),
   requests: (vehicle: string, filters: { market?: string; status?: string }, signal?: AbortSignal) =>
-    collect(`/requests?${params({ vehicle, ...filters })}`, toRequest, signal),
-  request: (id: string, signal?: AbortSignal) => api<unknown>(`/requests/${enc(id)}`, { signal }).then(toRequestDetail),
+    collect(`/requests?${params({ vehicle, ...filters, sort: "triage" })}`, toRequest, signal),
+  request: (id: string, actor: string | undefined, signal?: AbortSignal) =>
+    api<unknown>(`/requests/${enc(id)}?${params({ actor })}`, { signal }).then(toRequestDetail),
+  editRequest: (id: string, body: Gate & { topic?: string; effort?: string | null }) =>
+    write<unknown>(`/requests/${enc(id)}`, body, "PATCH").then((v) => toWrite(v, toRequest)),
+  clusters: (vehicle: string, market?: string, signal?: AbortSignal) =>
+    collect(`/requests/clusters?${params({ vehicle, market })}`, toCluster, signal),
   aggregates: (vehicle: string, market?: string, signal?: AbortSignal) =>
     api<unknown>(`/requests/aggregates?${params({ vehicle, market })}`, { signal }).then(toAggregates),
-  triage: (vehicle: string, body: Actor & { market?: string }) =>
+  classify: (vehicle: string, body: Actor & { market?: string; provider: Provider }) =>
+    write<unknown>("/requests/classify", { vehicle, ...body }).then(raw),
+  triage: (vehicle: string, body: Actor & { market?: string; link_provider: Provider | "none" }) =>
     write<unknown>("/requests/triage", { vehicle, ...body }).then(raw),
   cluster: (vehicle: string, body: Actor & { provider: Provider }) =>
     write<unknown>("/requests/cluster", { vehicle, ...body }).then(raw),
+  proposeLinks: (vehicle: string, body: Actor & { market?: string; request_ids?: string[]; provider: Provider }) =>
+    write<unknown>("/requests/links/propose", { vehicle, ...body }).then(raw),
+  draftPositions: (vehicle: string, body: Actor & { market?: string; request_ids?: string[]; provider: Provider }) =>
+    write<unknown>("/requests/positions", { vehicle, ...body }).then(raw),
   loadSimulated: (body: Actor) => write<unknown>("/requests/fixtures/simulated", body).then(raw),
   decideRequest: (id: string, body: Gate & { decision: string; requirement_id?: string }) =>
     write<unknown>(`/requests/${enc(id)}/decide`, body).then(raw),
@@ -1011,6 +1264,8 @@ export const platform = {
   ranking: (scope: Scope, signal?: AbortSignal) =>
     api<unknown>(`/priorities/ranking?${params(scope)}`, { signal }).then((v) => toRanking(v, scope)),
   sensitivity: (scope: Scope, body: Actor) => write<unknown>("/priorities/sensitivity", { ...scope, ...body }).then(raw),
+  explain: (scope: Scope, body: Actor & { provider: Provider; limit?: number }) =>
+    write<unknown>("/priorities/explain", { ...scope, ...body }).then(toExplanation),
   runs: (vehicle: string, filters: { market?: string; capability?: string; status?: string }, signal?: AbortSignal) =>
     api<unknown>(`/runs?${params({ vehicle, ...filters, limit: 50 })}`, { signal }).then((v) => toPage(v, toRun)),
 };

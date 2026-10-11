@@ -17,6 +17,10 @@ import {
   toComparison,
   toConflict,
   toConflictDetail,
+  toCluster,
+  toExplanation,
+  mergeExplanation,
+  toWeights,
   toPage,
   toRanking,
   toRequest,
@@ -139,6 +143,13 @@ describe("signals transforms (simulated)", () => {
     expect(series).toMatchObject([{ sourceClass: "bmw_evidence", methodVersion: "openai:m:p", n: 6, lowN: false }]);
     expect(toSentimentPoints([{ week: "2026-41" }])).toEqual([]);
   });
+  it("reads the assumed v_sentiment_weekly rows returned as a paginated list", () => {
+    const points = toSentimentPoints({
+      items: [{ vehicle: "G60", market: "US", topic: "driving-experience", week: "2026-38", source_class: "public_monitoring", method_version: "lexicon-v1", n: 3, mean_polarity: 0.2, negative_share: 0.33, positive_share: 0.66, undated_n: 1, subject_ids: '["si1","si2","si3"]', week_start: "2026-09-14", iso_week: "2026-W38", mixed_share: 0, low_n: true, provider: "deterministic" }],
+      total: 1, limit: 1000, offset: 0, method_version: "sentiment-summary-v1",
+    });
+    expect(points[0]).toMatchObject({ week: "2026-38", sourceClass: "public_monitoring", n: 3, lowN: true, undatedN: 1, subjectIds: ["si1", "si2", "si3"] });
+  });
   it("never mixes method versions in one chart and keeps series separate", () => {
     const points = toSentimentPoints([
       { week: "2026-41", source_class: "public_monitoring", method_version: "lexicon-v1", n: 8, mean_polarity: 0.3 },
@@ -169,92 +180,213 @@ describe("signals transforms (simulated)", () => {
   });
 });
 
-describe("market transforms (simulated)", () => {
-  it("reads a nested comparison and keeps missing data with its reason", () => {
-    const comparison = toComparison(
+// Fixtures below mirror the response construction in codex/platform-markets-complete:server/markets.py
+// (build_comparison, _cell, get_conflict, draft_conflict_brief) with simulated values.
+describe("market transforms (verified shapes, simulated values)", () => {
+  const cell = (market: string, extra: Record<string, unknown> = {}) => ({
+    market,
+    topic: "comfort",
+    evidence: { count: 0, grade: "D", evidence_ids: [], finding_ids: [] },
+    sentiment: null,
+    requirement: null,
+    targets: null,
+    weight: 0.5,
+    share: 0.5,
+    score: null,
+    priority: null,
+    rank: null,
+    rank_of: 0,
+    rank_band: null,
+    request_pressure: null,
+    missing: { evidence: "no analysed customer evidence for this topic in this market", requirement: "no requirement for this vehicle, market and topic" },
+    ...extra,
+  });
+  const comparison = {
+    vehicle: "G60",
+    method_version: "market-balance-v1",
+    markets: [
+      { market: "CN", name: "China", parent_code: null, basis: "equal_fallback", share: null, weight: 0.5, effective_share: 0.5, units: null },
+      { market: "US", name: "United States", parent_code: null, basis: "equal_fallback", share: null, weight: 0.5, effective_share: 0.5, units: null },
+    ],
+    topics: [
       {
-        method_version: "market-balance-v1",
-        run_id: "r1",
-        markets: [{ market: "CN", share: 0.5 }, { market: "US", share: 0.5, equal_weight: true }],
-        warnings: ["No sales-based weights; equal weights used."],
-        topics: [
-          {
-            topic: "comfort",
-            cells: {
-              CN: { evidence_count: 14, evidence_grade: "B", sentiment: { mean_polarity: -0.3 }, requirement: { id: "q1", key: "REQ-1", score: 72.5, rank: 1 }, targets: [{ target: "rear legroom +40 mm" }] },
-              US: { evidence_count: null, missing: { evidence_count: "no US comfort evidence imported" }, sentiment_reason: "not scored" },
-            },
-          },
-        ],
+        topic: "comfort",
+        label: "Cabin comfort",
+        demand_index: 0.36,
+        demand_coverage: 0.5,
+        alignment: "insufficient",
+        recommendation: null,
+        cells: {
+          CN: cell("CN", {
+            evidence: { count: 3, grade: "B", evidence_ids: ["e1", "e2", "e3"], finding_ids: ["f1"] },
+            sentiment: { method_version: "lexicon-v1", n: 3, low_n: true, mean_polarity: -0.4, negative_share: 0.67 },
+            requirement: { id: "q1", key: "REQ-G60-CN-COMFORT", status: "proposed", title: "Rear legroom", score: 72.5 },
+            targets: [{ metric: "Rear knee room", target: "+40", unit: "mm", basis: "PM assumption" }],
+            score: 72.5,
+            rank: 1,
+            rank_of: 4,
+            request_pressure: { count: 2, mean_triage: 61.5, request_ids: ["r1", "r2"] },
+            missing: {},
+          }),
+          US: cell("US"),
+        },
       },
-      "G60",
-    );
-    expect(comparison.markets[1]).toMatchObject({ market: "US", equalWeight: true });
-    const cn = comparison.rows[0].cells.CN;
-    expect(cn).toMatchObject({ evidenceCount: 14, sentiment: -0.3, targets: ["rear legroom +40 mm"] });
-    expect(cn.requirement).toMatchObject({ id: "q1", score: 72.5, rank: 1 });
-    const us = comparison.rows[0].cells.US;
-    expect(us.evidenceCount).toBeNull();
-    expect(us.missing).toEqual({ evidence_count: "no US comfort evidence imported", sentiment: "not scored" });
-    expect(comparison.warnings).toHaveLength(1);
+    ],
+    weights: { basis: "equal_fallback", period: null, method_version: null, missing_markets: ["CN", "US"] },
+    sentiment_method_version: "lexicon-v1",
+    warnings: ["No market_weights are recorded for G60; equal weights are assumed for CN and US until sales shares are derived (market_data.derive_weights)."],
+    run_id: "run-1",
+    audit_event_id: "a1",
+  };
+  it("reads the comparison matrix with weights, demand index and missing reasons", () => {
+    const data = toComparison(comparison, "G60");
+    expect(data.markets[0]).toMatchObject({ market: "CN", name: "China", share: null, weight: 0.5, equalWeight: true });
+    expect(data.weightBasis).toBe("equal_fallback");
+    expect(data.sentimentMethodVersion).toBe("lexicon-v1");
+    expect(data.rows[0]).toMatchObject({ topic: "comfort", label: "Cabin comfort", demandIndex: 0.36, alignment: "insufficient" });
+    const cn = data.rows[0].cells.CN;
+    expect(cn).toMatchObject({ evidenceCount: 3, evidenceGrade: "B", sentiment: -0.4, sentimentN: 3, sentimentLowN: true, requestPressure: 2, requestMeanTriage: 61.5 });
+    expect(cn.targets).toEqual(["Rear knee room +40 mm (PM assumption)"]);
+    expect(cn.requirement).toMatchObject({ id: "q1", key: "REQ-G60-CN-COMFORT", score: 72.5, rank: 1, rankOf: 4 });
+    const us = data.rows[0].cells.US;
+    expect(us.requirement).toBeNull();
+    expect(us.requestPressure).toBeNull();
+    expect(Object.keys(us.missing)).toEqual(["evidence", "requirement"]);
+    expect(data.warnings).toHaveLength(1);
+    expect(data.runId).toBe("run-1");
   });
-  it("reads a flat comparison and derives the market list from cells", () => {
-    const comparison = toComparison({ cells: [{ topic: "quietness", market: "US", requirement_id: "q2", score: 40 }], weights: { US: 0.6 } }, "G60");
-    expect(comparison.markets).toEqual([{ market: "US", share: 0.6, equalWeight: false, period: null }]);
-    expect(comparison.rows[0].cells.US.requirement?.score).toBe(40);
+  it("still reads a flat comparison and derives the market list from cells", () => {
+    const data = toComparison({ cells: [{ topic: "quietness", market: "US", requirement_id: "q2", score: 40 }], weights: { US: 0.6 } }, "G60");
+    expect(data.markets).toEqual([{ market: "US", name: null, share: null, weight: 0.6, units: null, equalWeight: false, period: null }]);
+    expect(data.rows[0].cells.US.requirement?.score).toBe(40);
   });
-  it("reads conflicts with per-market evidence and an AI brief kept apart from the rationale", () => {
-    const conflict = toConflict({
-      id: "c1", vehicle: "G60", topic: "quietness", related_topic: "driving-experience", markets: '["CN","US"]',
-      conflict_type: "direction_conflict", severity: "high", recommendation: "selectable_mode",
-      rationale: "Templated from metrics", method_version: "market-balance-v1", run_id: "r1",
-      evidence_ids: { CN: ["e1"], US: ["e2", "e3"] },
-      metrics: { ai_brief: { text: "Simulated brief", provider: "openai", model: "m", run_id: "r2" } },
+  const conflictRow = {
+    id: "c1", vehicle: "G60", topic: "quietness", related_topic: "driving-experience", markets: ["CN", "US"],
+    conflict_type: "direction_conflict", severity: "high", recommendation: "selectable_mode",
+    rationale: "Recommend selectable_mode (rule R2): templated from metrics", method_version: "market-balance-v1", run_id: "r1",
+    fingerprint: "fp", status: "open", created_at: "2026-10-01T10:00:00Z",
+    evidence_ids: { CN: ["e1"], US: ["e2", "e3"] }, requirement_ids: ["q1"],
+    metrics: {
+      rule: "R2",
+      ai_brief: {
+        summary: "Simulated brief", trade_off: "Quiet cabin vs audible sport sound",
+        options: [{ option: "selectable_mode", summary: "Drive-mode sound", benefits: ["both markets"], risks: ["cost of tuning"] }],
+        open_questions: ["Is a quiet default acceptable in the US?"],
+        citations: [{ evidence_id: "e2", quote: "louder exhaust", span: [4, 18], market: "US" }],
+        label: "AI-generated draft (OpenAI). Not a decision; the templated rationale is authoritative.",
+        provider: "openai", model: "gpt-test", method_version: "openai:gpt-test:market-conflict-brief-v1", prompt_version: "market-conflict-brief-v1", run_id: "r2",
+      },
+    },
+    ai_generated_fields: ["metrics.ai_brief"],
+    latest_resolution: { id: "res1", conflict_id: "c1", decision: "defer", actor: "pm:lena", rationale: "needs a clinic", requirement_ids: [], created_at: "2026-10-02" },
+  };
+  it("keeps the AI brief apart from the authoritative templated rationale", () => {
+    const conflict = toConflict(conflictRow);
+    expect(conflict.rationale).toContain("templated");
+    expect(conflict.aiBrief).toMatchObject({
+      summary: "Simulated brief",
+      tradeOff: "Quiet cabin vs audible sport sound",
+      openQuestions: ["Is a quiet default acceptable in the US?"],
+      citations: [{ evidenceId: "e2", quote: "louder exhaust", market: "US" }],
+      provenance: { generated: true, provider: "openai", model: "gpt-test", runId: "r2" },
     });
-    expect(conflict.markets).toEqual(["CN", "US"]);
-    expect(conflict.aiBrief).toMatchObject({ text: "Simulated brief", provenance: { generated: true, model: "m", runId: "r2" } });
-    const fromIds = toConflictDetail({ ...conflict, metrics: {} });
+    expect(conflict.aiBrief?.options[0]).toEqual({ option: "selectable_mode", summary: "Drive-mode sound", benefits: ["both markets"], risks: ["cost of tuning"] });
+    expect(conflict.latestResolution?.decision).toBe("defer");
+    expect(toConflict({ id: "c2", metrics: {} }).aiBrief).toBeNull();
+  });
+  it("reads conflict detail with per-market evidence, mentions, requirements and history", () => {
+    const detail = toConflictDetail({
+      ...conflictRow,
+      evidence: {
+        CN: [{ id: "e1", source_id: "s1", source_title: "Simulated clinic", source_kind: "workbook", content: "I want a quieter cabin", observed_at: "2026-05-01", mentions: [{ attribute: "quietness", direction: "increase", span: [9, 22], quote: "quieter cabin" }] }],
+        US: [{ id: "e2", source_id: "s2", source_title: "Simulated dealer", content: "Give it a louder exhaust", observed_at: null, mentions: [] }],
+      },
+      requirements: [{ id: "q1", key: "REQ-1", market: "US", topic: "quietness", status: "proposed", current_version_id: "v1", title: "Quiet", score_id: "sc1", score_total: 64.2, evidence_grade: "B" }],
+      resolutions: [],
+      history: [{ id: "c0", status: "superseded", severity: "medium", recommendation: "pm_tradeoff", run_id: "r0", created_at: "2026-09-01" }, { id: "c1", status: "open", run_id: "r1", created_at: "2026-10-01" }],
+      superseded_by: null,
+    });
+    expect(detail.evidenceByMarket.CN[0]).toMatchObject({ id: "e1", sourceTitle: "Simulated clinic", mentions: [{ attribute: "quietness", direction: "increase", quote: "quieter cabin" }] });
+    expect(detail.evidenceByMarket.US[0].observedAt).toBeNull();
+    expect(detail.requirements[0]).toMatchObject({ key: "REQ-1", score: 64.2, evidenceGrade: "B" });
+    expect(detail.history.map((h) => h.status)).toEqual(["superseded", "open"]);
+    const fromIds = toConflictDetail({ ...conflictRow, metrics: {} });
     expect(fromIds.evidenceByMarket.US.map((e) => e.id)).toEqual(["e2", "e3"]);
     expect(fromIds.evidenceByMarket.US[0].content).toBeNull();
-    const detail = toConflictDetail({
-      conflict: { ...conflict },
-      evidence: [{ id: "e9", market: "CN", content: "simulated rear legroom comment" }],
-      resolutions: [{ id: "x", decision: "defer", actor: "pm:lena", rationale: "needs research" }],
+  });
+  it("reads the weights listing with the selection and its warnings", () => {
+    const weights = toWeights({
+      items: [{ id: "w1", vehicle: "G60", market: "US", period: "2025", units: 1000, share: 0.6, evidence_ids: ["e9"], method_version: "sales-share-v1", run_id: "r7" }],
+      total: 1, limit: 100, offset: 0, selected: { period: "2025", method_version: "sales-share-v1" }, selected_markets: [], warnings: ["Shares sum to 0.6"],
     });
-    expect(detail.evidenceByMarket.CN[0].content).toBe("simulated rear legroom comment");
-    expect(detail.resolutions[0].decision).toBe("defer");
-    expect(toConflict({ id: "c2", metrics: {} }).aiBrief).toBeNull();
+    expect(weights.items[0]).toMatchObject({ market: "US", share: 0.6, units: 1000 });
+    expect(weights.selected).toEqual({ period: "2025", methodVersion: "sales-share-v1" });
+    expect(weights.warnings).toEqual(["Shares sum to 0.6"]);
+    expect(toWeights({ items: [], total: 0, limit: 100, offset: 0, selected: null, warnings: [] }).selected).toBeNull();
   });
 });
 
-describe("request transforms (simulated)", () => {
-  const triage = {
-    rubric_version: "request-triage-v1",
-    total: 3.4,
-    factors: { market_weight: 4, evidence_support: 3, effort: 2.5 },
-    weights: { market_weight: 0.3, evidence_support: 0.5, effort: 0.2 },
-    explanation: {
-      market_weight: { value: 4, inputs: { share: 0.42 }, ids: ["w1"] },
-      effort: { value: 2.5, flags: ["not_measured"], note: "No PM effort estimate" },
-      cap: { reason: "Out of scope: pricing" },
-    },
-    run_id: "r5",
+// Fixtures below mirror codex/platform-intake-complete:server/intake.py (_summary, triage_explanation,
+// get_request, draft_positions, aggregates) with simulated values.
+describe("request transforms (verified shapes, simulated values)", () => {
+  const summaryTriage = {
+    id: "t1", total: 20, rubric_version: "request-triage-v1",
+    factors: { market_weight: 2.5, evidence_support: 3, evidence_conflict: 0, recurrence: 2.5, alignment: 0, effort: 2.5 },
+    suggested_action: { decision: "decline", reason: "Out of scope: Pricing is a business-case topic." },
+    flags: ["market_weight_not_measured", "recurrence_not_measured", "effort_unknown"], run_id: "r5", created_at: "2026-10-01",
   };
-  it("labels simulated requests and reads triage factors with their inputs", () => {
-    const request = toRequest({ id: "q1", key: "MR-G60-CN-0001", market: "CN", title: "Rear legroom", simulated: 1, scope_flags: ["pricing"], triage });
-    expect(request.simulated).toBe(true);
-    expect(request.scope_flags).toEqual(["pricing"]);
-    expect(request.triage?.total).toBe(3.4);
-    expect(request.triage?.cap).toBe("Out of scope: pricing");
-    const effort = request.triage!.factors.find((f) => f.name === "effort")!;
-    expect(effort.notMeasured).toBe(true);
-    expect(effort.notes).toContain("No PM effort estimate");
-    const market = request.triage!.factors.find((f) => f.name === "market_weight")!;
-    expect(market).toMatchObject({ value: 4, weight: 0.3, inputs: { share: 0.42 }, contribution: null });
-    expect(market.sources).toEqual([{ type: "record", id: "w1" }]);
+  const fullTriage = {
+    id: "t1", request_id: "q1", rubric_version: "request-triage-v1", total: 20, run_id: "r5", created_at: "2026-10-01",
+    factors: summaryTriage.factors,
+    weights: { market_weight: 0.2, evidence_support: 0.25, evidence_conflict: 0.1, recurrence: 0.2, alignment: 0.15, effort: 0.1 },
+    explanation: {
+      rubric_version: "request-triage-v1",
+      formula: "total = 20 × Σ weight × value …",
+      factors: {
+        market_weight: { value: 2.5, measured: false, formula: "neutral: origin market sales share not measured", inputs: { measured: false }, flags: ["market_weight_not_measured"], weight: 0.2, contribution: 10 },
+        evidence_support: { value: 3, measured: true, formula: "5 × …", inputs: { count: 2, evidence_ids: ["e1", "e2"] }, flags: [], weight: 0.25, contribution: 15 },
+        effort: { value: 2.5, measured: false, formula: "neutral: no PM effort estimate", inputs: { effort: null }, flags: ["effort_unknown"], weight: 0.1, contribution: 5 },
+      },
+      total: 20,
+      scope: { flags: ["pricing"], reasons: ["Pricing is a business-case topic."], capped_from: 41.5, cap: 20 },
+      flags: summaryTriage.flags,
+      suggested_action: summaryTriage.suggested_action,
+    },
+  };
+  const summary = {
+    id: "q1", key: "MR-G60-CN-0001", vehicle: "G60", market: "CN", origin_type: "market_org", origin_name: "BMW China",
+    title: "Rear legroom", body: "Simulated ask", topic: "comfort", attribute: "comfort/rear-space", effort: null,
+    requested_at: "2026-09-01", simulated: true, scope_flags: ["pricing"], status: "triaged", cluster_id: "k1",
+    pm_pinned: [], created_by: "PM", created_at: "2026-09-01", age_days: 40.5, sla_breach: false,
+    triage: summaryTriage,
+    cluster: { id: "k1", canonical_title: "Rear-seat comfort", topic: "comfort", method_version: "request-cluster-v1", size: 2, markets: ["CN", "US"] },
+    link_counts: { "evidence:supports": 1 },
+  };
+  it("labels simulated requests and maps unmeasured triage flags onto factors", () => {
+    const request = toRequest(summary);
+    expect(request).toMatchObject({ simulated: true, attribute: "comfort/rear-space", clusterTitle: "Rear-seat comfort", clusterSize: 2, ageDays: 40.5 });
+    expect(request.triage?.suggestedAction).toEqual({ decision: "decline", reason: "Out of scope: Pricing is a business-case topic." });
+    const factors = Object.fromEntries(request.triage!.factors.map((f) => [f.name, f]));
+    expect(factors.market_weight.notMeasured).toBe(true);
+    expect(factors.effort.notMeasured).toBe(true);
+    expect(factors.evidence_support.notMeasured).toBe(false);
+    expect(factors.evidence_support.value).toBe(3);
     expect(toRequest({ id: "q2", simulated: 0 }).simulated).toBe(false);
   });
-  it("sorts by triage deterministically and groups clusters", () => {
+  it("uses the full triage record in the detail: weights, contributions, formulas and the scope cap", () => {
+    const detail = toRequestDetail({ ...summary, triage_history: [fullTriage], links: [], decisions: [], positions: [] });
+    const triage = detail.request.triage!;
+    expect(triage.cap).toBe("Capped at 20 from 41.5: Pricing is a business-case topic.");
+    expect(triage.formula).toContain("total = 20");
+    const support = triage.factors.find((f) => f.name === "evidence_support")!;
+    expect(support).toMatchObject({ value: 3, weight: 0.25, contribution: 15, notMeasured: false, inputs: { count: 2 } });
+    expect(support.sources).toEqual([{ type: "evidence", id: "e1" }, { type: "evidence", id: "e2" }]);
+    const market = triage.factors.find((f) => f.name === "market_weight")!;
+    expect(market.notMeasured).toBe(true);
+    expect(market.notes).toEqual([]);
+    expect(detail.position).toBeNull();
+  });
+  it("sorts by triage deterministically and groups clusters from the clusters endpoint or the list", () => {
     const requests = [
       toRequest({ id: "a", key: "MR-2", market: "US", requested_at: "2026-09-02", cluster_id: "k1", topic: "comfort" }),
       toRequest({ id: "b", key: "MR-1", market: "CN", requested_at: "2026-09-01", triage: { total: 2 }, cluster_id: "k1", cluster: { canonical_title: "Rear-seat comfort" }, topic: "comfort" }),
@@ -264,37 +396,55 @@ describe("request transforms (simulated)", () => {
     expect(clusterRequests(requests)).toEqual([
       expect.objectContaining({ id: "k1", title: "Rear-seat comfort", topic: "comfort", markets: ["CN", "US"] }),
     ]);
+    const cluster = toCluster({
+      id: "k1", vehicle: "G60", topic: "comfort", canonical_title: "Rear-seat comfort", method_version: "request-cluster-v1", created_at: "x",
+      members: [{ id: "b", key: "MR-1", market: "CN", title: "t", status: "triaged", origin_type: "dealer", origin_name: "x" }], size: 1, markets: ["CN"],
+    });
+    expect(cluster).toMatchObject({ title: "Rear-seat comfort", methodVersion: "request-cluster-v1", markets: ["CN"], members: [{ key: "MR-1", status: "triaged" }] });
   });
-  it("reads detail links, decisions and an AI position draft", () => {
+  it("reads links with their located quotes and the latest position draft with its provenance", () => {
+    const message = (payload: Record<string, unknown>) => ({ id: "m", thread_id: "th", author: "x", role: "agent", body: "…", run_id: payload.run_id, created_at: "2026-10-03", payload });
     const detail = toRequestDetail({
-      id: "q1",
-      key: "MR-G60-CN-0001",
+      ...summary,
       links: [
-        { id: "l1", entity_type: "evidence", entity_id: "e1", relation: "supports", entity: { content: "simulated", market: "CN" } },
-        { id: "l2", entity_type: "finding", entity_id: "f1", relation: "conflicts", status: "removed" },
+        { id: "l1", entity_type: "evidence", entity_id: "e1", relation: "supports", status: "active", created_by: "system:request-linker", basis: { method_version: "request-link-v1", quote: "more rear legroom", span: [3, 20] }, entity: { id: "e1", market: "CN", content: "We need more rear legroom" }, ai_generated: false },
+        { id: "l2", entity_type: "finding", entity_id: "f1", relation: "conflicts", status: "removed", created_by: "ai:openai:gpt-test", basis: { method_version: "openai:gpt-test:request-link-openai-v1" }, entity: { id: "f1", summary: "Compact exterior", market: "EU" }, ai_generated: true },
       ],
-      decisions: [{ id: "d1", decision: "defer", actor: "pm:lena", rationale: "wait for clinic" }],
-      position: { run_id: "r9", payload: { case_for: [{ text: "Simulated for", evidence_ids: ["e1"] }], case_against: ["Simulated against"], open_questions: [], model: "m" } },
+      decisions: [{ id: "d1", request_id: "q1", decision: "defer", actor: "pm:lena", rationale: "wait for clinic", requirement_id: null, created_at: "2026-10-04" }],
+      positions: [
+        message({ kind: "request_position", label: "Deterministic template draft (not AI)", ai_generated: false, provider: "deterministic", model: null, method_version: "request-position-template-v1", run_id: "r8", summary: "Template", case_for: [], case_against: [{ point: "No supporting customer evidence is linked.", evidence_id: null, quote: null, span: null }], open_questions: ["What is the rough effort?"], cited_evidence_ids: [] }),
+        message({ kind: "request_position", label: "AI-generated draft (OpenAI)", ai_generated: true, provider: "openai", model: "gpt-test", method_version: "openai:gpt-test:request-position-openai-v1", run_id: "r9", summary: "Simulated summary", case_for: [{ point: "CN asks for it", evidence_id: "e1", quote: "more rear legroom", span: [3, 20] }], case_against: [], open_questions: [], cited_evidence_ids: ["e1"] }),
+      ],
     });
-    expect(detail.links.map((l) => [l.relation, l.status, l.summary])).toEqual([
-      ["supports", "active", "simulated"],
-      ["conflicts", "removed", null],
+    expect(detail.links.map((l) => [l.relation, l.status, l.quote, l.aiGenerated])).toEqual([
+      ["supports", "active", "more rear legroom", false],
+      ["conflicts", "removed", null, true],
     ]);
-    expect(detail.position).toMatchObject({ caseFor: ["Simulated for"], caseAgainst: ["Simulated against"], citedIds: ["e1"] });
-    expect(detail.position?.provenance).toMatchObject({ generated: true, model: "m", runId: "r9" });
-    expect(toRequestDetail({ id: "q3" }).position).toBeNull();
-  });
-  it("reads aggregates from maps or count rows", () => {
-    expect(toAggregates({ by_market: { CN: 2, US: 3 }, demand_index: { comfort: 0.7 }, median_age_days: 4, sla_breaches: ["q1"] })).toMatchObject({
-      byMarket: { CN: 2, US: 3 },
-      demandIndex: { comfort: 0.7 },
-      medianAgeDays: 4,
-      slaBreaches: 1,
+    expect(detail.links[1].summary).toBe("Compact exterior");
+    expect(detail.decisions[0].decision).toBe("defer");
+    expect(detail.positionCount).toBe(2);
+    expect(detail.position).toMatchObject({
+      summary: "Simulated summary",
+      caseFor: [{ text: "CN asks for it", evidenceId: "e1", quote: "more rear legroom" }],
+      citedIds: ["e1"],
+      label: "AI-generated draft (OpenAI)",
+      provenance: { generated: true, provider: "openai", model: "gpt-test", runId: "r9" },
     });
-    const rows = toAggregates({ counts: [{ market: "US", topic: "comfort", status: "new", count: 2 }, { market: "US", topic: "quietness", status: "new", n: 1 }], demand_index: [{ topic: "comfort", value: 1.2 }] });
+    const template = toRequestDetail({ ...summary, positions: [message({ kind: "request_position", ai_generated: false, provider: "deterministic", method_version: "request-position-template-v1", run_id: "r8", case_for: [], case_against: ["x"], open_questions: [] })] });
+    expect(template.position?.provenance).toMatchObject({ generated: false, provider: "deterministic", methodVersion: "request-position-template-v1" });
+  });
+  it("reads aggregates: maps, demand index list, SLA count and the weights basis", () => {
+    const a = toAggregates({
+      vehicle: "G60", market: null, method_version: "request-aggregates-v1", total: 6,
+      counts: [{ market: "US", topic: "comfort", status: "new", origin_type: "dealer", count: 2 }],
+      by_market: { CN: 2, US: 4 }, by_topic: { comfort: 3, unclassified: 1 }, by_status: { new: 4, triaged: 2 }, by_origin: { dealer: 3 },
+      demand_index: [{ topic: "comfort", requests: 3, weighted_requests: 1.5, index: 0.6, markets: ["CN", "US"] }],
+      demand_index_method: "Σ origin-market sales share …", market_weights: { measured: false, weights: {}, flags: ["market_weights_not_measured"] },
+      median_age_days: 4.5, waiting_count: 3, sla_days: 14, sla_breach_count: 1, sla_breaches: [{ id: "q1" }], simulated_count: 6,
+    });
+    expect(a).toMatchObject({ total: 6, byMarket: { CN: 2, US: 4 }, demandIndex: { comfort: 0.6 }, weightsMeasured: false, medianAgeDays: 4.5, slaDays: 14, slaBreaches: 1, simulatedCount: 6 });
+    const rows = toAggregates({ counts: [{ market: "US", topic: "comfort", status: "new", count: 2 }, { market: "US", topic: "quietness", status: "new", n: 1 }] });
     expect(rows.byMarket).toEqual({ US: 3 });
-    expect(rows.byTopic).toEqual({ comfort: 2, quietness: 1 });
-    expect(rows.demandIndex).toEqual({ comfort: 1.2 });
     expect(rows.slaBreaches).toBeNull();
   });
 });
@@ -339,7 +489,7 @@ describe("priority transforms (simulated)", () => {
     );
     expect(ranking.rows.map((r) => r.requirementId)).toEqual(["q1", "q2"]);
     const [first, second] = ranking.rows;
-    expect(first.stability).toEqual({ rank: 1, minRank: 1, maxRank: 2, stable: true });
+    expect(first.stability).toEqual({ rank: 1, minRank: 1, maxRank: 2, stable: true, current: true, reason: null });
     expect(first.factors[0]).toMatchObject({ name: "request_pressure", value: 4, weight: 0.1, contribution: null });
     expect(first.factors[0].sources).toEqual([{ type: "request", id: "mr1" }]);
     expect(first.explanation?.provenance).toMatchObject({ generated: true, runId: "r3" });
@@ -351,8 +501,51 @@ describe("priority transforms (simulated)", () => {
     expect(second.preserveWarnings[0]).toMatchObject({ label: "Seat comfort", evidenceIds: ["e5"] });
     expect(second.explanation).toBeNull();
     const merged = mergeSensitivity(ranking.rows, { results: { q2: { rank: 2, min_rank: 1, max_rank: 5, stable: false } } });
-    expect(merged[1].stability).toEqual({ rank: 2, minRank: 1, maxRank: 5, stable: false });
+    expect(merged[1].stability).toEqual({ rank: 2, minRank: 1, maxRank: 5, stable: false, current: true, reason: null });
     expect(merged[0].stability).toEqual(first.stability);
+  });
+  it("reads the assumed Pod D shapes: default rubric, outdated stability, data-derived factor rows", () => {
+    const state = toRubricState({
+      items: [
+        { rubric_version: "customer-priority-v2", factors: [], default_weights: { customer_impact: 0.3, market_demand: 0.1 }, formula: "sum(factor × weight × 20)", derived_factors: { market_demand: { method_version: "market-demand-v1", formula: "5 × Σ share × p" } } },
+      ],
+      history: [],
+      active: { id: null, vehicle: "G60", market: "US", rubric_version: "customer-priority-v1", weights: { customer_impact: 0.35 }, actor: null, rationale: "Default rubric until a human PM switches this scope", created_at: null, default: true },
+    });
+    expect(state.current).toMatchObject({ rubric_version: "customer-priority-v1", isDefault: true });
+    expect(state.available[0].derived).toEqual([{ factor: "market_demand", methodVersion: "market-demand-v1", formula: "5 × Σ share × p" }]);
+    const ranking = toRanking(
+      {
+        vehicle: "G60", market: "US", method_version: "priority-ranking-v1", rubric: { rubric_version: "customer-priority-v2" }, warnings: [],
+        items: [{
+          requirement_id: "q1", key: "REQ-1", topic: "comfort", title: "Rear legroom", status: "approved", version_id: "v1", score_id: "s1", rubric_version: "customer-priority-v2", total: 66, evidence_grade: "B", rank: 1, needs_review: true, v2_preview: null,
+          factors: [{ factor: "sentiment_momentum", value: 2.5, weight: 0.1, contribution: 5, source: "derived", measured: false, flags: [], priority_input_id: "pi1", method_version: "sentiment-momentum-v1", run_id: "r1",
+            derivation: { factor: "sentiment_momentum", value: 2.5, measured: false, formula: "group = …", flags: ["not_measured", "low_n"], summary: "fewer than 5 scored points", inputs: {}, source_ids: { bmw_evidence_ids: ["e1"], signal_item_ids: ["si1"] } } }],
+          not_measured: ["sentiment_momentum"],
+          preserve_warnings: [{ preserve_attribute_id: "pa1", topic: "comfort", label: "seat comfort", message: "Customers love seat comfort; confirm this requirement does not degrade it." }],
+          stability: { stable: null, current: false, sensitivity_id: null, reason: "No sensitivity analysis yet; run POST /priorities/sensitivity" },
+        }],
+      },
+      scope,
+    );
+    const row = ranking.rows[0];
+    expect(ranking.rubricVersion).toBe("customer-priority-v2");
+    expect(row).toMatchObject({ scoreId: "s1", needsReview: true, v2PreviewTotal: null });
+    expect(row.factors[0]).toMatchObject({ notMeasured: true, contribution: 5, methodVersion: "sentiment-momentum-v1" });
+    expect(row.factors[0].notes).toEqual(["low_n", "fewer than 5 scored points"]);
+    expect(row.factors[0].sources).toEqual([{ type: "evidence", id: "e1" }, { type: "signal_item", id: "si1" }]);
+    expect(row.stability).toMatchObject({ stable: null, current: false, reason: expect.stringContaining("No sensitivity") });
+  });
+  it("labels explanations by provider and merges them into the ranking without touching scores", () => {
+    const ai = toExplanation({ provider: "openai", method_version: "openai:gpt-test:priority-explanation-v1", model: "gpt-test", prompt_version: "priority-explanation-v1", ai_generated: true, run_id: "r4", summary: "Simulated", items: [{ requirement_id: "q1", explanation: "Ranks first because …", cited_ids: ["s1", "pi1"] }] });
+    expect(ai.provenance).toMatchObject({ generated: true, provider: "openai", model: "gpt-test", runId: "r4" });
+    const template = toExplanation({ provider: "deterministic", method_version: "priority-explanation-template-v1", model: null, ai_generated: false, run_id: "r5", items: [{ requirement_id: "q1", explanation: "Rank 1 with 66/100", cited_ids: ["s1"] }] });
+    expect(template.provenance).toMatchObject({ generated: false, provider: "deterministic" });
+    const rows = toRanking({ items: [{ requirement_id: "q1", title: "x", total: 66, rank: 1 }] }, scope).rows;
+    const merged = mergeExplanation(rows, ai);
+    expect(merged[0].explanation).toMatchObject({ text: "Ranks first because …", citedIds: ["s1", "pi1"] });
+    expect(merged[0].total).toBe(66);
+    expect(mergeExplanation(rows, undefined)).toBe(rows);
   });
   it("collects typed source references from derivations", () => {
     expect(toSourceRefs({ source_ids: [{ type: "evidence", id: "e1" }, "x"], evidence_ids: ["e1", "e2"] })).toEqual([

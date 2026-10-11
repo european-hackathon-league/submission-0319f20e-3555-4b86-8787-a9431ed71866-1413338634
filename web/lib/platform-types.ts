@@ -1,60 +1,65 @@
 /**
- * Platform API contract assumed by the web workspace (Pod G) until the backend pods (A–F) merge.
+ * Platform API contract used by the web workspace (Pod G).
  *
- * Sources: PLATFORM_BUILD_PLAN.md §5.1 (record fields), §5.3 (endpoints) and §8 (what each endpoint
- * returns), plus notes/platform-foundation.md "Response conventions":
- * - a record is its §5.1 row with JSON columns decoded, plus computed fields;
- * - lists are {items, total, limit, offset} (a bare array is accepted too), filterable by vehicle/market;
- * - writes return the record's fields at the top level plus run_id and audit_event_id;
- * - AI output carries provider, model / method_version ("openai:<model>:<prompt>") and run_id.
+ * Status per pod (read-only review of the pod branches; nothing is merged into this branch):
+ * - VERIFIED against the finished backends: markets (codex/platform-markets-complete:server/markets.py),
+ *   requests (codex/platform-intake-complete:server/intake.py) and runs (codex/platform-runtime-complete:
+ *   server/agent_runtime.py). Their transforms are tested with fixtures that mirror the server's response
+ *   construction.
+ * - ASSUMED for signals (Pod A), priorities (Pod D) and market weights rows (Pod E): PLATFORM_BUILD_PLAN.md
+ *   §5.1/§5.3/§8 plus the in-progress pod branches. Their transforms tolerate the documented alternatives;
+ *   the integrator reconciles them here and in lib/platform-api.ts only.
  *
- * Every response-shape assumption lives in exactly one transform per endpoint in lib/platform-api.ts
- * (`to<Thing>`), unit-tested with simulated fixtures in lib/platform-api.test.ts. When the real
- * backends differ, adapt the transform (and the request body builder next to it), not the screens.
+ * Conventions (notes/platform-foundation.md "Response conventions"): a record is its §5.1 row with JSON
+ * decoded plus computed fields; lists are {items, total, limit, offset}; writes return the record plus
+ * run_id and audit_event_id; AI output carries provider, model / method_version ("openai:<model>:<prompt>")
+ * and run_id. Every response-shape assumption lives in one transform per endpoint in lib/platform-api.ts
+ * (`to<Thing>`); screens read only the transformed view models.
  *
- * Availability: the UI reads GET /openapi.json once and calls only endpoints listed there (path
- * parameters normalised to `{}`); a missing endpoint renders "Not available on this server" without a
- * request. If the catalogue itself cannot be read, endpoints are tried and FastAPI's default 404
- * ("Not Found") or a 405 is treated the same way. Nothing is ever substituted for missing data.
+ * Availability: the UI reads GET /openapi.json once and calls only endpoints listed there; a missing
+ * endpoint renders "Not available on this server" without a request. Nothing is substituted for missing data.
  *
- * Request bodies follow the existing API: the acting identity is `actor` (a declared human for every
- * gate) and human decisions carry a non-empty `rationale`. Server models forbid extra fields, so each
- * body is built in one function in lib/platform-api.ts.
+ * Request bodies: the acting identity is `actor` (a declared human for every gate) and human decisions carry
+ * a non-empty `rationale`. Server models forbid extra fields, so each body is built in one client function.
  *
- * | Endpoint (§5.3)                          | Request (query / body)                                         | Response fields read (see types below)                         |
- * | ---------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------- |
- * | GET    /signals/watchlists               | vehicle, market, limit, offset                                 | Page<Watchlist>                                                |
- * | POST   /signals/watchlists               | WatchlistInput (actor = human, rationale)                      | Watchlist + run_id? + audit_event_id                           |
- * | PATCH  /signals/watchlists/{id}          | {status: active|paused, actor, rationale}                      | Watchlist + audit_event_id                                     |
- * | POST   /signals/watchlists/{id}/refresh  | {actor}                                                        | run_id, created/items counts (shown as returned)               |
- * | POST   /signals/watchlists/{id}/backfill | {actor, weeks}                                                 | run_id, created/items counts                                   |
- * | GET    /signals/items                    | vehicle, market, topic?, review_status?, limit, offset         | Page<SignalItem>                                               |
- * | POST   /signals/items/{id}/import        | {actor, rationale}                                             | SignalItem (review_status imported, evidence_id)               |
- * | POST   /signals/items/{id}/dismiss       | {actor, rationale}                                             | SignalItem (review_status dismissed)                           |
- * | POST   /signals/sentiment/score          | {vehicle, market, provider, actor}                             | run_id, counts                                                 |
- * | GET    /signals/sentiment/timeseries     | vehicle, market, topic, source_class?                          | points[] | items[] | series[].points[] (v_sentiment_weekly)    |
- * | GET    /signals/summary                  | vehicle, market                                                | items[] | topics[]: topic, n, mean_polarity, momentum, sample_ids |
- * | POST   /markets/compare                  | {vehicle, actor?}                                              | markets[], topics[] (cells per market) | cells[], warnings[]   |
- * | POST   /markets/conflicts/detect         | {vehicle, provider, actor}                                     | run_id, created/superseded counts                              |
- * | GET    /markets/conflicts                | vehicle, status?, limit, offset                                | Page<MarketConflict>                                           |
- * | GET    /markets/conflicts/{id}           | –                                                              | MarketConflict + evidence {market: Evidence[]} + resolutions[] |
- * | POST   /markets/conflicts/{id}/resolve   | {decision, actor, rationale, requirement_ids}                  | resolution + conflict status + audit_event_id                  |
- * | GET    /markets/weights                  | vehicle                                                        | Page<MarketWeight>                                             |
- * | GET    /requests                         | vehicle, market?, status?, sort=triage, limit, offset          | Page<IntakeRequest + triage (latest request_triage)>           |
- * | GET    /requests/{id}                    | –                                                              | IntakeRequest + links[] + decisions[] + triage_history[] + position |
- * | POST   /requests/triage | /cluster       | {vehicle, market?, actor, provider?}                           | run_id, counts                                                 |
- * | POST   /requests/{id}/decide             | {decision, actor, rationale, requirement_id?}                  | request_decision + request status + audit_event_id             |
- * | GET    /requests/aggregates              | vehicle, market?                                               | by_market/by_topic/by_status/by_origin (maps or count rows), demand_index, median_age_days, sla_breaches |
- * | POST   /requests/fixtures/simulated      | {actor}                                                        | created count                                                  |
- * | GET    /priorities/rubrics               | vehicle, market                                                | items[] (rubric definitions) + current scope rubric + history  |
- * | POST   /priorities/rubric                | {vehicle, market, rubric_version, weights, actor, rationale}   | scope_rubric + review ids + run_id + audit_event_id            |
- * | POST   /priorities/inputs/derive         | {vehicle, market, actor}                                       | run_id, counts                                                 |
- * | GET    /priorities/ranking               | vehicle, market                                                | items[]: factors (map or list) with derivations, stability, preserve_warnings |
- * | POST   /priorities/sensitivity           | {vehicle, market, actor}                                       | results {requirement_id: {rank, min_rank, max_rank, stable}}   |
- * | GET    /runs                             | vehicle, capability?, status?, limit, offset                   | Page<Run> (§5.1 runs with metrics.llm from server/llm.py)      |
- *
- * Clusters are derived from the request records (`cluster_id`, optional `cluster` / `cluster_title`);
- * no clusters endpoint is assumed.
+ * | Endpoint                                   | Body / query sent                                         | Status   |
+ * | ------------------------------------------ | --------------------------------------------------------- | -------- |
+ * | GET    /signals/watchlists                 | vehicle, market, limit, offset                            | assumed  |
+ * | POST   /signals/watchlists                 | scope, topic, label, query_terms, competitors, domain_group, domains, cadence_days, max_results, actor, rationale | assumed |
+ * | PATCH  /signals/watchlists/{id}            | {status, actor, rationale}                                | assumed  |
+ * | POST   /signals/watchlists/{id}/refresh    | {actor}                                                   | assumed  |
+ * | POST   /signals/watchlists/{id}/backfill   | {actor, weeks}                                            | assumed  |
+ * | GET    /signals/items                      | vehicle, market, topic?, review_status?                   | assumed  |
+ * | POST   /signals/items/{id}/import|dismiss  | {actor, rationale}                                        | assumed  |
+ * | POST   /signals/sentiment/score            | {vehicle, market, provider, actor}                        | assumed  |
+ * | GET    /signals/sentiment/timeseries       | vehicle, market, topic → v_sentiment_weekly rows          | assumed  |
+ * | GET    /signals/summary                    | vehicle, market → per topic × source_class × method rows  | assumed  |
+ * | POST   /markets/compare                    | {vehicle, actor}                                          | verified |
+ * | POST   /markets/conflicts/detect           | {vehicle, provider, actor}                                | verified |
+ * | GET    /markets/conflicts                  | vehicle, status?                                          | verified |
+ * | GET    /markets/conflicts/{id}             | –                                                         | verified |
+ * | POST   /markets/conflicts/{id}/brief       | {actor, provider: openai}                                 | verified |
+ * | POST   /markets/conflicts/{id}/resolve     | {decision, actor, rationale, requirement_ids}             | verified |
+ * | GET    /markets/weights                    | vehicle, limit                                            | verified |
+ * | GET    /requests                           | vehicle, market?, status?, sort=triage                    | verified |
+ * | GET    /requests/{id}                      | actor (the view is audited)                               | verified |
+ * | PATCH  /requests/{id}                      | {topic?, effort?, actor, rationale}                       | verified |
+ * | GET    /requests/clusters                  | vehicle, market?                                          | verified |
+ * | GET    /requests/aggregates                | vehicle, market?                                          | verified |
+ * | POST   /requests/classify                  | {vehicle, market?, provider, actor}                       | verified |
+ * | POST   /requests/cluster                   | {vehicle, provider, actor}                                | verified |
+ * | POST   /requests/triage                    | {vehicle, market?, link_provider, actor}                  | verified |
+ * | POST   /requests/links/propose             | {vehicle, market, request_ids, provider, actor}           | verified |
+ * | POST   /requests/positions                 | {vehicle, market?, request_ids?, provider, actor}         | verified |
+ * | POST   /requests/{id}/decide               | {decision, actor, rationale, requirement_id (link only)}  | verified |
+ * | POST   /requests/fixtures/simulated        | {actor}                                                   | verified |
+ * | GET    /priorities/rubrics                 | vehicle, market → items, active, history                  | assumed  |
+ * | POST   /priorities/rubric                  | {vehicle, market, rubric_version, weights, actor, rationale} | assumed |
+ * | POST   /priorities/inputs/derive           | {vehicle, market, actor}                                  | assumed  |
+ * | GET    /priorities/ranking                 | vehicle, market                                           | assumed  |
+ * | POST   /priorities/sensitivity             | {vehicle, market, actor}                                  | assumed  |
+ * | POST   /priorities/explain                 | {vehicle, market, provider, limit, actor}                 | assumed  |
+ * | GET    /runs                               | vehicle, market?, capability?, status?, limit=50          | verified |
  */
 import type { Scope } from "./types";
 
@@ -172,7 +177,7 @@ export type TopicSummary = {
   sampleIds: string[];
 };
 
-// Markets (Pod B) -------------------------------------------------------------------------------
+// Markets (Pod B) – verified against codex/platform-markets-complete:server/markets.py -----------------
 export type MarketWeight = Scope & {
   period: string;
   units: number | null;
@@ -181,27 +186,85 @@ export type MarketWeight = Scope & {
   method_version: string | null;
   run_id: string | null;
 };
+export type MarketWeights = ListPage<MarketWeight> & {
+  selected: { period: string; methodVersion: string | null } | null;
+  warnings: string[];
+};
 export type ComparisonCell = {
   market: string;
   evidenceCount: number | null;
   evidenceGrade: string | null;
+  evidenceIds: string[];
+  findingIds: string[];
   sentiment: number | null;
-  requirement: { id: string; key: string | null; title: string | null; status: string | null; score: number | null; rank: number | null } | null;
+  sentimentN: number | null;
+  sentimentLowN: boolean;
+  requirement: {
+    id: string;
+    key: string | null;
+    title: string | null;
+    status: string | null;
+    score: number | null;
+    rank: number | null;
+    rankOf: number | null;
+  } | null;
   targets: string[];
   requestPressure: number | null;
+  requestMeanTriage: number | null;
+  requestIds: string[];
   missing: Record<string, string>;
+};
+export type ComparisonRow = {
+  topic: string;
+  label: string | null;
+  demandIndex: number | null;
+  demandCoverage: number | null;
+  alignment: string | null;
+  recommendation: string | null;
+  cells: Record<string, ComparisonCell>;
+};
+export type MarketColumn = {
+  market: string;
+  name: string | null;
+  /** Recorded sales share (null when not measured). */
+  share: number | null;
+  /** Normalised weight used by the comparison (sales-based or the equal fallback). */
+  weight: number | null;
+  units: number | null;
+  equalWeight: boolean;
+  period: string | null;
 };
 export type MarketComparison = {
   vehicle: string;
   methodVersion: string | null;
   runId: string | null;
-  markets: { market: string; share: number | null; equalWeight: boolean; period: string | null }[];
-  rows: { topic: string; cells: Record<string, ComparisonCell> }[];
+  weightBasis: string | null;
+  weightsMethodVersion: string | null;
+  sentimentMethodVersion: string | null;
+  markets: MarketColumn[];
+  rows: ComparisonRow[];
   warnings: string[];
 };
 export const CONFLICT_DECISIONS = ["adopt_global", "market_variants", "selectable_mode", "optional_package", "defer", "dismiss"] as const;
 export type ConflictDecision = (typeof CONFLICT_DECISIONS)[number];
-export type AiBrief = { text: string; options: string[]; provenance: Provenance };
+export type AiBrief = {
+  summary: string;
+  tradeOff: string | null;
+  options: { option: string; summary: string; benefits: string[]; risks: string[] }[];
+  openQuestions: string[];
+  citations: { evidenceId: string; quote: string; market: string | null }[];
+  label: string | null;
+  provenance: Provenance;
+};
+export type MarketResolution = {
+  id: string;
+  conflict_id: string;
+  decision: string;
+  actor: string;
+  rationale: string;
+  requirement_ids: string[];
+  created_at: string;
+};
 export type MarketConflict = {
   id: string;
   vehicle: string;
@@ -220,6 +283,7 @@ export type MarketConflict = {
   status: "open" | "resolved" | "superseded" | "dismissed" | string;
   created_at: string;
   aiBrief: AiBrief | null;
+  latestResolution: MarketResolution | null;
 };
 export type EvidenceSnippet = {
   id: string;
@@ -227,26 +291,33 @@ export type EvidenceSnippet = {
   content: string | null;
   quote: string | null;
   sourceId: string | null;
+  sourceTitle: string | null;
   observedAt: string | null;
-};
-export type MarketResolution = {
-  id: string;
-  conflict_id: string;
-  decision: string;
-  actor: string;
-  rationale: string;
-  requirement_ids: string[];
-  created_at: string;
+  mentions: { attribute: string; direction: string; quote: string }[];
 };
 export type ConflictDetail = {
   conflict: MarketConflict;
   evidenceByMarket: Record<string, EvidenceSnippet[]>;
+  requirements: {
+    id: string;
+    key: string | null;
+    market: string | null;
+    topic: string | null;
+    status: string | null;
+    title: string | null;
+    score: number | null;
+    evidenceGrade: string | null;
+  }[];
   resolutions: MarketResolution[];
+  history: { id: string; status: string; runId: string | null; createdAt: string }[];
+  supersededBy: string | null;
 };
 
-// Requests (Pod C) ------------------------------------------------------------------------------
+// Requests (Pod C) – verified against codex/platform-intake-complete:server/intake.py ------------------
 export const REQUEST_DECISIONS = ["convert", "link", "decline", "defer"] as const;
 export type RequestDecisionKind = (typeof REQUEST_DECISIONS)[number];
+export const REQUEST_STATUSES = ["new", "triaged", "linked", "converted", "declined", "deferred"] as const;
+export const EFFORTS = ["low", "medium", "high"] as const;
 export type FactorView = {
   name: string;
   value: number | null;
@@ -261,9 +332,13 @@ export type FactorView = {
   runId: string | null;
 };
 export type Triage = {
+  id: string | null;
   rubricVersion: string | null;
   total: number | null;
   factors: FactorView[];
+  flags: string[];
+  suggestedAction: { decision: string; reason: string } | null;
+  formula: string | null;
   cap: string | null;
   runId: string | null;
   createdAt: string | null;
@@ -276,12 +351,18 @@ export type IntakeRequest = Scope & {
   title: string;
   body: string;
   topic: string | null;
+  attribute: string | null;
+  effort: string | null;
   requested_at: string;
   simulated: boolean;
   scope_flags: string[];
   status: string;
   cluster_id: string | null;
   clusterTitle: string | null;
+  clusterSize: number | null;
+  ageDays: number | null;
+  slaBreach: boolean;
+  pmPinned: string[];
   created_by: string;
   created_at: string;
   triage: Triage | null;
@@ -297,6 +378,9 @@ export type RequestLink = {
   summary: string | null;
   market: string | null;
   quote: string | null;
+  methodVersion: string | null;
+  rationale: string | null;
+  aiGenerated: boolean;
 };
 export type RequestDecision = {
   id: string;
@@ -306,11 +390,15 @@ export type RequestDecision = {
   requirement_id: string | null;
   created_at: string;
 };
+export type PositionPoint = { text: string; evidenceId: string | null; quote: string | null };
 export type PositionDraft = {
-  caseFor: string[];
-  caseAgainst: string[];
+  summary: string | null;
+  caseFor: PositionPoint[];
+  caseAgainst: PositionPoint[];
   openQuestions: string[];
   citedIds: string[];
+  label: string | null;
+  createdAt: string | null;
   provenance: Provenance;
 };
 export type RequestDetail = {
@@ -319,6 +407,7 @@ export type RequestDetail = {
   decisions: RequestDecision[];
   triageHistory: Triage[];
   position: PositionDraft | null;
+  positionCount: number;
 };
 export type RequestAggregates = {
   total: number | null;
@@ -327,20 +416,32 @@ export type RequestAggregates = {
   byStatus: Record<string, number>;
   byOrigin: Record<string, number>;
   demandIndex: Record<string, number>;
+  demandMethod: string | null;
+  weightsMeasured: boolean | null;
   medianAgeDays: number | null;
+  slaDays: number | null;
   slaBreaches: number | null;
+  simulatedCount: number | null;
+  methodVersion: string | null;
 };
 export type RequestCluster = {
   id: string;
   title: string;
   topic: string | null;
-  requests: IntakeRequest[];
+  methodVersion: string | null;
   markets: string[];
+  members: { id: string; key: string; market: string; title: string; status: string }[];
 };
 
-// Priorities (Pod D) ----------------------------------------------------------------------------
+// Priorities (Pod D) – ASSUMED: §5.3 plus the in-progress Pod D branch (not merged, not verified) ---------
 export type SourceRef = { type: string; id: string };
-export type RubricDefinition = { version: string; weights: Record<string, number>; description: string | null };
+export type RubricDefinition = {
+  version: string;
+  weights: Record<string, number>;
+  description: string | null;
+  formula: string | null;
+  derived: { factor: string; methodVersion: string | null; formula: string | null }[];
+};
 export type ScopeRubric = Scope & {
   id: string;
   rubric_version: string;
@@ -348,10 +449,21 @@ export type ScopeRubric = Scope & {
   actor: string;
   rationale: string;
   created_at: string;
+  /** The v1 default: no human switch is recorded for this scope. */
+  isDefault: boolean;
 };
 export type RubricState = { available: RubricDefinition[]; current: ScopeRubric | null; history: ScopeRubric[] };
-export type Stability = { rank: number | null; minRank: number | null; maxRank: number | null; stable: boolean | null };
+export type Stability = {
+  rank: number | null;
+  minRank: number | null;
+  maxRank: number | null;
+  stable: boolean | null;
+  /** false when the scores changed since the recorded sensitivity analysis. */
+  current: boolean;
+  reason: string | null;
+};
 export type PreserveWarning = { label: string; message: string; evidenceIds: string[] };
+export type ExplanationText = { text: string; citedIds: string[]; provenance: Provenance };
 export type RankingRow = {
   requirementId: string;
   key: string | null;
@@ -359,13 +471,18 @@ export type RankingRow = {
   topic: string | null;
   status: string | null;
   versionId: string | null;
+  scoreId: string | null;
+  rubricVersion: string | null;
   total: number | null;
   rank: number | null;
   evidenceGrade: string | null;
+  needsReview: boolean;
+  /** customer-priority-v2 preview total for a v1-scored version (not stored, not a decision). */
+  v2PreviewTotal: number | null;
   factors: FactorView[];
   preserveWarnings: PreserveWarning[];
   stability: Stability | null;
-  explanation: { text: string; provenance: Provenance } | null;
+  explanation: ExplanationText | null;
 };
 export type Ranking = {
   vehicle: string;
@@ -376,6 +493,7 @@ export type Ranking = {
   rows: RankingRow[];
   warnings: string[];
 };
+export type RankingExplanation = { summary: string | null; provenance: Provenance; items: Record<string, ExplanationText> };
 
 // Runs (Pod F) ----------------------------------------------------------------------------------
 export type LlmUsage = {

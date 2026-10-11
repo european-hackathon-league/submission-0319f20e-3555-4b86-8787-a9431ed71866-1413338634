@@ -5,11 +5,16 @@ import { Info, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { allPages, date, readable } from "@/lib/api";
-import { clusterRequests, platform, sortByTriage } from "@/lib/platform-api";
+import { platform, sortByTriage } from "@/lib/platform-api";
 import {
+  EFFORTS,
   MARKETS,
   REQUEST_DECISIONS,
+  REQUEST_STATUSES,
+  TOPICS,
   type IntakeRequest,
+  type PositionPoint,
+  type RequestCluster,
   type Provider,
   type RequestAggregates,
   type RequestDetail,
@@ -58,7 +63,9 @@ export function Requests() {
   const invalidate = [["requests"], ["request"], ["request-aggregates"]];
   const simulated = useCapability("simulatedRequests", (actor) => platform.loadSimulated({ actor }), invalidate);
   const cluster = useCapability("cluster", (actor) => platform.cluster(scope.vehicle, { actor, provider }), invalidate);
-  const triage = useCapability("triage", (actor) => platform.triage(scope.vehicle, { actor, market: market || undefined }), invalidate);
+  const classify = useCapability("classify", (actor) => platform.classify(scope.vehicle, { actor, market: market || undefined, provider }), invalidate);
+  const triage = useCapability("triage", (actor) => platform.triage(scope.vehicle, { actor, market: market || undefined, link_provider: provider }), invalidate);
+  const positions = useCapability("positions", (actor) => platform.draftPositions(scope.vehicle, { actor, market: market || undefined, provider }), invalidate);
   const state = usePlatformQuery("requests", {
     queryKey: ["requests", scope.vehicle, market, status],
     queryFn: ({ signal }) => platform.requests(scope.vehicle, { market: market || undefined, status: status || undefined }, signal),
@@ -89,12 +96,14 @@ export function Requests() {
           aria-label="Request status"
           value={status}
           onValueChange={(value) => set({ rstatus: value || undefined })}
-          options={[{ value: "", label: "All statuses" }, ...["new", "triaged", "linked", "converted", "declined", "deferred"].map((v) => ({ value: v, label: readable(v) }))]}
+          options={[{ value: "", label: "All statuses" }, ...REQUEST_STATUSES.map((v) => ({ value: v, label: readable(v) }))]}
         />
         <span className="toolbar-spacer" />
-        <PmSelect aria-label="Clustering provider" value={provider} onValueChange={(value) => setProvider(value as Provider)} options={PROVIDER_OPTIONS} />
+        <PmSelect aria-label="AI provider for classification, clustering, evidence links and position drafts" value={provider} onValueChange={(value) => setProvider(value as Provider)} options={PROVIDER_OPTIONS} />
+        <CapabilityButton capability={classify}>Classify</CapabilityButton>
         <CapabilityButton capability={cluster}>Cluster</CapabilityButton>
-        <CapabilityButton capability={triage}>Triage</CapabilityButton>
+        <CapabilityButton capability={triage}>Link evidence &amp; triage</CapabilityButton>
+        <CapabilityButton capability={positions}>Draft positions</CapabilityButton>
       </div>
       <div className="requests-layout">
         <Panel title="Inbox" description="Sorted by triage score (untriaged last, then oldest first).">
@@ -116,35 +125,50 @@ export function Requests() {
         {selected ? (
           <RequestDetailPanel key={selected} id={selected} onClose={() => set({ request: undefined })} />
         ) : (
-          <Panel title="Clusters" description="Requests the clustering run grouped together within a vehicle and topic.">
-            <PlatformView state={state} isEmpty={(page) => !page.items.some((r) => r.cluster_id)} empty={<Empty title="No clusters yet" description="Run clustering to group recurring asks across markets." />}>
-              {(page) => (
-                <div className="cluster-list">
-                  {clusterRequests(page.items).map((c) => (
-                    <article key={c.id}>
-                      <div>
-                        <strong>{c.title}</strong>
-                        <small className="muted">
-                          {c.requests.length} requests · {c.markets.join(", ")}
-                          {c.topic && ` · ${readable(c.topic)}`}
-                        </small>
-                      </div>
-                      <span className="chip-list">
-                        {c.requests.map((r) => (
-                          <button key={r.id} type="button" className="chip" onClick={() => set({ request: r.id })}>
-                            {r.key || shortId(r.id)}
-                          </button>
-                        ))}
-                      </span>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </PlatformView>
-          </Panel>
+          <ClustersPanel market={market} onSelect={(id) => set({ request: id })} />
         )}
       </div>
     </>
+  );
+}
+
+function ClustersPanel({ market, onSelect }: { market: string; onSelect: (id: string) => void }) {
+  const { scope } = useWorkspace();
+  const state = usePlatformQuery("clusters", {
+    queryKey: ["requests", "clusters", scope.vehicle, market],
+    queryFn: ({ signal }) => platform.clusters(scope.vehicle, market || undefined, signal),
+  });
+  return (
+    <Panel title="Clusters" description="Recurring asks the clustering run grouped within a vehicle and topic (Jaccard baseline or OpenAI embeddings). Select a request to open it.">
+      <PlatformView state={state} isEmpty={(page) => !page.items.length} empty={<Empty title="No clusters yet" description="Run clustering to group recurring asks across markets." />}>
+        {(page) => <ClusterList clusters={page.items} onSelect={onSelect} />}
+      </PlatformView>
+    </Panel>
+  );
+}
+function ClusterList({ clusters, onSelect }: { clusters: RequestCluster[]; onSelect: (id: string) => void }) {
+  return (
+    <div className="cluster-list">
+      {clusters.map((c) => (
+        <article key={c.id}>
+          <div>
+            <strong>{c.title}</strong>
+            <small className="muted">
+              {c.members.length} requests · {c.markets.join(", ") || "no market"}
+              {c.topic && ` · ${readable(c.topic)}`}
+              {c.methodVersion && ` · ${c.methodVersion}`}
+            </small>
+          </div>
+          <span className="chip-list">
+            {c.members.map((m) => (
+              <button key={m.id} type="button" className="chip" title={m.title} onClick={() => onSelect(m.id)}>
+                {m.key || shortId(m.id)} <small>{readable(m.status)}</small>
+              </button>
+            ))}
+          </span>
+        </article>
+      ))}
+    </div>
   );
 }
 
@@ -164,6 +188,7 @@ function AggregateTiles({ market }: { market: string }) {
               <h2 className="metric-label">Requests</h2>
               <p className="metric-value">{total ?? "–"}</p>
               <span className="muted text-xs">{top(a.byStatus, 4).map(([k, v]) => `${readable(k)} ${v}`).join(" · ") || "No status counts"}</span>
+              {!!a.simulatedCount && <span className="muted text-xs"><SimulatedBadge /> {a.simulatedCount} simulated</span>}
             </div>
             <div className="metric-cell">
               <h2 className="metric-label">By market</h2>
@@ -185,11 +210,12 @@ function AggregateTiles({ market }: { market: string }) {
                 ))}
               </ul>
               {!Object.keys(a.byTopic).length && <span className="muted text-xs">No topic counts</span>}
+              {a.weightsMeasured === false && <span className="attention-text text-xs">Sales shares not measured: every market weighs equally in the demand index.</span>}
             </div>
             <div className="metric-cell">
               <h2 className="metric-label">SLA breaches</h2>
               <p className={`metric-value ${a.slaBreaches ? "attention-text" : ""}`}>{a.slaBreaches ?? "–"}</p>
-              <span className="muted text-xs">Untriaged after 14 days · median age {a.medianAgeDays === null ? "–" : `${fixed(a.medianAgeDays)} days`}</span>
+              <span className="muted text-xs">Untriaged after {a.slaDays ?? 14} days · median wait {a.medianAgeDays === null ? "–" : `${fixed(a.medianAgeDays)} days`}</span>
             </div>
           </div>
         );
@@ -212,8 +238,12 @@ function RequestRow({ request: r, active, onSelect }: { request: IntakeRequest; 
       <strong>{r.title}</strong>
       <small className="muted">
         {r.market} · {readable(r.origin_type)}
-        {r.origin_name && ` (${r.origin_name})`} · {r.topic ? readable(r.topic) : "topic not assigned"} · {date(r.requested_at)}
+        {r.origin_name && ` (${r.origin_name})`} · {r.topic ? readable(r.topic) : "topic not assigned"}
+        {r.attribute && ` / ${readable(r.attribute)}`} · {date(r.requested_at)}
+        {r.ageDays !== null && ` · ${Math.floor(r.ageDays)} days old`}
       </small>
+      {r.slaBreach && <span className="chip is-attention">Triage SLA breached</span>}
+      {r.triage?.suggestedAction && <small className="muted">Suggested: {readable(r.triage.suggestedAction.decision)}</small>}
       {!!r.scope_flags.length && (
         <span className="chip-list">
           {r.scope_flags.map((flag) => (
@@ -227,9 +257,10 @@ function RequestRow({ request: r, active, onSelect }: { request: IntakeRequest; 
 }
 
 function RequestDetailPanel({ id, onClose }: { id: string; onClose: () => void }) {
+  const { actor } = useWorkspace();
   const state = usePlatformQuery("request", {
-    queryKey: ["request", id],
-    queryFn: ({ signal }) => platform.request(id, signal),
+    queryKey: ["request", id, actor?.id ?? ""],
+    queryFn: ({ signal }) => platform.request(id, actor?.id, signal),
   });
   return (
     <Panel title="Request detail" description="The request as submitted, its triage breakdown and the evidence for and against." action={<Button variant="ghost" size="sm" onClick={onClose}>Close</Button>}>
@@ -240,6 +271,18 @@ function RequestDetailPanel({ id, onClose }: { id: string; onClose: () => void }
 function RequestBody({ detail }: { detail: RequestDetail }) {
   const { request: r } = detail;
   const [deciding, setDeciding] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [provider, setProvider] = useState<Provider>("openai");
+  const position = useCapability(
+    "positions",
+    (actor) => platform.draftPositions(r.vehicle, { actor, market: r.market, request_ids: [r.id], provider }),
+    [["request", r.id], ["requests"]],
+  );
+  const links = useCapability(
+    "proposeLinks",
+    (actor) => platform.proposeLinks(r.vehicle, { actor, market: r.market, request_ids: [r.id], provider }),
+    [["request", r.id], ["requests"]],
+  );
   const forLinks = detail.links.filter((l) => l.relation === "supports" || l.relation === "addresses");
   const againstLinks = detail.links.filter((l) => l.relation === "conflicts");
   const duplicates = detail.links.filter((l) => l.relation === "duplicates");
@@ -251,6 +294,9 @@ function RequestBody({ detail }: { detail: RequestDetail }) {
         {r.simulated && <SimulatedBadge />}
         <Status value={r.status} />
         <span className="toolbar-spacer" />
+        <Button variant="outline" disabled={r.status === "converted"} onClick={() => setEditing(true)}>
+          Edit
+        </Button>
         <Button disabled={final} title={final ? "A terminal decision is recorded" : undefined} onClick={() => setDeciding(true)}>
           Decide
         </Button>
@@ -275,21 +321,24 @@ function RequestBody({ detail }: { detail: RequestDetail }) {
         <LinkColumn title="Evidence against" links={againstLinks} market={r.market} empty="No conflicting evidence linked." />
       </div>
       {!!duplicates.length && <LinkColumn title="Duplicates" links={duplicates} market={r.market} empty="" />}
+      <div className="platform-toolbar">
+        <PmSelect aria-label="AI provider for this request" value={provider} onValueChange={(value) => setProvider(value as Provider)} options={PROVIDER_OPTIONS} />
+        <CapabilityButton capability={links}>Propose evidence links</CapabilityButton>
+        <CapabilityButton capability={position}>{detail.position ? "Redraft position" : "Draft position"}</CapabilityButton>
+      </div>
       {detail.position && (
         <section className="ai-brief">
           <ProvenanceLabel value={detail.position.provenance} />
-          <h3>Draft position</h3>
+          <h3>Draft position{detail.positionCount > 1 && <small className="muted"> · latest of {detail.positionCount}</small>}</h3>
+          {detail.position.summary && <p>{detail.position.summary}</p>}
           <div className="position-grid">
-            <PositionList title="Case for" items={detail.position.caseFor} />
-            <PositionList title="Case against" items={detail.position.caseAgainst} />
-            <PositionList title="Open questions" items={detail.position.openQuestions} />
+            <PositionList title="Case for" items={detail.position.caseFor} market={r.market} />
+            <PositionList title="Case against" items={detail.position.caseAgainst} market={r.market} />
+            <PositionList title="Open questions" items={detail.position.openQuestions.map((text) => ({ text, evidenceId: null, quote: null }))} market={r.market} />
           </div>
-          {!!detail.position.citedIds.length && (
-            <p className="muted text-xs">
-              Cited: <SourceLinks refs={detail.position.citedIds.map((eid) => ({ type: "evidence", id: eid }))} market={r.market} />
-            </p>
-          )}
-          <small className="muted">A draft for the PM; spans were validated by the server before storing. It is not a decision.</small>
+          <small className="muted">
+            {detail.position.label ?? "Draft"} · {date(detail.position.createdAt)}. Quotes were located in the cited evidence by the server before storing. It is not a decision.
+          </small>
         </section>
       )}
       <section>
@@ -315,6 +364,7 @@ function RequestBody({ detail }: { detail: RequestDetail }) {
         )}
       </section>
       <DecisionDialog request={r} open={deciding} onOpenChange={setDeciding} />
+      <EditDialog request={r} open={editing} onOpenChange={setEditing} />
     </div>
   );
 }
@@ -329,8 +379,15 @@ function TriageBlock({ triage, history }: { triage: Triage | null; history: Tria
         </h3>
         <MethodLabel methodVersion={triage.rubricVersion} runId={triage.runId} compact />
       </div>
-      {triage.cap && <p className="attention-text text-xs">Capped: {triage.cap}</p>}
+      {triage.cap && <p className="attention-text text-xs">{triage.cap.startsWith("Capped") ? triage.cap : `Capped: ${triage.cap}`}</p>}
+      {triage.suggestedAction && (
+        <p className="text-xs">
+          <strong>Rubric suggests {readable(triage.suggestedAction.decision)}</strong>
+          <span className="muted"> · {triage.suggestedAction.reason} The decision stays with the PM.</span>
+        </p>
+      )}
       <FactorBars factors={triage.factors} />
+      {triage.formula && <code className="derivation-formula">{triage.formula}</code>}
       <details>
         <summary>Factor inputs and source ids</summary>
         {triage.factors.map((f) => (
@@ -358,8 +415,11 @@ function LinkColumn({ title, links, market, empty }: { title: string; links: Req
               <SourceLinks refs={[{ type: ENTITY_TYPE[l.entity_type] ?? l.entity_type, id: l.entity_id }]} market={l.market ?? market} />
               <small className="muted">
                 {readable(l.relation)} · {l.created_by.startsWith("system:") || l.created_by.startsWith("ai:") ? `proposed by ${l.created_by}` : `added by ${l.created_by}`}
+                {l.methodVersion && ` · ${l.methodVersion}`}
                 {l.status === "removed" && " · removed"}
               </small>
+              {l.aiGenerated && <ProvenanceLabel value={{ generated: true, provider: "openai", model: null, promptVersion: null, methodVersion: l.methodVersion, runId: null }} compact />}
+              {l.rationale && <small className="muted">{l.rationale}</small>}
             </span>
           </article>
         ))
@@ -369,20 +429,74 @@ function LinkColumn({ title, links, market, empty }: { title: string; links: Req
     </section>
   );
 }
-function PositionList({ title, items }: { title: string; items: string[] }) {
+function PositionList({ title, items, market }: { title: string; items: PositionPoint[]; market: string }) {
   return (
     <div>
       <h4>{title}</h4>
       {items.length ? (
         <ul>
           {items.map((item, i) => (
-            <li key={i}>{item}</li>
+            <li key={i}>
+              {item.text}
+              {item.quote && <small>“{item.quote}”</small>}
+              {item.evidenceId && <SourceLinks refs={[{ type: "evidence", id: item.evidenceId }]} market={market} />}
+            </li>
           ))}
         </ul>
       ) : (
         <p className="muted text-xs">None drafted.</p>
       )}
     </div>
+  );
+}
+function EditDialog({ request, open, onOpenChange }: { request: IntakeRequest; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const client = useQueryClient();
+  const [topic, setTopic] = useState(request.topic ?? "");
+  const [effort, setEffort] = useState(request.effort ?? "");
+  const changes = {
+    ...(topic && topic !== request.topic ? { topic } : {}),
+    ...(effort !== (request.effort ?? "") ? { effort: effort || null } : {}),
+  };
+  const edit = useMutation({
+    mutationFn: ({ actor, rationale }: { actor: string; rationale: string }) => platform.editRequest(request.id, { ...changes, actor, rationale }),
+    onSuccess: () => {
+      toast.success("Edit recorded with your rationale; re-run triage to rescore.");
+      onOpenChange(false);
+      for (const key of [["requests"], ["request", request.id], ["request-aggregates"]]) void client.invalidateQueries({ queryKey: key });
+    },
+  });
+  return (
+    <GateDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`Edit ${request.key}`}
+      description="Correct the topic or add a rough effort estimate. PM-set fields are pinned against reclassification; every edit is audited with before and after."
+      submitLabel="Record edit"
+      role="run"
+      pending={edit.isPending}
+      error={edit.error}
+      ready={Object.keys(changes).length > 0}
+      onSubmit={(actor, rationale) => edit.mutate({ actor, rationale })}
+    >
+      <div className="form-grid">
+        <Field label="Topic">
+          <PmSelect
+            aria-label="Request topic"
+            value={topic}
+            onValueChange={setTopic}
+            options={[...(request.topic ? [] : [{ value: "", label: "Not assigned" }]), ...TOPICS.map(([value, label]) => ({ value, label }))]}
+          />
+        </Field>
+        <Field label="Rough effort (a triage factor)">
+          <PmSelect
+            aria-label="Rough effort"
+            value={effort}
+            onValueChange={setEffort}
+            options={[{ value: "", label: "Not estimated" }, ...EFFORTS.map((value) => ({ value, label: readable(value) }))]}
+          />
+        </Field>
+      </div>
+    </GateDialog>
   );
 }
 function DecisionDialog({ request, open, onOpenChange }: { request: IntakeRequest; open: boolean; onOpenChange: (open: boolean) => void }) {

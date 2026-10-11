@@ -12,9 +12,8 @@ import {
   MARKETS,
   type ComparisonCell,
   type ConflictDetail,
-  type ListPage,
-  type MarketComparison,
-  type MarketWeight,
+    type MarketComparison,
+  type MarketWeights,
   type MarketConflict,
   type Provider,
 } from "@/lib/platform-types";
@@ -113,27 +112,34 @@ function ComparisonPanel() {
     </Panel>
   );
 }
-function WeightsStrip({ state }: { state: PlatformState<ListPage<MarketWeight>> }) {
+function WeightsStrip({ state }: { state: PlatformState<MarketWeights> }) {
   return (
     <div className="weights-strip">
       <span className="mono muted">Sales-based market weights</span>
       <PlatformView
         state={state}
         compact
-        isEmpty={(page) => !page.items.length}
-        empty={<span className="muted text-xs">No sales-based weights recorded; the comparison must say when it falls back to equal weights.</span>}
+        isEmpty={(page) => !page.items.length && !page.warnings.length}
+        empty={<span className="muted text-xs">No sales-based weights recorded; the comparison says when it falls back to equal weights.</span>}
       >
         {(page) => (
-          <span className="chip-list">
-            {[...page.items]
-              .sort((a, b) => b.period.localeCompare(a.period) || a.market.localeCompare(b.market))
-              .map((w) => (
-                <span key={`${w.market}-${w.period}-${w.method_version}`} className="chip" title={`${w.method_version ?? "method not recorded"} · run ${w.run_id ?? "–"} · ${w.evidence_ids.length} sales records`}>
-                  {w.market} {w.period}: {percent(w.share)}
-                  {w.units !== null && <small> · {Math.round(w.units).toLocaleString("en-US")} units</small>}
-                </span>
-              ))}
-          </span>
+          <>
+            <span className="chip-list">
+              {[...page.items]
+                .filter((w) => !page.selected || (w.period === page.selected.period && w.method_version === page.selected.methodVersion))
+                .sort((a, b) => b.period.localeCompare(a.period) || a.market.localeCompare(b.market))
+                .map((w) => (
+                  <span key={`${w.market}-${w.period}-${w.method_version}`} className="chip" title={`${w.method_version ?? "method not recorded"} · run ${w.run_id ?? "–"} · ${w.evidence_ids.length} sales records`}>
+                    {w.market} {w.period}: {percent(w.share)}
+                    {w.units !== null && <small> · {Math.round(w.units).toLocaleString("en-US")} units</small>}
+                  </span>
+                ))}
+            </span>
+            {page.selected && <span className="muted text-xs">Used by the comparison: {page.selected.methodVersion ?? "method not recorded"} · {page.selected.period}</span>}
+            {page.warnings.map((warning) => (
+              <span key={warning} className="attention-text text-xs">{warning}</span>
+            ))}
+          </>
         )}
       </PlatformView>
     </div>
@@ -151,6 +157,10 @@ function ComparisonMatrix({ data }: { data: MarketComparison }) {
       ))}
       <p className="chart-meta">
         <MethodLabel methodVersion={data.methodVersion} runId={data.runId} />
+        <span className="muted">
+          Weights: {data.weightBasis === "sales" ? `sales shares (${data.weightsMethodVersion ?? "method not recorded"})` : data.weightBasis === "equal_fallback" ? "equal fallback — sales shares missing" : data.weightBasis ?? "basis not recorded"}
+          {" · "}Sentiment: {data.sentimentMethodVersion ?? "not scored"}
+        </span>
       </p>
       <div className="pm-table-wrap">
         <table className="pm-table market-table market-matrix">
@@ -160,9 +170,10 @@ function ComparisonMatrix({ data }: { data: MarketComparison }) {
               {data.markets.map((m) => (
                 <th key={m.market}>
                   {m.market}
+                  {m.name && <span className="muted"> · {m.name}</span>}
                   <small>
-                    weight {percent(m.share)}
-                    {m.equalWeight && " · equal (no sales data)"}
+                    weight {percent(m.weight)}
+                    {m.equalWeight ? " · equal (no sales share)" : m.share !== null ? ` · sales share ${percent(m.share)}` : ""}
                     {m.period && ` · ${m.period}`}
                   </small>
                 </th>
@@ -172,12 +183,22 @@ function ComparisonMatrix({ data }: { data: MarketComparison }) {
           <tbody>
             {data.rows.map((row) => (
               <tr key={row.topic}>
-                <td className="pin-column">
-                  <strong>{readable(row.topic)}</strong>
+                <td className="pin-column matrix-topic">
+                  <strong>{row.label ?? readable(row.topic)}</strong>
+                  <small>
+                    Demand index {row.demandIndex === null ? "not measured" : fixed(row.demandIndex, 2)}
+                    {row.demandCoverage !== null && ` · covers ${percent(row.demandCoverage)} of weight`}
+                  </small>
+                  {row.alignment && <small>Alignment: {readable(row.alignment)}</small>}
+                  {row.recommendation && <small>Rule recommends {readable(row.recommendation)}</small>}
                 </td>
                 {data.markets.map((m) => (
                   <td key={m.market}>
-                    {row.cells[m.market] ? <MatrixCell cell={row.cells[m.market]} vehicle={scope.vehicle} /> : <span className="market-missing">Not returned for this market</span>}
+                    {row.cells[m.market] ? (
+                      <MatrixCell cell={row.cells[m.market]} vehicle={scope.vehicle} topic={row.topic} />
+                    ) : (
+                      <span className="market-missing">Not returned for this market</span>
+                    )}
                   </td>
                 ))}
               </tr>
@@ -188,16 +209,23 @@ function ComparisonMatrix({ data }: { data: MarketComparison }) {
     </>
   );
 }
-function MatrixCell({ cell, vehicle }: { cell: ComparisonCell; vehicle: string }) {
+function MatrixCell({ cell, vehicle, topic }: { cell: ComparisonCell; vehicle: string; topic: string }) {
   const missing = Object.entries(cell.missing);
+  const scoped = `/${vehicle.toLowerCase()}/${cell.market.toLowerCase()}`;
   return (
     <div className="matrix-cell">
       {cell.requirement ? (
-        <Link className="market-cell" href={`/${vehicle.toLowerCase()}/${cell.market.toLowerCase()}/requirements?requirement=${cell.requirement.id}`}>
+        <Link className="market-cell" href={`${scoped}/requirements?requirement=${cell.requirement.id}`}>
           {cell.requirement.score !== null && <ScoreLabel score={cell.requirement.score} grade={cell.evidenceGrade ?? "–"} />}
           <span>
             {cell.requirement.title || cell.requirement.key || shortId(cell.requirement.id)}
-            {cell.requirement.rank !== null && <small> · rank {cell.requirement.rank}</small>}
+            {cell.requirement.rank !== null && (
+              <small>
+                {" "}
+                · rank {cell.requirement.rank}
+                {cell.requirement.rankOf ? ` of ${cell.requirement.rankOf}` : ""}
+              </small>
+            )}
           </span>
           {cell.requirement.status && <Status value={cell.requirement.status} />}
         </Link>
@@ -207,15 +235,32 @@ function MatrixCell({ cell, vehicle }: { cell: ComparisonCell; vehicle: string }
       <dl className="matrix-facts">
         <div>
           <dt>Evidence</dt>
-          <dd>{cell.evidenceCount === null ? "–" : `${cell.evidenceCount}${cell.evidenceGrade ? ` · grade ${cell.evidenceGrade}` : ""}`}</dd>
+          <dd>
+            {cell.evidenceCount === null ? (
+              "–"
+            ) : cell.evidenceCount > 0 ? (
+              <Link className="text-link" href={`${scoped}/evidence?topic=${encodeURIComponent(topic)}`}>
+                {cell.evidenceCount}
+                {cell.evidenceGrade ? ` · grade ${cell.evidenceGrade}` : ""}
+              </Link>
+            ) : (
+              `0${cell.evidenceGrade ? ` · grade ${cell.evidenceGrade}` : ""}`
+            )}
+          </dd>
         </div>
         <div>
           <dt>BMW sentiment</dt>
-          <dd className="tabular-nums">{signed(cell.sentiment)}</dd>
+          <dd className={`tabular-nums ${cell.sentimentLowN ? "low-n-flag" : ""}`}>
+            {signed(cell.sentiment)}
+            {cell.sentimentN !== null && ` · n ${cell.sentimentN}${cell.sentimentLowN ? " (low n)" : ""}`}
+          </dd>
         </div>
         <div>
-          <dt>Request pressure</dt>
-          <dd className="tabular-nums">{fixed(cell.requestPressure)}</dd>
+          <dt>Requests</dt>
+          <dd className="tabular-nums">
+            {cell.requestPressure === null ? "–" : cell.requestPressure}
+            {cell.requestMeanTriage !== null && ` · mean triage ${fixed(cell.requestMeanTriage)}`}
+          </dd>
         </div>
       </dl>
       {!!cell.targets.length && <small className="matrix-targets">Targets: {cell.targets.join("; ")}</small>}
@@ -394,6 +439,10 @@ function ConflictDetailPanel({ id, onClose }: { id: string; onClose: () => void 
 function ConflictBody({ detail }: { detail: ConflictDetail }) {
   const { conflict } = detail;
   const [resolving, setResolving] = useState(false);
+  const brief = useCapability("draftBrief", (actor) => platform.draftBrief(conflict.id, { actor }), [
+    ["market-conflict", conflict.id],
+    ["market-conflicts"],
+  ]);
   const markets = [...new Set([...conflict.markets, ...Object.keys(detail.evidenceByMarket)])];
   const scalars = Object.entries(conflict.metrics).filter(([key, value]) => key !== "ai_brief" && (typeof value !== "object" || value === null));
   const nested = Object.fromEntries(Object.entries(conflict.metrics).filter(([key, value]) => key !== "ai_brief" && typeof value === "object" && value !== null));
@@ -415,18 +464,19 @@ function ConflictBody({ detail }: { detail: ConflictDetail }) {
         <p>{conflict.rationale}</p>
         <MethodLabel methodVersion={conflict.method_version} runId={conflict.run_id} />
       </div>
-      {conflict.aiBrief && (
-        <div className="ai-brief">
-          <ProvenanceLabel value={conflict.aiBrief.provenance} />
-          <p>{conflict.aiBrief.text}</p>
-          {!!conflict.aiBrief.options.length && (
-            <ul>
-              {conflict.aiBrief.options.map((option) => (
-                <li key={option}>{option}</li>
-              ))}
-            </ul>
-          )}
-          <small className="muted">Drafted from the recorded metrics. The templated rationale above is authoritative; the PM decides.</small>
+      {conflict.aiBrief ? (
+        <AiBriefView brief={conflict.aiBrief} />
+      ) : (
+        conflict.status === "open" && (
+          <div className="ai-brief-actions">
+            <span className="muted text-xs">No AI trade-off brief yet. OpenAI drafts one from the recorded metrics and cited evidence; it never decides.</span>
+            <CapabilityButton capability={brief}>Draft AI brief</CapabilityButton>
+          </div>
+        )
+      )}
+      {conflict.aiBrief && conflict.status === "open" && (
+        <div className="ai-brief-actions">
+          <CapabilityButton capability={brief} variant="ghost">Redraft AI brief</CapabilityButton>
         </div>
       )}
       {(scalars.length > 0 || Object.keys(nested).length > 0) && (
@@ -452,8 +502,26 @@ function ConflictBody({ detail }: { detail: ConflictDetail }) {
             {(detail.evidenceByMarket[market] || []).length ? (
               detail.evidenceByMarket[market].map((e) => (
                 <article key={e.id} className="evidence-card">
-                  {e.quote || e.content ? <blockquote>{e.quote || e.content}</blockquote> : <p className="muted text-xs">Evidence text not included in this response.</p>}
-                  <span className="muted text-xs">{e.observedAt ? `Observed ${date(e.observedAt)}` : "Observation date not recorded"}</span>
+                  {!!e.mentions.length && (
+                    <span className="mention-list">
+                      {e.mentions.map((m, i) => (
+                        <span key={i} className="chip" title={`“${m.quote}”`}>
+                          {readable(m.attribute)} · {m.direction}
+                        </span>
+                      ))}
+                    </span>
+                  )}
+                  {e.quote || e.content ? (
+                    <blockquote>
+                      <Highlighted text={e.quote || e.content || ""} quotes={e.mentions.map((m) => m.quote)} />
+                    </blockquote>
+                  ) : (
+                    <p className="muted text-xs">Evidence text not included in this response.</p>
+                  )}
+                  <span className="muted text-xs">
+                    {e.sourceTitle && `${e.sourceTitle} · `}
+                    {e.observedAt ? `Observed ${date(e.observedAt)}` : "Observation date not recorded"}
+                  </span>
                   <SourceLinks refs={[{ type: "evidence", id: e.id }]} market={market === "unscoped" || market === "all" ? null : market} />
                 </article>
               ))
@@ -463,15 +531,109 @@ function ConflictBody({ detail }: { detail: ConflictDetail }) {
           </section>
         ))}
       </div>
-      {!!conflict.requirement_ids.length && (
+      {detail.requirements.length ? (
+        <section>
+          <h3 className="muted text-xs">Requirements in this conflict</h3>
+          <div className="chip-list">
+            {detail.requirements.map((r) => (
+              <Link
+                key={r.id}
+                className="source-chip"
+                href={`/${conflict.vehicle.toLowerCase()}/${(r.market ?? "").toLowerCase()}/requirements?requirement=${encodeURIComponent(r.id)}`}
+                title={r.title ?? r.id}
+              >
+                {r.market} · {r.key ?? shortId(r.id)}
+                {r.score !== null && ` · ${fixed(r.score)}`}
+                {r.status && ` · ${readable(r.status)}`}
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : (
+        !!conflict.requirement_ids.length && (
+          <p className="muted text-xs">
+            Linked requirements: <SourceLinks refs={conflict.requirement_ids.map((rid) => ({ type: "requirement", id: rid }))} />
+          </p>
+        )
+      )}
+      {detail.history.length > 1 && (
         <p className="muted text-xs">
-          Linked requirements: <SourceLinks refs={conflict.requirement_ids.map((rid) => ({ type: "requirement", id: rid }))} />
+          Detection history for this fingerprint: {detail.history.map((h) => `${readable(h.status)} ${date(h.createdAt)}`).join(" → ")}
+          {detail.supersededBy && " · superseded by a newer detection"}
         </p>
       )}
       <ResolutionHistory detail={detail} />
       <ResolveDialog conflict={conflict} open={resolving} onOpenChange={setResolving} />
     </div>
   );
+}
+function AiBriefView({ brief }: { brief: NonNullable<MarketConflict["aiBrief"]> }) {
+  return (
+    <section className="ai-brief">
+      <ProvenanceLabel value={brief.provenance} />
+      <p>{brief.summary}</p>
+      {brief.tradeOff && (
+        <p>
+          <strong>Trade-off: </strong>
+          {brief.tradeOff}
+        </p>
+      )}
+      {!!brief.options.length && (
+        <ul>
+          {brief.options.map((option, i) => (
+            <li key={`${option.option}-${i}`}>
+              <strong>{readable(option.option)}</strong>
+              {option.summary && `: ${option.summary}`}
+              {!!option.benefits.length && <small className="muted"> Benefits: {option.benefits.join("; ")}.</small>}
+              {!!option.risks.length && <small className="muted"> Risks: {option.risks.join("; ")}.</small>}
+            </li>
+          ))}
+        </ul>
+      )}
+      {!!brief.openQuestions.length && (
+        <>
+          <h4>Open questions</h4>
+          <ul>
+            {brief.openQuestions.map((q) => (
+              <li key={q}>{q}</li>
+            ))}
+          </ul>
+        </>
+      )}
+      {!!brief.citations.length && (
+        <ul>
+          {brief.citations.map((c, i) => (
+            <li key={`${c.evidenceId}-${i}`}>
+              “{c.quote}” <SourceLinks refs={[{ type: "evidence", id: c.evidenceId }]} market={c.market} />
+            </li>
+          ))}
+        </ul>
+      )}
+      <small className="muted">{brief.label ?? "Drafted from the recorded metrics. The templated rationale above is authoritative; the PM decides."}</small>
+    </section>
+  );
+}
+/** Marks the exact quotes the direction extraction located in an evidence text (first occurrence each). */
+function Highlighted({ text, quotes }: { text: string; quotes: string[] }) {
+  const ranges = quotes
+    .map((q) => ({ start: text.indexOf(q), length: q.length }))
+    .filter((r) => r.start >= 0 && r.length > 0)
+    .sort((a, b) => a.start - b.start)
+    .filter((r, i, all) => i === 0 || r.start >= all[i - 1].start + all[i - 1].length);
+  if (!ranges.length) return <>{text}</>;
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+  ranges.forEach((r, i) => {
+    if (r.start > cursor) parts.push(text.slice(cursor, r.start));
+    parts.push(
+      <mark key={i} className="mention">
+        {text.slice(r.start, r.start + r.length)}
+      </mark>,
+    );
+    cursor = r.start + r.length;
+  });
+  if (cursor < text.length) parts.push(text.slice(cursor));
+  return <>{parts}</>;
 }
 function ResolutionHistory({ detail }: { detail: ConflictDetail }) {
   if (!detail.resolutions.length) return <p className="muted text-xs">No resolution recorded yet.</p>;

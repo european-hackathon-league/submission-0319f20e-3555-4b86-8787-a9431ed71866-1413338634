@@ -6,14 +6,15 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { date, readable } from "@/lib/api";
-import { describeWrite, mergeSensitivity, platform } from "@/lib/platform-api";
-import type { FactorView, Ranking, RankingRow, RubricState, Stability } from "@/lib/platform-types";
+import { describeWrite, mergeExplanation, mergeSensitivity, platform } from "@/lib/platform-api";
+import type { FactorView, Provider, Ranking, RankingExplanation, RankingRow, RubricState, Stability } from "@/lib/platform-types";
 import { useWorkspace } from "./context";
 import { PmSelect } from "./pm-select";
 import {
   CapabilityButton,
   GateDialog,
   MethodLabel,
+  PROVIDER_OPTIONS,
   PlatformView,
   ProvenanceLabel,
   SourceLinks,
@@ -66,8 +67,11 @@ function RubricSummary({ state }: { state: RubricState }) {
     <div className="rubric-summary">
       <div>
         <span className="mono muted">Current</span>
-        <strong>{current?.rubric_version ?? `${V1} (default; no switch recorded)`}</strong>
-        {current && (
+        <strong>
+          {current?.rubric_version ?? V1}
+          {(!current || current.isDefault) && <small className="muted"> · default, no PM switch recorded</small>}
+        </strong>
+        {current && !current.isDefault && (
           <small className="muted">
             Switched by {current.actor} · {date(current.created_at)} · “{current.rationale}”
           </small>
@@ -82,6 +86,21 @@ function RubricSummary({ state }: { state: RubricState }) {
           ))}
         </span>
       )}
+      {state.available
+        .filter((r) => r.derived.length)
+        .map((r) => (
+          <details key={r.version} className="rubric-derived">
+            <summary>How {r.version} derives its data factors</summary>
+            {r.derived.map((d) => (
+              <div key={d.factor} className="factor-detail">
+                <strong>
+                  {readable(d.factor)} <span className="mono muted">{d.methodVersion}</span>
+                </strong>
+                {d.formula && <code>{d.formula}</code>}
+              </div>
+            ))}
+          </details>
+        ))}
       <small className="muted">
         {state.available.length} rubric{state.available.length === 1 ? "" : "s"} available · {state.history.length} recorded switch{state.history.length === 1 ? "" : "es"}
       </small>
@@ -97,6 +116,9 @@ function RankingPanel() {
   });
   const derive = useCapability("deriveInputs", (actor) => platform.deriveInputs(scope, { actor }), [["priority-ranking"]]);
   const sensitivity = useCapability("sensitivity", (actor) => platform.sensitivity(scope, { actor }), [["priority-ranking"]]);
+  const [provider, setProvider] = useState<Provider>("openai");
+  const explain = useCapability("explain", (actor) => platform.explain(scope, { actor, provider, limit: 10 }), []);
+  const explanation = explain.mutation.data as RankingExplanation | undefined;
   return (
     <Panel
       title="Ranking"
@@ -105,6 +127,8 @@ function RankingPanel() {
         <span className="row-actions">
           <CapabilityButton capability={derive}>Derive inputs</CapabilityButton>
           <CapabilityButton capability={sensitivity}>Run sensitivity</CapabilityButton>
+          <PmSelect aria-label="Explanation provider" value={provider} onValueChange={(value) => setProvider(value as Provider)} options={PROVIDER_OPTIONS} />
+          <CapabilityButton capability={explain}>Explain top 10</CapabilityButton>
         </span>
       }
     >
@@ -113,13 +137,13 @@ function RankingPanel() {
         isEmpty={(data) => !data.rows.length}
         empty={<Empty title="No ranked requirements" description="Generate requirements for this scope, then derive inputs to rank them." />}
       >
-        {(data) => <RankingList ranking={data} sensitivity={sensitivity.mutation.data} />}
+        {(data) => <RankingList ranking={data} sensitivity={sensitivity.mutation.data} explanation={explanation} />}
       </PlatformView>
     </Panel>
   );
 }
-function RankingList({ ranking, sensitivity }: { ranking: Ranking; sensitivity: unknown }) {
-  const rows = sensitivity ? mergeSensitivity(ranking.rows, sensitivity) : ranking.rows;
+function RankingList({ ranking, sensitivity, explanation }: { ranking: Ranking; sensitivity: unknown; explanation?: RankingExplanation }) {
+  const rows = mergeExplanation(sensitivity ? mergeSensitivity(ranking.rows, sensitivity) : ranking.rows, explanation);
   const n = rows.length;
   return (
     <>
@@ -127,6 +151,12 @@ function RankingList({ ranking, sensitivity }: { ranking: Ranking; sensitivity: 
         <span className="mono">{ranking.rubricVersion ?? "rubric not stated"}</span>
         <MethodLabel methodVersion={ranking.methodVersion} runId={ranking.runId} />
       </p>
+      {explanation?.summary && (
+        <div className="ai-brief is-inline">
+          <ProvenanceLabel value={explanation.provenance} />
+          <p>{explanation.summary}</p>
+        </div>
+      )}
       {ranking.warnings.map((warning) => (
         <div key={warning} className="pm-alert attention">
           <Info size={16} />
@@ -157,8 +187,13 @@ function RankingItem({ row, position, count }: { row: RankingRow; position: numb
             {row.title}
           </RequirementLink>
           {row.status && <Status value={row.status} />}
+          {row.needsReview && <Status value="needs_review" />}
         </div>
-        <small className="muted">{row.topic ? readable(row.topic) : "Topic not stated"}</small>
+        <small className="muted">
+          {row.topic ? readable(row.topic) : "Topic not stated"}
+          {row.rubricVersion && ` · scored with ${row.rubricVersion}`}
+          {row.v2PreviewTotal !== null && ` · v2 preview ${fixed(row.v2PreviewTotal)} (not stored)`}
+        </small>
         {contributions.length > 0 && contributionTotal > 0 && (
           <div className="contribution-bar" aria-label="Factor contributions to the score">
             {contributions.map((f, i) => (
@@ -188,8 +223,9 @@ function RankingItem({ row, position, count }: { row: RankingRow; position: numb
         ))}
         {row.explanation && (
           <div className="ai-brief is-inline">
-            <ProvenanceLabel value={row.explanation.provenance} compact />
+            <ProvenanceLabel value={row.explanation.provenance} />
             <p>{row.explanation.text}</p>
+            {!!row.explanation.citedIds.length && <small className="muted mono">Cites {row.explanation.citedIds.map(shortId).join(", ")}</small>}
           </div>
         )}
       </div>
@@ -202,7 +238,7 @@ function RankingItem({ row, position, count }: { row: RankingRow; position: numb
 }
 function StabilityBand({ stability, count }: { stability: Stability | null; count: number }) {
   if (!stability || stability.minRank === null || stability.maxRank === null)
-    return <small className="muted stability-label">Stability not computed</small>;
+    return <small className="muted stability-label" title={stability?.reason ?? undefined}>{stability?.reason ? "Stability outdated" : "Stability not computed"}</small>;
   const span = Math.max(1, count - 1);
   const left = ((stability.minRank - 1) / span) * 100;
   const width = Math.max(4, ((stability.maxRank - stability.minRank) / span) * 100);
@@ -215,6 +251,7 @@ function StabilityBand({ stability, count }: { stability: Stability | null; coun
       </span>
       <small className={stability.stable ? "stability-label" : "stability-label attention-text"}>
         {stability.stable === null ? "" : stability.stable ? "Stable" : "Sensitive"} · {stability.minRank}–{stability.maxRank}
+        {!stability.current && " · outdated"}
       </small>
     </span>
   );
