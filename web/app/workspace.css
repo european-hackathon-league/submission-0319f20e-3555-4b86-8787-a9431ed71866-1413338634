@@ -2398,3 +2398,34 @@ summary {
   .decision-actions .pm-component-select:first-of-type,
   .decision-actions .pm-component-select:nth-of-type(2) { flex: 1 1 40%; }
 }
+
+/* Multi-agentic system page */
+.agent-lede { max-width: 760px; margin: 10px 0 18px; color: var(--muted-foreground); line-height: 1.55; }
+.agent-gates { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.agent-gates > div { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
+.agent-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-bottom: 22px; font-size: 12.5px; color: var(--muted-foreground); }
+.agent-tier { margin-bottom: 24px; }
+.agent-tier h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted-foreground); margin: 0 0 10px; }
+.agent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.agent-grid-single { grid-template-columns: minmax(280px, 560px); }
+.agent-card { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--card, transparent); min-width: 0; }
+.agent-card header { display: flex; align-items: flex-start; gap: 10px; }
+.agent-card header > div { flex: 1; min-width: 0; }
+.agent-card h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.agent-card header .muted { font-size: 12px; }
+.agent-card p { margin: 0; font-size: 13px; line-height: 1.5; }
+.agent-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: color-mix(in srgb, currentColor 8%, transparent); flex: none; }
+.agent-autonomy { display: inline-block; padding: 1px 7px; border-radius: 999px; font: 600 11px/18px ui-monospace, monospace; border: 1px solid currentColor; }
+.autonomy-A0 { color: #2563eb; }
+.autonomy-A1 { color: #0f766e; }
+.autonomy-A2 { color: #b45309; }
+.autonomy-A3 { color: #9333ea; }
+.agent-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; }
+.agent-capabilities { display: flex; flex-wrap: wrap; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.agent-capabilities li { padding: 2px 7px; border-radius: 6px; font-size: 11px; background: color-mix(in srgb, currentColor 7%, transparent); overflow-wrap: anywhere; }
+.agent-nocap { font-size: 12px !important; }
+.agent-tasks { width: 100%; border-collapse: collapse; font-size: 13px; }
+.agent-tasks th, .agent-tasks td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.agent-tasks th { font-size: 12px; font-weight: 600; color: var(--muted-foreground); }
+.agent-task-error { margin-top: 4px; font-size: 12px; color: #b91c1c; }
+.multi-agent-page > .panel, .multi-agent-page > section.panel { margin-bottom: 18px; }

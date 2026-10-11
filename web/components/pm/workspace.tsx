@@ -79,6 +79,7 @@ import { Signals } from "./signals";
 import { Requests } from "./requests";
 import { Priorities } from "./priorities";
 import { ErrorMessage, Loading } from "./shared";
+import { AgentsPage } from "./agents";
 const VehicleStudio = dynamic(() => import("./vehicle-studio").then((module) => module.VehicleStudio), {
   ssr: false,
   loading: () => <Loading label="Opening vehicle studio…" />,
@@ -412,9 +413,7 @@ export function WorkspaceApp({
           >
             <main>
               {section === "agents" ? (
-                <div className="multi-agent-page">
-                  <h1>Multi-agentic system</h1>
-                </div>
+                <AgentsPage />
               ) : loadError ? (
                 <ErrorMessage error={loadError} retry={refresh} />
               ) : context.loading ? (
