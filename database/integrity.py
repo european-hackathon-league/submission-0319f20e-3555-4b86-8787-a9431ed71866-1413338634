@@ -11,7 +11,11 @@ HISTORY_TABLES = ("evidence", "analysis_runs", "findings", "finding_evidence", "
                   "requirement_findings", "scores", "decisions", "audit_events", "imports")
 GOVERNANCE_TRIGGERS = ("audit_events_actor", "requirement_versions_actor", "decisions_actor",
                        "requirements_approval_requires_decision",
-                       "requirements_status_workflow", "requirements_assign_key", "audit_events_chain")
+                       "requirements_status_workflow", "requirements_assign_key", "audit_events_chain",
+                       # Platform human gates and append-only records (migration 0009).
+                       "agents_status_human", "watchlists_human_actor", "market_resolutions_human_actor",
+                       "request_decisions_human_actor", "scope_rubrics_human_actor", "runs_finished_immutable",
+                       "messages_no_update")
 
 
 def verify_audit_chain(connection: sqlite3.Connection) -> dict:

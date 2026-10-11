@@ -16,8 +16,14 @@ from mcp.server import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import BaseModel, ConfigDict, Field
 
+from mcp_server.agent_tools import register_agent_tools
 from mcp_server.apps import SCORING_UI, TRACE_UI, register_app_resources
+from mcp_server.intake_tools import register_intake_tools
+from mcp_server.market_data_tools import register_market_data_tools
+from mcp_server.markets_tools import register_markets_tools
+from mcp_server.priority_tools import register_priority_tools
 from mcp_server.research_tools import register_research_tools
+from mcp_server.signals_tools import register_signals_tools
 from mcp_server.workflow_tools import register_workflow_tools
 
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000").rstrip("/")
@@ -385,6 +391,11 @@ async def get_workspace(vehicle: str = "G60", market: str = "US") -> dict:
 register_research_tools(mcp)
 register_app_resources(mcp)
 register_workflow_tools(mcp, lambda *args, **kwargs: api_request(*args, **kwargs), _id)
+# Platform pods (PLATFORM_BUILD_PLAN.md). The lambda resolves api_request at call time, so tests can patch it.
+PLATFORM_TOOL_REGISTRARS = (register_signals_tools, register_markets_tools, register_intake_tools,
+                            register_priority_tools, register_market_data_tools, register_agent_tools)
+for register in PLATFORM_TOOL_REGISTRARS:
+    register(mcp, lambda *args, **kwargs: api_request(*args, **kwargs), _id)
 
 
 if __name__ == "__main__":

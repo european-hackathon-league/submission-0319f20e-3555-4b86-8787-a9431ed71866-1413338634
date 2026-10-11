@@ -12,14 +12,23 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import Field, model_validator
 
 from database.store import create_source, get_source, init_database, list_sources, ping_database
+from server import agent_runtime
+from server.analysis_engine import AnalysisError, ProviderUnavailable
 from server.decision_briefs import router as decision_briefs_router
 from server.evaluation import router as evaluation_router
 from server.evidence import ImportRoute, scope_filters
 from server.evidence import router as evidence_router
 from server.exa_research import router as exa_research_router
+from server.intake import router as intake_router
+from server.llm import LLMOutputInvalid
+from server.market_data import router as market_data_router
+from server.markets import router as markets_router
 from server.models import Scope, json_size
 from server.pipeline import router as pipeline_router
+from server.platform import HUMAN_REQUIRED
+from server.prioritization import router as prioritization_router
 from server.requirements import router as requirements_router
+from server.signals import router as signals_router
 from server.web_fetch import router as web_fetch_router
 from server.workflows import router as workflows_router
 
@@ -68,6 +77,14 @@ app.include_router(web_fetch_router)
 app.include_router(evaluation_router)
 app.include_router(workflows_router)
 app.include_router(decision_briefs_router)
+# Platform pods (PLATFORM_BUILD_PLAN.md); each module owns the routes under its prefix.
+app.include_router(signals_router)
+app.include_router(markets_router)
+app.include_router(intake_router)
+app.include_router(prioritization_router)
+app.include_router(market_data_router)
+for runtime_router in agent_runtime.routers:
+    app.include_router(runtime_router)
 app.router.route_class = ImportRoute
 
 
@@ -89,9 +106,22 @@ async def governance_error_handler(request, exc):
     # this handler. Only named actor gates are client permission failures;
     # unrelated integrity errors must remain visible as server failures.
     detail = str(exc)
-    if detail in {"inactive actor", "decisions require a human actor", "approve and reject require a PM role"}:
+    if detail in {"inactive actor", "decisions require a human actor", "approve and reject require a PM role",
+                  HUMAN_REQUIRED}:
         return JSONResponse(status_code=403, content={"detail": detail})
     raise exc
+
+
+@app.exception_handler(ProviderUnavailable)
+async def provider_error_handler(request, exc):
+    # The selected AI provider is unavailable; never substitute another method.
+    return JSONResponse(status_code=503, content={"detail": str(exc)})
+
+
+@app.exception_handler(AnalysisError)
+async def analysis_error_handler(request, exc):
+    # Model output that failed strict JSON, schema or grounding checks is rejected, not stored.
+    return JSONResponse(status_code=502 if isinstance(exc, LLMOutputInvalid) else 422, content={"detail": str(exc)})
 
 
 @app.get("/health")

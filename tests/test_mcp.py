@@ -41,9 +41,34 @@ def text_result(result):
     return "\n".join(item.text for item in result.content if hasattr(item, "text"))
 
 
+class _ToolRecorder:
+    """Collects the tool names a platform registrar adds, without an MCP server or API."""
+
+    def __init__(self):
+        self.names = set()
+
+    def tool(self, *args, **kwargs):
+        def decorator(function):
+            self.names.add(kwargs.get("name") or function.__name__)
+            return function
+        return decorator
+
+    def __getattr__(self, name):
+        return lambda *args, **kwargs: (lambda function: function)
+
+
+def platform_tool_names() -> set[str]:
+    recorder = _ToolRecorder()
+    for register in adapter.PLATFORM_TOOL_REGISTRARS:
+        register(recorder, None, None)
+    return recorder.names
+
+
 async def test_every_pipeline_operation_is_discoverable():
     tools = {tool.name: tool for tool in await adapter.mcp.list_tools()}
-    assert set(tools) == {
+    platform = platform_tool_names()
+    assert platform <= set(tools)
+    assert set(tools) - platform == {
         "health", "list_sources", "get_source", "import_local_file", "import_records", "import_web_source", "fetch_web_source",
         "list_evidence", "get_evidence", "analyze_evidence", "get_analysis", "list_findings", "get_finding",
         "generate_requirements", "run_pipeline", "assess_updates", "list_requirements", "get_requirement",
