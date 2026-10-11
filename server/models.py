@@ -5,7 +5,7 @@ import re
 from datetime import date, datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_serializer, model_validator
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 Factor = Annotated[float, Field(ge=0, le=5, allow_inf_nan=False)]
@@ -158,18 +158,57 @@ class Factors(Command):
     feasibility: Factor
 
 
+RUBRIC_V1, RUBRIC_V2 = "customer-priority-v1", "customer-priority-v2"
+V1_FACTORS = ("customer_impact", "market_relevance", "strategic_fit", "differentiation", "feasibility")
+DERIVED_FACTORS = ("market_demand", "sentiment_momentum", "request_pressure")  # derived from data (prioritization.py)
+WeightValue = Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)]
+
+
 class Weights(Command):
-    customer_impact: Annotated[float, Field(ge=0, le=1)] = 0.35
-    market_relevance: Annotated[float, Field(ge=0, le=1)] = 0.25
-    strategic_fit: Annotated[float, Field(ge=0, le=1)] = 0.20
-    differentiation: Annotated[float, Field(ge=0, le=1)] = 0.10
-    feasibility: Annotated[float, Field(ge=0, le=1)] = 0.10
+    """customer-priority-v1 weights; giving all three derived factors makes them customer-priority-v2 weights.
+
+    Absent derived factors are omitted when serialized, so v1 payloads and stored v1 weights are unchanged.
+    """
+
+    customer_impact: WeightValue = 0.35
+    market_relevance: WeightValue = 0.25
+    strategic_fit: WeightValue = 0.20
+    differentiation: WeightValue = 0.10
+    feasibility: WeightValue = 0.10
+    market_demand: WeightValue | None = None
+    sentiment_momentum: WeightValue | None = None
+    request_pressure: WeightValue | None = None
 
     @model_validator(mode="after")
     def sums_to_one(self):
+        derived = [getattr(self, key) is None for key in DERIVED_FACTORS]
+        if any(derived) and not all(derived):
+            raise ValueError("customer-priority-v2 weights need market_demand, sentiment_momentum and request_pressure")
         if abs(sum(self.model_dump().values()) - 1) > 1e-6:
             raise ValueError("Scoring weights must sum to 1")
         return self
+
+    @model_serializer(mode="wrap")
+    def omit_absent_derived(self, handler):
+        return {key: value for key, value in handler(self).items() if not (key in DERIVED_FACTORS and value is None)}
+
+    @property
+    def rubric_version(self) -> str:
+        return rubric_of(self.model_dump())
+
+
+V2_DEFAULT_WEIGHTS = {"customer_impact": 0.25, "market_relevance": 0.15, "strategic_fit": 0.15, "differentiation": 0.07,
+                      "feasibility": 0.08, "market_demand": 0.12, "sentiment_momentum": 0.08, "request_pressure": 0.10}
+
+
+def rubric_of(weights: dict) -> str:
+    """The rubric a stored or submitted weights object belongs to (its key set)."""
+    keys = set(weights)
+    if keys == set(V1_FACTORS):
+        return RUBRIC_V1
+    if keys == set(V1_FACTORS) | set(DERIVED_FACTORS):
+        return RUBRIC_V2
+    raise ValueError(f"Weights match no known rubric: {sorted(keys)}")
 
 
 class AcceptanceCriterion(Command):
