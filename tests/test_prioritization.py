@@ -93,7 +93,8 @@ def scored_import(client, kind, rows, reference):
             for index, (_observed, polarity, label, *method) in enumerate(rows):
                 evidence_id = connection.execute("SELECT id FROM evidence WHERE content=?",
                                                  (f"Simulated {reference} {index}: driving feel",)).fetchone()[0]
-                connection.execute("INSERT INTO sentiment_scores VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                connection.execute("INSERT INTO sentiment_scores (id,subject_type,subject_id,topic,method_version,polarity,"
+                                   "label,aspects,input_hash,run_id,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                                    (f"{reference}-{index}", "evidence", evidence_id, "driving-experience",
                                     method[0] if method else "lexicon-v1", polarity, label, "[]", "h", run.id, "t"))
 
