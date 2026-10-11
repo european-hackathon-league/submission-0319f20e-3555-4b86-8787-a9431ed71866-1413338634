@@ -286,3 +286,45 @@ mark.mention { background: color-mix(in srgb, var(--primary), transparent 82%); 
 .edit-dialog .pm-component-select { max-width: 100%; min-width: 0; }
 .edit-dialog .pm-component-select > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .field-hint { display: block; margin-top: 4px; color: var(--muted-foreground); font-size: 11px; line-height: 1.5; }
+
+/* Evidence source mix and data connectors */
+:root {
+  --origin-bmw_internal: var(--brand);
+  --origin-public_official: #b26a00;
+  --origin-public_web: #2f8f6b;
+}
+.dark {
+  --origin-public_official: #e3a64b;
+  --origin-public_web: #6cc7a1;
+}
+.source-mix .panel-heading p { max-width: 72ch; }
+.source-mix-legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.source-mix-origin { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; min-width: 0; }
+.source-mix-origin > svg { margin-top: 2px; flex-shrink: 0; color: var(--muted-foreground); }
+.source-mix-origin div { display: grid; gap: 2px; min-width: 0; }
+.source-mix-origin span:not(.source-mix-swatch) { color: var(--muted-foreground); font-size: 11px; }
+.source-mix-swatch { width: 10px; height: 10px; margin-top: 4px; flex-shrink: 0; border-radius: 2px; background: var(--origin-color); }
+.origin-bmw_internal { --origin-color: var(--origin-bmw_internal); }
+.origin-public_official { --origin-color: var(--origin-public_official); }
+.origin-public_web { --origin-color: var(--origin-public_web); }
+.source-mix-bar { display: flex; gap: 2px; height: 12px; overflow: hidden; border-radius: 3px; background: var(--muted); }
+.source-mix-bar > span { flex-basis: 0; min-width: 3px; background: var(--origin-color); }
+.source-mix-caption { margin: 8px 0 16px; font-size: 11px; color: var(--muted-foreground); }
+.source-origin-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 999px; font-size: 10px; white-space: nowrap;
+  color: var(--origin-color); background: color-mix(in srgb, var(--origin-color), transparent 88%); }
+.source-mix-table td small, .source-mix-publisher { display: block; font-size: 10px; color: var(--muted-foreground); }
+.source-mix-table td:first-child { min-width: 220px; }
+.connector-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.connector-card { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px; background: var(--muted);
+  border-left: 3px solid var(--origin-color); min-width: 0; }
+.connector-card h3 { font-size: 14px; font-weight: 500; margin: 2px 0 0; }
+.connector-card p { font-size: 12px; color: var(--muted-foreground); margin: 0; }
+.connector-card small { font-size: 11px; color: var(--muted-foreground); }
+.connector-card button { margin-top: auto; }
+.connector-heading { display: flex; align-items: center; gap: 8px; color: var(--origin-color); }
+.requirement-source-mix ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.requirement-source-mix li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 12px; }
+.requirement-source-mix small { color: var(--muted-foreground); font-size: 11px; }
+@media (max-width: 640px) {
+  .source-mix-legend, .connector-grid { grid-template-columns: 1fr; }
+}

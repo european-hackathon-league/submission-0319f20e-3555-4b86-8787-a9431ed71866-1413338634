@@ -45,6 +45,7 @@ import {
 } from "@/lib/api";
 import type { Detail, Evidence, Finding, Page } from "@/lib/types";
 import { ExaResearch } from "./exa-research";
+import { PublicConnectors, SourceMixPanel } from "./source-mix";
 export function EvidenceExplorer() {
   const { scope, base, sources } = useWorkspace();
   const { params, set } = useUrlState();
@@ -440,6 +441,8 @@ export function Sources() {
           Run a cumulative update to assess its impact on approved decisions.
         </span>
       </div>
+      <PublicConnectors />
+      <SourceMixPanel />
       <Panel
         title="Source registry"
         description={`${sources.length} imported sources · ${scope.vehicle} / ${scope.market}`}

@@ -149,3 +149,7 @@ def test_public_evidence_flows_into_requirements_and_the_source_mix(client, nhts
     charging = next(r for r in client.get("/requirements?vehicle=G60&market=US").json()["items"] if r["topic"] == "charging")
     trace = client.get(f"/requirements/{charging['id']}/trace").json()
     assert {source["kind"] for source in trace["sources"]} == {"feedback", "web"}
+    mix = client.get(f"/public-sources/requirements/{charging['id']}").json()
+    assert {item["origin"] for item in mix["sources"]} == {"bmw_internal", "public_official"}
+    assert mix["public_supporting"] >= 1
+    assert client.get("/public-sources/requirements/unknown").status_code == 404

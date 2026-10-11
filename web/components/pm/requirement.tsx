@@ -63,6 +63,7 @@ import {
   Status,
   useUrlState,
 } from "./shared";
+import { RequirementSourceMix } from "./source-mix";
 function criterionTarget(c: Criterion) {
   const unit = String(c.target).trim().endsWith("%")
     ? (c.unit || "").replace(/^%\s*/, "")
@@ -443,6 +444,10 @@ function TraceView({
         <GitBranch size={14} />
         <span>{trace.decisions.length} decisions on this score</span>
       </div>
+      <RequirementSourceMix
+        requirementId={trace.requirement.id}
+        versionId={trace.version.id}
+      />
       <section className="detail-section">
         <h3>Linked findings</h3>
         {trace.findings.map((f) => (

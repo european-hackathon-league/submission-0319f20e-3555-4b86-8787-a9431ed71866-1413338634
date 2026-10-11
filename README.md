@@ -45,6 +45,7 @@ actors in the API and the database.
 | Prefix | What it does | Notes |
 | --- | --- | --- |
 | `/market-data` | Imports every BMW input (`POST /market-data/import-bmw`), derives sales-share market weights, the "customers love" preserve list and representativeness coverage | [BMW data coverage](notes/bmw-data-coverage.md) |
+| `/public-sources` | NHTSA owner complaints and recalls plus grounded OpenAI web research as dated public evidence; source mix per scope and per requirement; `scripts/run_multisource_pipeline.py` runs BMW files + public data end to end | [multi-source evidence](notes/public-sources.md) |
 | `/signals` | PM-authorised public watchlists over Exa, lexicon or OpenAI sentiment, weekly series and 8-week momentum | [signals and sentiment](notes/signals-and-sentiment.md) |
 | `/markets` | Topic × market comparison, conflict detection, sales-weighted recommendations, human resolution | [market balancer](notes/market-balancer.md) |
 | `/requests` | Request inbox from markets, dealers and engineering: classification, clustering, triage, position drafts, human decisions | [request intake](notes/request-intake.md) |

@@ -21,6 +21,7 @@ const roots = new Set([
   "requests",
   "priorities",
   "market-data",
+  "public-sources",
   "runs",
   "agents",
   "capabilities",

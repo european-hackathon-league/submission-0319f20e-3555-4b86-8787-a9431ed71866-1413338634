@@ -4,17 +4,22 @@ import { ArrowUpRight, Info } from "lucide-react";
 import { fmt } from "@/lib/api";
 import { useWorkspace } from "./context";
 import { Empty, ScoreLabel, Status } from "./shared";
+import { SourceMixPanel, useSourceMix } from "./source-mix";
 
 export function Overview() {
   const { base, scope, requirements, metrics } = useWorkspace();
   const lead = [...requirements].sort((a, b) => b.priority - a.priority)[0];
   const counts = metrics?.counts || {};
   const coverage = metrics?.traceability;
+  const mix = useSourceMix().data;
+  const publicSources = (mix?.by_origin.public_official?.sources || 0) + (mix?.by_origin.public_web?.sources || 0);
   const cards = [
     {
       label: "Evidence records",
       value: counts.evidence || 0,
-      note: "Original customer feedback",
+      note: mix
+        ? `${mix.totals.sources} sources · ${publicSources} public`
+        : "BMW files and public data",
       href: `${base}/evidence`,
     },
     {
@@ -60,6 +65,8 @@ export function Overview() {
           </Link>
         ))}
       </div>
+
+      <SourceMixPanel compact />
 
       <section className="pm-panel demo-focus" aria-labelledby="demo-focus-title">
         <div className="demo-focus-topline">

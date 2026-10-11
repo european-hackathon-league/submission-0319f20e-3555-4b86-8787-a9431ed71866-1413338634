@@ -348,7 +348,8 @@ def import_web_research(command: WebResearchImport, actor: str | None = None) ->
         if records:
             retrieved = now()
             result = import_records(RecordsImport(
-                title=f"Public web research · {', '.join(TOPICS[t][0].lower() for t in topics)}"[:200], kind="web",
+                title=(f"Public web research · {TOPICS[topics[0]][0].lower()}" if len(topics) == 1
+                       else f"Public web research · {len(topics)} topics"), kind="web",
                 reference=f"openai-web-search:{command.vehicle}:{command.market}:{retrieved}",
                 vehicle=command.vehicle, market=command.market, actor=actor, records=records,
                 metadata={"connector": "web_research", "origin": "public_web", "provider": "openai",
@@ -402,6 +403,8 @@ def source_mix(vehicle: str, market: str) -> dict:
                       "first_observed": stat.get("first"), "last_observed": stat.get("last"),
                       "linked_records": link.get("linked_records", 0), "linked_findings": link.get("findings", 0),
                       "linked_requirements": link.get("requirements", 0)})
+    role_order = {"customer_voice": 0, "scoring_context": 1, "product_context": 2}
+    items.sort(key=lambda item: (role_order[item["role"]], -item["records"], item["title"]))
     by_origin = {}
     for item in items:
         group = by_origin.setdefault(item["origin"], {"sources": 0, "records": 0, "dated_records": 0, "linked_records": 0})
@@ -414,6 +417,31 @@ def source_mix(vehicle: str, market: str) -> dict:
                        "requirements_with_public_evidence": public_requirements}}
 
 
+def requirement_mix(requirement_id: str, version_id: str | None = None) -> dict:
+    """Supporting and conflicting records per source for one requirement version (default: current)."""
+    with closing(connect()) as connection:
+        requirement = connection.execute("SELECT id, current_version_id FROM requirements WHERE id=?",
+                                         (requirement_id,)).fetchone()
+        if requirement is None:
+            raise HTTPException(404, "Requirement not found")
+        version_id = version_id or requirement["current_version_id"]
+        rows = connection.execute(
+            "SELECT s.id, s.title, s.kind, s.metadata, "
+            "count(DISTINCT CASE WHEN fe.relation='supports' THEN e.id END) AS supporting, "
+            "count(DISTINCT CASE WHEN fe.relation='conflicts' THEN e.id END) AS conflicting, "
+            "count(DISTINCT CASE WHEN e.observed_at IS NOT NULL THEN e.id END) AS dated "
+            "FROM requirement_versions v JOIN requirement_findings rf ON rf.version_id=v.id "
+            "JOIN finding_evidence fe ON fe.finding_id=rf.finding_id JOIN evidence e ON e.id=fe.evidence_id "
+            "JOIN sources s ON s.id=e.source_id WHERE v.id=? AND v.requirement_id=? GROUP BY s.id "
+            "ORDER BY supporting DESC, s.title", (version_id, requirement_id)).fetchall()
+    items = [{"source_id": row["id"], "title": row["title"], "kind": row["kind"],
+              "origin": origin({"kind": row["kind"], "metadata": json.loads(row["metadata"] or "{}")}),
+              "supporting": row["supporting"], "conflicting": row["conflicting"], "dated": row["dated"]}
+             for row in rows]
+    return {"requirement_id": requirement_id, "version_id": version_id, "sources": items,
+            "public_supporting": sum(i["supporting"] for i in items if i["origin"] != "bmw_internal")}
+
+
 def catalog(vehicle: str, market: str) -> dict:
     try:
         llm_client()
@@ -423,16 +451,16 @@ def catalog(vehicle: str, market: str) -> dict:
     nhtsa_ready = vehicle in NHTSA_MODELS and market == "US"
     with closing(connect()) as connection:
         last = {row["capability"]: dict(row) for row in connection.execute(
-            "SELECT capability, id, status, finished_at, outputs FROM runs WHERE capability IN "
-            "('public_sources.import_nhtsa','public_sources.web_research') AND vehicle=? AND market=? "
-            "ORDER BY started_at", (vehicle, market))}
+            "SELECT capability, id, status, finished_at FROM runs WHERE (capability IN "
+            "('public_sources.import_nhtsa','public_sources.web_research') AND vehicle=? AND market=?) "
+            "OR capability='market_data.import_bmw' ORDER BY started_at", (vehicle, market))}
     def run_info(name):
         row = last.get(name)
         return row and {"run_id": row["id"], "status": row["status"], "finished_at": row["finished_at"]}
     return {"vehicle": vehicle, "market": market, "connectors": [
         {"key": "bmw_files", "label": "BMW customer feedback, studies, sales and option lists", "origin": "bmw_internal",
          "publisher": "BMW Group (supplied files)", "available": True, "reason": None,
-         "endpoint": "POST /market-data/import-bmw", "last_run": None},
+         "endpoint": "POST /market-data/import-bmw", "last_run": run_info("market_data.import_bmw")},
         {"key": "nhtsa", "label": "NHTSA owner complaints and safety recalls", "origin": "public_official",
          "publisher": "U.S. National Highway Traffic Safety Administration", "available": nhtsa_ready,
          "reason": None if nhtsa_ready else "US market and a mapped model (G60, G70) only",
@@ -453,6 +481,11 @@ def get_catalog(vehicle: str = "G60", market: str = "US"):
 def get_mix(vehicle: str = "G60", market: str = "US"):
     vehicle, market = scope_filters(vehicle, market)
     return source_mix(vehicle, market)
+
+
+@router.get("/requirements/{requirement_id}")
+def get_requirement_mix(requirement_id: str, version_id: str | None = None):
+    return requirement_mix(requirement_id, version_id)
 
 
 @router.post("/nhtsa/import", status_code=201)

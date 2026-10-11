@@ -475,13 +475,17 @@ async def test_mcp_tools_call_the_market_data_api_without_blank_filters():
     register_market_data_tools(Recorder(), api_request, lambda value: value)
     assert {"import_bmw_data", "derive_sales_weights", "list_sales_weights", "derive_preserve_attributes",
             "list_preserve_attributes", "derive_coverage_reports", "list_coverage_reports",
-            "extract_report_context", "list_market_context", "list_data_scopes"} == set(tools)
+            "extract_report_context", "list_market_context", "list_data_scopes", "list_public_source_connectors",
+            "import_nhtsa_records", "import_public_web_research", "get_source_mix"} == set(tools)
     await tools["list_sales_weights"](vehicle="G60")
     await tools["derive_preserve_attributes"](vehicle="G60")
     assert calls[0] == ("GET", "/market-data/weights", {"vehicle": "G60", "status": "current", "limit": 200,
                                                         "offset": 0}, None)
     assert calls[1] == ("POST", "/market-data/preserve/derive", None,
                         {"vehicle": "G60", "provider": "openai", "actor": "ai:mcp"})
+    await tools["import_nhtsa_records"]()
+    assert calls[2] == ("POST", "/public-sources/nhtsa/import", None,
+                        {"vehicle": "G60", "market": "US", "include_recalls": True, "actor": "ai:mcp"})
 
 
 def test_simulated_feedback_dates_are_not_invented(client, db, bmw_data):
