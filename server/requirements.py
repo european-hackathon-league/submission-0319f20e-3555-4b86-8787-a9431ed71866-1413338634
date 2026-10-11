@@ -8,6 +8,9 @@ from fastapi import APIRouter, HTTPException, Query
 from database.store import audit, connect, decode, encode, new_id, now, transaction
 from server.grounding import target_supported
 from server.models import (
+    DERIVED_FACTORS,
+    RUBRIC_V1,
+    RUBRIC_V2,
     DecisionRequest,
     RequirementContent,
     RequirementCreate,
@@ -118,9 +121,30 @@ def validate_targets(connection, content, finding_ids):
                 raise HTTPException(422, "Source-based target must be quoted in a linked explicit desired outcome; use PM assumption otherwise")
 
 
+def weights_rubric(weights) -> str:
+    """customer-priority-v2 when the weights carry every derived factor; anything else scores as v1, as before."""
+    return RUBRIC_V2 if set(DERIVED_FACTORS) <= set(weights) else RUBRIC_V1
+
+
+def active_rubric(connection, vehicle, market):
+    """The scope's rubric: the latest human switch (scope_rubrics), else the v1 default for every scope."""
+    row = decode(connection.execute("SELECT * FROM scope_rubrics WHERE vehicle=? AND market=? "
+                                    "ORDER BY created_at DESC,rowid DESC LIMIT 1", (vehicle, market)).fetchone(), ("weights",))
+    if row is not None:
+        return {**row, "default": False}
+    return {"id": None, "vehicle": vehicle, "market": market, "rubric_version": RUBRIC_V1, "weights": Weights().model_dump(),
+            "actor": None, "rationale": "Default rubric until a human PM switches this scope", "created_at": None, "default": True}
+
+
 def score_version(connection, version_id, weights, actor, rationale):
     version = version_detail(connection, version_id)
-    factors = version["factors"]
+    factors, rubric_version, derived = version["factors"], weights_rubric(weights), {}
+    if rubric_version == RUBRIC_V2:
+        # v2 adds data-derived factors; their recorded derivations (priority_inputs) are cited by id.
+        from server.prioritization import ensure_inputs
+
+        derived = ensure_inputs(connection, version, actor)
+        factors = {**factors, **{key: derived[key]["value"] for key in DERIVED_FACTORS}}
     total = round(sum(factors[key] * weights[key] * 20 for key in weights), 4)
     evidence = evidence_for_findings(connection, version["finding_ids"])
     provenances = {str(row["metadata"].get("provenance") or row["source_id"]) for row in evidence}
@@ -141,7 +165,16 @@ def score_version(connection, version_id, weights, actor, rationale):
                       + (["Some evidence has no observation date."] if dated < len(evidence) else [])
                       + (["Conflicting evidence requires PM review."] if conflicts else []),
     }
-    score = {"id": new_id(), "version_id": version_id, "rubric_version": "customer-priority-v1",
+    if derived:
+        not_measured = [key for key in DERIVED_FACTORS if not derived[key]["derivation"]["measured"]]
+        explanation["derived_inputs"] = {key: {
+            "priority_input_id": row["id"], "value": row["value"], "measured": row["derivation"]["measured"],
+            "flags": row["derivation"]["flags"], "method_version": row["method_version"], "run_id": row["run_id"],
+        } for key, row in derived.items()}
+        explanation["not_measured"] = not_measured
+        explanation["limitations"] += (["Derived factors are recorded data summaries, not PM judgments."]
+                                       + ([f"Not measured, neutral 2.5 used: {', '.join(not_measured)}."] if not_measured else []))
+    score = {"id": new_id(), "version_id": version_id, "rubric_version": rubric_version,
              "factors": factors, "weights": weights, "total": total, "evidence_grade": grade,
              "explanation": explanation, "created_at": now()}
     connection.execute("INSERT INTO scores VALUES (?,?,?,?,?,?,?,?,?)",
@@ -171,7 +204,12 @@ def new_version(connection, requirement, content, finding_ids, actor, rationale,
     status = "needs_review" if requirement["approved_version_id"] else "proposed"
     connection.execute("UPDATE requirements SET current_version_id=?,status=?,updated_at=? WHERE id=?",
                        (version_id, status, timestamp, requirement["id"]))
-    selected_weights = weights or (previous["score"]["weights"] if previous and previous["score"] else Weights().model_dump())
+    # Keep the previous weights (e.g. a PM's reweighting) while they belong to the scope's rubric; a scope a PM
+    # switched to another rubric scores new versions with that rubric's weights.
+    rubric = active_rubric(connection, requirement["vehicle"], requirement["market"])
+    previous_weights = previous["score"]["weights"] if previous and previous["score"] else None
+    selected_weights = weights or (previous_weights if previous_weights is not None
+                                   and weights_rubric(previous_weights) == rubric["rubric_version"] else rubric["weights"])
     score_version(connection, version_id, selected_weights, actor, "Recalculate priority for the new requirement version")
     result = version_detail(connection, version_id)
     audit(connection, "requirement", requirement["id"], "requirement.version_created", actor, rationale,
@@ -340,9 +378,16 @@ def rescore_requirement(requirement_id: str, command: ScoreRequest):
         before = latest_score(connection, requirement["current_version_id"])
         if command.expected_score_id is not None and before["id"] != command.expected_score_id:
             raise HTTPException(409, "Score changed; reload before scoring")
-        if before["weights"] == command.weights.model_dump():
+        rubric = active_rubric(connection, requirement["vehicle"], requirement["market"])
+        # Omitted weights mean the scope rubric's weights (the v1 defaults unless a PM switched the scope).
+        weights = command.weights.model_dump() if "weights" in command.model_fields_set else rubric["weights"]
+        if before["weights"] == weights:
             return before
-        result = score_version(connection, requirement["current_version_id"], command.weights.model_dump(), command.actor, command.rationale)
+        if weights_rubric(weights) != rubric["rubric_version"]:
+            # Changing a scope's rubric is a human gate (POST /priorities/rubric); one ranking never mixes rubrics.
+            raise HTTPException(409, f"This scope uses {rubric['rubric_version']}; submit {rubric['rubric_version']} weights "
+                                     "or switch the scope rubric through POST /priorities/rubric")
+        result = score_version(connection, requirement["current_version_id"], weights, command.actor, command.rationale)
         if requirement["approved_version_id"] and before["weights"] != result["weights"]:
             open_review(connection, requirement_id, "Prioritization weights changed", {"previous_score": before, "proposed_score": result}, command.actor)
         return result
