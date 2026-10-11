@@ -281,3 +281,8 @@ mark.mention { background: color-mix(in srgb, var(--primary), transparent 82%); 
 .portfolio-total { font-size: 17px; }
 .portfolio-table td small, .portfolio-table td.pin-column small { white-space: normal; }
 .portfolio-table td.pin-column small .text-link { display: block; text-transform: none; }
+
+/* Selects inside dialogs never widen the dialog; long labels truncate. */
+.edit-dialog .pm-component-select { max-width: 100%; min-width: 0; }
+.edit-dialog .pm-component-select > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.field-hint { display: block; margin-top: 4px; color: var(--muted-foreground); font-size: 11px; line-height: 1.5; }

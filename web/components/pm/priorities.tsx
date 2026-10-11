@@ -357,8 +357,11 @@ function RubricDialog({ state, open, onOpenChange }: { state: RubricState; open:
             const def = state.available.find((r) => r.version === next);
             setWeights(Object.fromEntries(Object.entries(def?.weights ?? {}).map(([k, v]) => [k, String(v)])));
           }}
-          options={state.available.map((r) => ({ value: r.version, label: `${r.version}${r.description ? ` · ${r.description}` : ""}` }))}
+          options={state.available.map((r) => ({ value: r.version, label: r.version }))}
         />
+        {state.available.find((r) => r.version === version)?.description ? (
+          <span className="field-hint">{state.available.find((r) => r.version === version)?.description}</span>
+        ) : null}
       </Field>
       {Object.keys(weights).length ? (
         <div className="weight-grid">
