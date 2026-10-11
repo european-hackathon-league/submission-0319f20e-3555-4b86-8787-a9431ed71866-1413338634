@@ -148,10 +148,13 @@ def main() -> None:
     parser.add_argument("command", choices=("prepare", "simulate-update"))
     parser.add_argument("--api-url", default="http://127.0.0.1:18200")
     args = parser.parse_args()
-    if args.command == "prepare":
-        prepare(args.api_url)
-    else:
-        simulate_update(args.api_url)
+    try:
+        if args.command == "prepare":
+            prepare(args.api_url)
+        else:
+            simulate_update(args.api_url)
+    except RuntimeError as exc:
+        parser.exit(1, f"{exc}\n")
 
 
 if __name__ == "__main__":
