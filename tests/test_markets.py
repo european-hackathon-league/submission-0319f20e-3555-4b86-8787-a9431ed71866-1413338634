@@ -60,7 +60,7 @@ def scenario(client):
         with transaction() as connection:
             for market, share in (("CN", .45), ("US", .45), ("EU", .10)):
                 connection.execute(
-                    "INSERT INTO market_weights VALUES (?,?,?,?,?,?,?,?,?,?)",
+                    "INSERT INTO market_weights (id,vehicle,market,period,units,share,evidence_ids,method_version,run_id,created_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
                     (f"weight-{market}", "G60", market, "2025", share * 100, share, "[]", "sales-share-v1", run.id,
                      "2026-01-01",))
     return loaded
@@ -299,7 +299,8 @@ def test_context_inputs_request_pressure_sentiment_methods_and_coverage(client, 
                 "'human:test','t','t')")
             connection.execute("INSERT INTO request_triage VALUES ('triage','request','request-triage-v1','{}','{}',75,'{}',?,'t')",
                                (run.id,))
-            connection.execute("INSERT INTO coverage_reports VALUES ('coverage','G60','US','{}',?, 'coverage-v1',?,'t')",
+            connection.execute("INSERT INTO coverage_reports (id,vehicle,market,metrics,warnings,method_version,run_id,created_at) "
+                               "VALUES ('coverage','G60','US','{}',?, 'coverage-v1',?,'t')",
                                (encode(["Simulated single-source dominance"]), run.id))
             evidence = connection.execute("SELECT id FROM evidence WHERE market='US' ORDER BY id").fetchall()
             for index, row in enumerate(evidence):

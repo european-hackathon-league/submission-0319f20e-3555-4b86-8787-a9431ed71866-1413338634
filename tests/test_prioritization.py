@@ -64,7 +64,8 @@ def insert_weights(shares):
     with record_run(None, "simulated.weights", "system:test", "sales-share-v1", {"simulated": True}) as run:
         with transaction() as connection:
             for market, share in shares.items():
-                connection.execute("INSERT INTO market_weights VALUES (?,?,?,?,?,?,?,?,?,?)",
+                connection.execute("INSERT INTO market_weights (id,vehicle,market,period,units,share,evidence_ids,method_version,run_id,created_at) "
+                                   "VALUES (?,?,?,?,?,?,?,?,?,?)",
                                    (f"weight-{market}", "G60", market, "2025", share * 100, share, '["sales-1"]',
                                     "sales-share-v1", run.id, "2026-01-01"))
 
@@ -401,9 +402,11 @@ def test_preserve_guard_warns_without_changing_scores(client, us):
     before = {item["topic"]: item["total"] for item in client.get("/priorities/ranking").json()["items"]}
     with record_run(None, "simulated.preserve", "system:test", "preserve-v1", {"simulated": True}) as run:
         with transaction() as connection:
-            connection.execute("INSERT INTO preserve_attributes VALUES ('love-seats','G60','US','comfort','Seat comfort',"
+            connection.execute("INSERT INTO preserve_attributes (id,vehicle,market,topic,label,evidence_ids,strength,method_version,run_id,created_at) "
+                               "VALUES ('love-seats','G60','US','comfort','Seat comfort',"
                                "'[\"e1\"]',0.8,'preserve-v1',?,'t')", (run.id,))
-            connection.execute("INSERT INTO preserve_attributes VALUES ('love-other','G60','CN','quietness','Quiet cabin',"
+            connection.execute("INSERT INTO preserve_attributes (id,vehicle,market,topic,label,evidence_ids,strength,method_version,run_id,created_at) "
+                               "VALUES ('love-other','G60','CN','quietness','Quiet cabin',"
                                "'[]',0.9,'preserve-v1',?,'t')", (run.id,))
     items = by_topic(client.get("/priorities/ranking").json())
     assert {topic: item["total"] for topic, item in items.items()} == before
