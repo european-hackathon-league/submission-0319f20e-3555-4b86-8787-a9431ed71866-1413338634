@@ -27,6 +27,7 @@ from server.models import Scope, json_size
 from server.pipeline import router as pipeline_router
 from server.platform import HUMAN_REQUIRED
 from server.prioritization import router as prioritization_router
+from server.public_sources import router as public_sources_router
 from server.requirements import router as requirements_router
 from server.signals import router as signals_router
 from server.web_fetch import router as web_fetch_router
@@ -83,6 +84,7 @@ app.include_router(markets_router)
 app.include_router(intake_router)
 app.include_router(prioritization_router)
 app.include_router(market_data_router)
+app.include_router(public_sources_router)
 for runtime_router in agent_runtime.routers:
     app.include_router(runtime_router)
 app.router.route_class = ImportRoute

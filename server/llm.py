@@ -16,6 +16,7 @@ import os
 import re
 import time
 from collections.abc import Callable, Iterable, Mapping
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing, contextmanager
 from typing import Literal
 from urllib.error import HTTPError, URLError
@@ -253,6 +254,69 @@ class LLMClient:
             raise LLMOutputInvalid(f"OpenAI output for {task} does not match the required schema") from None
         self._cache_put(key, self.model, prompt_version, raw, usage)
         return parsed
+
+    def web_search(self, *, task: str, prompt_version: str, instructions: str, inputs: list[str],
+                   schema: type[BaseModel], run: RunHandle, max_output_tokens: int = 8000,
+                   max_workers: int = 4) -> list[tuple[BaseModel, list[str]]]:
+        """Structured Outputs requests with OpenAI's web_search tool, one per input, in input order.
+
+        Returns (validated output, URLs the search returned or opened) per input. The URL list lets the
+        caller reject cited pages the search never saw. Only public research questions belong here.
+        Requests run concurrently over HTTP; recording and caching stay on the calling thread.
+        """
+        json_schema = strict_schema(schema)
+        name = re.sub(r"[^A-Za-z0-9_-]+", "_", task)[:64] or "output"
+        keys = [input_hash({"task": task, "instructions": instructions, "input": text, "schema": json_schema,
+                            "tools": ["web_search"], "max_output_tokens": max_output_tokens}) for text in inputs]
+        results: dict[int, tuple[BaseModel, list[str]]] = {}
+        for index, key in enumerate(keys):
+            cached = self._cache_get(key, self.model, prompt_version)
+            try:
+                parsed = schema.model_validate(cached["output"]) if isinstance(cached, dict) else None
+            except (ValidationError, KeyError):
+                parsed = None
+            if parsed is not None:
+                self._record(run, kind="web_search", task=task, model=self.model, prompt_version=prompt_version,
+                             key=key, cached=True, usage={}, latency_ms=0)
+                results[index] = (parsed, list(cached.get("sources", [])))
+        missing = [index for index in range(len(inputs)) if index not in results]
+        for _ in missing:
+            self._reserve(run)
+
+        def send(index: int):
+            payload = {"model": self.model, "instructions": instructions, "input": inputs[index], "store": False,
+                       "max_output_tokens": max_output_tokens, "tools": [{"type": "web_search"}],
+                       "include": ["web_search_call.action.sources"],
+                       "text": {"format": {"type": "json_schema", "name": name, "strict": True, "schema": json_schema}}}
+            return self._send("/responses", payload)
+
+        with ThreadPoolExecutor(max_workers=max(1, min(max_workers, len(missing) or 1))) as pool:
+            responses = dict(zip(missing, pool.map(send, missing)))
+        for index in missing:
+            result, latency = responses[index]
+            usage = _usage(result.get("usage"))
+            self._record(run, kind="web_search", task=task, model=self.model, prompt_version=prompt_version,
+                         key=keys[index], cached=False, usage=usage, latency_ms=latency)
+            sources, message = [], {"status": result.get("status"), "output": []}
+            for item in result.get("output") or []:
+                if isinstance(item, dict) and item.get("type") == "web_search_call":
+                    action = item.get("action") if isinstance(item.get("action"), dict) else {}
+                    sources += [source["url"] for source in action.get("sources") or []
+                                if isinstance(source, dict) and isinstance(source.get("url"), str)]
+                    if isinstance(action.get("url"), str):
+                        sources.append(action["url"])
+                else:
+                    message["output"].append(item)
+            text = _output_text(message)
+            try:
+                raw = _strict_json(text)
+                parsed = schema.model_validate(raw)
+            except (ValueError, RecursionError, ValidationError):
+                raise LLMOutputInvalid(f"OpenAI web research output for {task} does not match the required schema") from None
+            sources = list(dict.fromkeys(sources))
+            self._cache_put(keys[index], self.model, prompt_version, {"output": raw, "sources": sources}, usage)
+            results[index] = (parsed, sources)
+        return [results[index] for index in range(len(inputs))]
 
     def embed(self, texts: list[str], *, run: RunHandle) -> list[list[float]]:
         """Embedding vectors in input order; cached per text and model."""

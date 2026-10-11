@@ -99,3 +99,34 @@ def register_market_data_tools(mcp, api_request, identifier):
     async def list_data_scopes(vehicle: str | None = None) -> dict:
         """Evidence counts per vehicle × market × record type, with unique feedback IDs and the sales region."""
         return await api_request("GET", "/market-data/scopes", params=_present(vehicle=vehicle))
+
+    @mcp.tool()
+    async def list_public_source_connectors(vehicle: str = "G60", market: str = "US") -> dict:
+        """Data connectors for a scope (BMW files, NHTSA, public web research), their availability and last run."""
+        return await api_request("GET", "/public-sources/catalog", params={"vehicle": vehicle, "market": market})
+
+    @mcp.tool()
+    async def import_nhtsa_records(vehicle: str = "G60", market: str = "US", model_years: list[int] | None = None,
+                                   include_recalls: bool = True, actor: str = "ai:mcp") -> dict:
+        """Import new NHTSA owner complaints and safety recalls (US only) as dated public evidence.
+
+        Sends only make, model and model year to api.nhtsa.gov; records already imported are skipped.
+        """
+        return await api_request("POST", "/public-sources/nhtsa/import", payload=_present(
+            vehicle=vehicle, market=market, model_years=model_years, include_recalls=include_recalls, actor=actor))
+
+    @mcp.tool()
+    async def import_public_web_research(vehicle: str = "G60", market: str = "US", topics: list[str] | None = None,
+                                         max_per_topic: int = 5, since_year: int = 2024, actor: str = "ai:mcp") -> dict:
+        """Find owner forums and press reviews per topic with OpenAI web search and import grounded paraphrases.
+
+        Sends only public model, market and topic names. Pages the search did not return are rejected.
+        """
+        return await api_request("POST", "/public-sources/web-research/import", payload=_present(
+            vehicle=vehicle, market=market, topics=topics, max_per_topic=max_per_topic, since_year=since_year,
+            actor=actor))
+
+    @mcp.tool()
+    async def get_source_mix(vehicle: str = "G60", market: str = "US") -> dict:
+        """Per-source records, dates, origin (BMW internal, public official, public web), role and linked requirements."""
+        return await api_request("GET", "/public-sources/mix", params={"vehicle": vehicle, "market": market})
