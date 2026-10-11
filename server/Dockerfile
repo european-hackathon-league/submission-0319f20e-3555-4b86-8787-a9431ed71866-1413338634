@@ -7,6 +7,7 @@ COPY server ./server
 COPY mcp_server/*.py ./mcp_server/
 COPY database ./database
 COPY notes/source-inventory.json ./notes/source-inventory.json
+COPY scripts ./scripts
 
 EXPOSE 8000
 CMD ["uvicorn", "server.main:app", "--host", "0.0.0.0", "--port", "8000"]
