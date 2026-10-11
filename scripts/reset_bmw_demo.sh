@@ -34,7 +34,7 @@ export COMPOSE_PROJECT_NAME=bmw-demo-core API_PORT=18200 MCP_PORT=18201 WEB_PORT
 docker compose --profile web down
 cp "$snapshot" database/local/app.db
 rm -f database/local/app.db-shm database/local/app.db-wal
-docker compose --profile web up -d --build
+docker compose --profile web up -d --wait --wait-timeout 90 --build
 node web/scripts/demo-preflight.mjs http://127.0.0.1:13203 | tee /tmp/bmw-demo-preflight.txt
 if ! rg -q "PASS · $expected_records evidence records" /tmp/bmw-demo-preflight.txt; then
   echo "Demo record count differs from the frozen $expected_records" >&2
