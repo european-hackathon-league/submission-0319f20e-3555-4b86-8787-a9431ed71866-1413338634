@@ -12,6 +12,7 @@ import type { Trace } from "@/lib/types";
 import { buildZoneRollups, vehicleAssets, zoneNames, type ZoneRollup } from "@/lib/vehicle-models";
 import { useWorkspace } from "./context";
 import { Heading, ScoreLabel, Status } from "./shared";
+import { PmSelect } from "./pm-select";
 
 const VehicleViewport = dynamic(() => import("./vehicle-viewport").then((module) => module.VehicleViewport), {
   ssr: false,
@@ -121,13 +122,18 @@ export function VehicleStudio() {
           aria-current={asset?.manifest.id === item.manifest.id ? "page" : undefined}
         >{item.label}</Link>)}
       </div>
-      <label className="studio-layer">Color zones by
-        <select value={layer} onChange={(event) => setLayer(event.target.value)}>
-          <option value="priority">Top priority</option>
-          <option value="evidence">Weakest evidence</option>
-          <option value="review">Needs review</option>
-        </select>
-      </label>
+      <div className="studio-layer">Color zones by
+        <PmSelect
+          aria-label="Color zones by"
+          value={layer}
+          onValueChange={setLayer}
+          options={[
+            { value: "priority", label: "Top priority" },
+            { value: "evidence", label: "Weakest evidence" },
+            { value: "review", label: "Needs review" },
+          ]}
+        />
+      </div>
     </div>
 
     {!asset || !manifest ? <section className="pm-panel studio-unavailable">

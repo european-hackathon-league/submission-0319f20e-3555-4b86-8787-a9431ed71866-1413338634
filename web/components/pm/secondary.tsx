@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
+import { PmSelect } from "./pm-select";
 import { useWorkspace } from "./context";
 import {
   Heading,
@@ -94,40 +95,32 @@ export function AuditPage() {
             }}
           />
         </div>
-        <select
+        <PmSelect
           aria-label="Audit actor"
           value={actor}
-          onChange={(e) => {
-            set({ actor: e.target.value });
+          onValueChange={(value) => {
+            set({ actor: value });
             setPage(1);
           }}
-        >
-          <option value="">All actors</option>
-          {[...new Set(result.data?.map((e) => e.actor) || [])]
-            .sort()
-            .map((a) => (
-              <option key={a} value={a}>
-                {actors.find((x) => x.id === a)?.display_name || a}
-              </option>
-            ))}
-        </select>
-        <select
+          options={[
+            { value: "", label: "All actors" },
+            ...[...new Set(result.data?.map((e) => e.actor) || [])].sort().map((a) => ({
+              value: a, label: actors.find((x) => x.id === a)?.display_name || a,
+            })),
+          ]}
+        />
+        <PmSelect
           aria-label="Audit action"
           value={action}
-          onChange={(e) => {
-            set({ action: e.target.value });
+          onValueChange={(value) => {
+            set({ action: value });
             setPage(1);
           }}
-        >
-          <option value="">All actions</option>
-          {[...new Set(result.data?.map((e) => e.action) || [])]
-            .sort()
-            .map((a) => (
-              <option key={a} value={a}>
-                {readable(a)}
-              </option>
-            ))}
-        </select>
+          options={[
+            { value: "", label: "All actions" },
+            ...[...new Set(result.data?.map((e) => e.action) || [])].sort().map((a) => ({ value: a, label: readable(a) })),
+          ]}
+        />
       </div>
       <div className="audit-filters">
         <Field label="Entity ID">
@@ -359,27 +352,23 @@ export function SettingsPage() {
         >
           <div className="setting-row">
             <span>Color theme</span>
-            <select
+            <PmSelect
               aria-label="Color theme"
               className="pm-select"
               value={resolvedTheme || "light"}
-              onChange={(e) => setTheme(e.target.value)}
-            >
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
+              onValueChange={setTheme}
+              options={[{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }]}
+            />
           </div>
           <div className="setting-row">
             <span>Table density</span>
-            <select
+            <PmSelect
               aria-label="Table density"
               className="pm-select"
               value={compact ? "compact" : "comfortable"}
-              onChange={(e) => setCompact(e.target.value === "compact")}
-            >
-              <option value="comfortable">Comfortable</option>
-              <option value="compact">Compact</option>
-            </select>
+              onValueChange={(value) => setCompact(value === "compact")}
+              options={[{ value: "comfortable", label: "Comfortable" }, { value: "compact", label: "Compact" }]}
+            />
           </div>
         </Panel>
         <Panel
@@ -387,19 +376,16 @@ export function SettingsPage() {
           description="This local prototype records a declared identity. It does not authenticate enterprise accounts."
         >
           <Field label="Acting reviewer">
-            <select
+            <PmSelect
               aria-label="Settings reviewer"
               className="pm-select"
               value={actor?.id || ""}
-              onChange={(e) => setActor(e.target.value)}
-            >
-              <option value="">Select reviewer</option>
-              {actors.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.display_name} · {readable(a.role)}
-                </option>
-              ))}
-            </select>
+              onValueChange={setActor}
+              options={[
+                { value: "", label: "Select reviewer" },
+                ...actors.map((a) => ({ value: a.id, label: `${a.display_name} · ${readable(a.role)}` })),
+              ]}
+            />
           </Field>
           <p className="muted mt-4">
             Approve, reject and complete require a PM. Viewers are read-only.

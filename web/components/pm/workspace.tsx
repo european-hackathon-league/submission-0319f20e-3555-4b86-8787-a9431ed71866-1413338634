@@ -53,6 +53,7 @@ import {
 import { AppearanceToggle } from "@/components/appearance";
 import { MotionField } from "@/components/motion-field";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { api, allPages, query, readable } from "@/lib/api";
 import type {
   Actor,
@@ -274,33 +275,27 @@ export function WorkspaceApp({
                 BMW<span className="brand-subtitle">Product intelligence</span>
               </span>
             </Link>
-            <div className="scope-switcher">
-              <Car size={20} />
-              <div>
-                <strong>
-                  {scope.vehicle} · {scope.market}
-                </strong>
-                <span>Vehicle & market</span>
-              </div>
-              <ChevronsUpDown size={15} />
-              <select
-                aria-label="Vehicle and market"
-                value={`${scope.vehicle}/${scope.market}`}
-                onChange={(e) =>
-                  router.push("/" + e.target.value.toLowerCase())
-                }
-              >
+            <Select
+              items={options.map((s) => ({ value: `${s.vehicle}/${s.market}`, label: `${s.vehicle} · ${s.market}${marketNames[s.market] ? ` (${marketNames[s.market]})` : ""}` }))}
+              value={`${scope.vehicle}/${scope.market}`}
+              onValueChange={(value) => { if (value) router.push("/" + value.toLowerCase()); }}
+            >
+              <SelectTrigger className="scope-switcher" aria-label="Vehicle and market" hideIcon>
+                <Car size={20} />
+                <div>
+                  <strong>{scope.vehicle} · {scope.market}</strong>
+                  <span>Vehicle & market</span>
+                </div>
+                <ChevronsUpDown size={15} />
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false} align="start">
                 {options.map((s) => (
-                  <option
-                    key={`${s.vehicle}/${s.market}`}
-                    value={`${s.vehicle}/${s.market}`}
-                  >
-                    {s.vehicle} · {s.market}
-                    {marketNames[s.market] ? ` (${marketNames[s.market]})` : ""}
-                  </option>
+                  <SelectItem key={`${s.vehicle}/${s.market}`} value={`${s.vehicle}/${s.market}`}>
+                    {s.vehicle} · {s.market}{marketNames[s.market] ? ` (${marketNames[s.market]})` : ""}
+                  </SelectItem>
                 ))}
-              </select>
-            </div>
+              </SelectContent>
+            </Select>
           </SidebarHeader>
           <SidebarContent>
             <SidebarGroup>
@@ -339,31 +334,32 @@ export function WorkspaceApp({
             </SidebarGroup>
           </SidebarContent>
           <SidebarFooter>
-            <div className="reviewer-switcher">
-              <span className="profile-monogram">
-                {actor?.display_name.charAt(0) || "B"}
-              </span>
-              <span className="profile-label">
-                <strong>{actor?.display_name || "Select reviewer"}</strong>
-                <span>{actor ? readable(actor.role) : "Acting reviewer"}</span>
-              </span>
-              <ChevronsUpDown className="profile-arrow" size={15} />
-              <select
-                aria-label="Acting reviewer"
-                value={actor?.id || ""}
-                onChange={(event) => setActor(event.target.value)}
-                disabled={actors.isPending || !!actors.error}
-              >
-                <option value="">
-                  {actors.error ? "Reviewers unavailable" : "Select reviewer"}
-                </option>
+            <Select
+              items={[
+                { value: "", label: actors.error ? "Reviewers unavailable" : "Select reviewer" },
+                ...activeActors.map((person) => ({ value: person.id, label: `${person.display_name} · ${readable(person.role)}` })),
+              ]}
+              value={actor?.id || ""}
+              onValueChange={(value) => setActor(value ?? "")}
+              disabled={actors.isPending || !!actors.error}
+            >
+              <SelectTrigger className="reviewer-switcher" aria-label="Acting reviewer" hideIcon>
+                <span className="profile-monogram">{actor?.display_name.charAt(0) || "B"}</span>
+                <span className="profile-label">
+                  <strong>{actor?.display_name || "Select reviewer"}</strong>
+                  <span>{actor ? readable(actor.role) : "Acting reviewer"}</span>
+                </span>
+                <ChevronsUpDown className="profile-arrow" size={15} />
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false} align="start">
+                <SelectItem value="">{actors.error ? "Reviewers unavailable" : "Select reviewer"}</SelectItem>
                 {activeActors.map((person) => (
-                  <option key={person.id} value={person.id}>
+                  <SelectItem key={person.id} value={person.id}>
                     {person.display_name} · {readable(person.role)}
-                  </option>
+                  </SelectItem>
                 ))}
-              </select>
-            </div>
+              </SelectContent>
+            </Select>
           </SidebarFooter>
         </Sidebar>
         <SidebarInset className={section === "overview" ? "overview-shell" : undefined}>

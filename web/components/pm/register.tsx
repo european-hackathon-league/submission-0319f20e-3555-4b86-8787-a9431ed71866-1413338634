@@ -25,6 +25,7 @@ import {
   ErrorMessage,
 } from "./shared";
 import { Button } from "@/components/ui/button";
+import { PmSelect } from "./pm-select";
 import { api, date, query, readable } from "@/lib/api";
 import { csv, download, registerRows, reqif } from "@/lib/export";
 import type { Detail, Review } from "@/lib/types";
@@ -127,36 +128,33 @@ export function Register() {
           {(status || topic || grade) && <span className="register-active-filter">Active filters</span>}
         </summary>
         <div className="register-toolbar register-filters">
-          <select
+          <PmSelect
             aria-label="Requirement status"
             value={status}
-            onChange={(e) => filter({ status: e.target.value })}
-          >
-            <option value="">All statuses</option>
-            {["proposed", "approved", "needs_review", "postponed", "rejected"].map((s) => (
-              <option key={s} value={s}>{readable(s)}</option>
-            ))}
-          </select>
-          <select
+            onValueChange={(value) => filter({ status: value })}
+            options={[
+              { value: "", label: "All statuses" },
+              ...["proposed", "approved", "needs_review", "postponed", "rejected"].map((s) => ({ value: s, label: readable(s) })),
+            ]}
+          />
+          <PmSelect
             aria-label="Topic"
             value={topic}
-            onChange={(e) => filter({ topic: e.target.value })}
-          >
-            <option value="">All topics</option>
-            {[...new Set(requirements.map((r) => r.topic))].sort().map((t) => (
-              <option key={t} value={t}>{readable(t)}</option>
-            ))}
-          </select>
-          <select
+            onValueChange={(value) => filter({ topic: value })}
+            options={[
+              { value: "", label: "All topics" },
+              ...[...new Set(requirements.map((r) => r.topic))].sort().map((t) => ({ value: t, label: readable(t) })),
+            ]}
+          />
+          <PmSelect
             aria-label="Evidence grade"
             value={grade}
-            onChange={(e) => filter({ grade: e.target.value })}
-          >
-            <option value="">All evidence grades</option>
-            {["A", "B", "C", "D"].map((g) => (
-              <option key={g} value={g}>Grade {g}</option>
-            ))}
-          </select>
+            onValueChange={(value) => filter({ grade: value })}
+            options={[
+              { value: "", label: "All evidence grades" },
+              ...["A", "B", "C", "D"].map((g) => ({ value: g, label: `Grade ${g}` })),
+            ]}
+          />
           <button
             className="icon-button"
             aria-label="Clear filters"
@@ -194,19 +192,18 @@ export function Register() {
             <ListFilter size={13} />
             {compact ? "Comfortable" : "Compact"}
           </button>
-          <select
+          <PmSelect
             aria-label="Export requirements"
             disabled={exporting || !filtered.length}
             value=""
-            onChange={(e) => void exportAs(e.target.value)}
-          >
-            <option value="">
-              {exporting ? "Exporting…" : "Export selection"}
-            </option>
-            <option value="csv">CSV</option>
-            <option value="json">JSON</option>
-            <option value="reqif">ReqIF · approved snapshots</option>
-          </select>
+            onValueChange={(value) => { if (value) void exportAs(value); }}
+            options={[
+              { value: "", label: exporting ? "Exporting…" : "Export selection" },
+              { value: "csv", label: "CSV" },
+              { value: "json", label: "JSON" },
+              { value: "reqif", label: "ReqIF · approved snapshots" },
+            ]}
+          />
         </div>
         {saved.length > 0 && (
           <div className="saved-views">
