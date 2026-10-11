@@ -1,0 +1,3 @@
+-- Pod C: reserved so migration numbers stay consecutive on every pod branch (PLATFORM_BUILD_PLAN.md).
+-- Pod C replaces this file on codex/platform-intake with its schema additions, or with
+-- `-- Pod C: no schema changes beyond 0009.`
