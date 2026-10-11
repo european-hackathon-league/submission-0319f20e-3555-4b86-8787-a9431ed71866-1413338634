@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { PmSelect } from "./pm-select";
 import { useWorkspace } from "./context";
 import {
   ErrorMessage,
@@ -135,32 +136,34 @@ export function Pipeline() {
           }}
         >
           <Field label="Workflow">
-            <select
+            <PmSelect
               className="pm-select"
               value={kind}
               disabled={busy}
-              onChange={(e) => {
-                setKind(e.target.value);
+              onValueChange={(value) => {
+                setKind(value);
                 requestKey.current = null;
               }}
-            >
-              <option value="initial">Initial analysis</option>
-              <option value="update">Cumulative evidence update</option>
-            </select>
+              options={[
+                { value: "initial", label: "Initial analysis" },
+                { value: "update", label: "Cumulative evidence update" },
+              ]}
+            />
           </Field>
           <Field label="Analysis provider">
-            <select
+            <PmSelect
               className="pm-select"
               value={provider}
               disabled={busy}
-              onChange={(e) => {
-                setProvider(e.target.value);
+              onValueChange={(value) => {
+                setProvider(value);
                 requestKey.current = null;
               }}
-            >
-              <option value="deterministic">Deterministic reference</option>
-              <option value="openai">Live OpenAI</option>
-            </select>
+              options={[
+                { value: "deterministic", label: "Deterministic reference" },
+                { value: "openai", label: "Live OpenAI" },
+              ]}
+            />
           </Field>
           <div className="pipeline-input-count">
             <strong>{sources.length}</strong>
@@ -191,23 +194,20 @@ export function Pipeline() {
         <>
           <div className="run-selector">
             <label htmlFor="run-selector">Planning cycle</label>
-            <select
+            <PmSelect
               className="pm-select"
               id="run-selector"
               value={id || ""}
               disabled={busy}
-              onChange={(e) => {
-                set({ run: e.target.value });
+              onValueChange={(value) => {
+                set({ run: value });
                 setRationale("");
               }}
-            >
-              {runs.data.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {date(r.created_at)} · {readable(r.kind)} ·{" "}
-                  {readable(r.status)} · {r.id.slice(0, 8)}
-                </option>
-              ))}
-            </select>
+              options={runs.data.map((r) => ({
+                value: r.id,
+                label: `${date(r.created_at)} · ${readable(r.kind)} · ${readable(r.status)} · ${r.id.slice(0, 8)}`,
+              }))}
+            />
             {w && <Status value={w.status} />}
           </div>
           {workflow.error ? (

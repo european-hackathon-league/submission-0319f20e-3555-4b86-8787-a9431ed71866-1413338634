@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { PmSelect } from "./pm-select";
 import {
   Dialog,
   DialogContent,
@@ -118,46 +119,35 @@ export function EvidenceExplorer() {
           />
         </div>
         {mode === "evidence" ? (
-          <select
+          <PmSelect
             aria-label="Evidence source"
             value={source}
-            onChange={(e) => set({ source: e.target.value, offset: undefined })}
-          >
-            <option value="">All sources</option>
-            {sources.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.title}
-              </option>
-            ))}
-          </select>
+            onValueChange={(value) => set({ source: value, offset: undefined })}
+            options={[
+              { value: "", label: "All sources" },
+              ...sources.map((s) => ({ value: s.id, label: s.title })),
+            ]}
+          />
         ) : (
           <>
-            <select
+            <PmSelect
               aria-label="Finding kind"
               value={kind}
-              onChange={(e) => set({ kind: e.target.value })}
-            >
-              <option value="">All finding kinds</option>
-              {["need", "problem", "strength", "context"].map((k) => (
-                <option key={k} value={k}>
-                  {readable(k)}
-                </option>
-              ))}
-            </select>
-            <select
+              onValueChange={(value) => set({ kind: value })}
+              options={[
+                { value: "", label: "All finding kinds" },
+                ...["need", "problem", "strength", "context"].map((k) => ({ value: k, label: readable(k) })),
+              ]}
+            />
+            <PmSelect
               aria-label="Finding topic"
               value={topic}
-              onChange={(e) => set({ topic: e.target.value })}
-            >
-              <option value="">All topics</option>
-              {[...new Set(findings.data?.map((f) => f.topic) || [])]
-                .sort()
-                .map((t) => (
-                  <option key={t} value={t}>
-                    {readable(t)}
-                  </option>
-                ))}
-            </select>
+              onValueChange={(value) => set({ topic: value })}
+              options={[
+                { value: "", label: "All topics" },
+                ...[...new Set(findings.data?.map((f) => f.topic) || [])].sort().map((t) => ({ value: t, label: readable(t) })),
+              ]}
+            />
           </>
         )}
       </div>
@@ -628,13 +618,18 @@ function ImportForm({ onDone }: { onDone: () => void }) {
       </Field>
       {mode !== "web" && (
         <Field label="Source kind">
-          <select className="pm-select" name="kind">
-            <option value="feedback">Customer feedback</option>
-            <option value="study">Study</option>
-            <option value="sales">Sales context</option>
-            <option value="document">Document</option>
-            <option value="other">Other</option>
-          </select>
+          <PmSelect
+            className="pm-select"
+            name="kind"
+            defaultValue="feedback"
+            options={[
+              { value: "feedback", label: "Customer feedback" },
+              { value: "study", label: "Study" },
+              { value: "sales", label: "Sales context" },
+              { value: "document", label: "Document" },
+              { value: "other", label: "Other" },
+            ]}
+          />
         </Field>
       )}
       {mode === "upload" && (

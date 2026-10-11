@@ -168,7 +168,6 @@
 .reviewer-switcher { position: relative; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 7px 8px; color: var(--sidebar-foreground); }
 .reviewer-switcher:hover { background: var(--sidebar-accent); }
 .reviewer-switcher:focus-within { outline: 2px solid var(--sidebar-ring); outline-offset: 2px; }
-.reviewer-switcher select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; }
 .profile-monogram { display: grid; place-items: center; width: 30px; height: 32px; flex-shrink: 0; background: #1c3150; color: #91beff; font: 22px var(--font-barlow), sans-serif; }
 .profile-label { display: flex; flex-direction: column; min-width: 0; gap: 3px; font-size: 10px; }
 .profile-label strong { font-size: 12px; font-weight: 500; color: #e0e8f5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

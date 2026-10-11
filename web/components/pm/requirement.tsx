@@ -28,6 +28,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { PmMultiSelect, PmSelect } from "./pm-select";
 import {
   api,
   write,
@@ -462,16 +463,17 @@ function TraceView({
       </section>
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-medium">Exact evidence locations</h3>
-        <select
+        <PmSelect
           className="pm-select"
           aria-label="Evidence relationship on this page"
           value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        >
-          <option value="all">All links on this page</option>
-          <option value="supports">Supporting</option>
-          <option value="conflicts">Conflicting</option>
-        </select>
+          onValueChange={setFilter}
+          options={[
+            { value: "all", label: "All links on this page" },
+            { value: "supports", label: "Supporting" },
+            { value: "conflicts", label: "Conflicting" },
+          ]}
+        />
       </div>
       <p className="muted text-xs">
         {trace.evidence.total} linked records. This page shows {offset + 1}–
@@ -642,36 +644,31 @@ function DecisionPanel({
         rows={2}
       />
       <div className="decision-actions">
-        <select
+        <PmSelect
           className="pm-select"
           aria-label="Reviewer for decision"
           value={actor?.id || ""}
-          onChange={(e) => setActor(e.target.value)}
+          onValueChange={setActor}
           disabled={mutation.isPending || stale}
-        >
-          <option value="">Select reviewer</option>
-          {actors.map((person) => (
-            <option key={person.id} value={person.id}>
-              {person.display_name} · {readable(person.role)}
-            </option>
-          ))}
-        </select>
-        <select
+          options={[
+            { value: "", label: "Select reviewer" },
+            ...actors.map((person) => ({ value: person.id, label: `${person.display_name} · ${readable(person.role)}` })),
+          ]}
+        />
+        <PmSelect
           className="pm-select"
           aria-label="Decision action"
           value={action}
-          onChange={(e) =>
-            setAction(e.target.value as Schema["DecisionRequest"]["action"])
+          onValueChange={(value) =>
+            setAction(value as Schema["DecisionRequest"]["action"])
           }
           disabled={mutation.isPending || stale}
-        >
-          {["approve", "reject", "postpone", "challenge"].map((a) => (
-            <option key={a} value={a} disabled={!canAct(actor, a)}>
-              {readable(a)}
-              {!canAct(actor, a) ? " · role required" : ""}
-            </option>
-          ))}
-        </select>
+          options={["approve", "reject", "postpone", "challenge"].map((a) => ({
+            value: a,
+            label: `${readable(a)}${!canAct(actor, a) ? " · role required" : ""}`,
+            disabled: !canAct(actor, a),
+          }))}
+        />
         <Button
           type="submit"
           disabled={
@@ -1100,28 +1097,27 @@ function EditForm({
               ))}
             </div>
             <Field label="Target basis">
-              <select
+              <PmSelect
                 className="pm-select"
                 value={criterion.basis}
-                onChange={(e) =>
+                onValueChange={(value) =>
                   setCriteria(
                     criteria.map((c, i) =>
                       i === index
                         ? {
                             ...c,
-                            basis: e.target.value as Criterion["basis"],
+                            basis: value as Criterion["basis"],
                             source_ids: [],
                           }
                         : c,
                     ),
                   )
                 }
-              >
-                <option value="PM assumption">
-                  PM assumption · requires validation
-                </option>
-                <option value="source">Source-supported target</option>
-              </select>
+                options={[
+                  { value: "PM assumption", label: "PM assumption · requires validation" },
+                  { value: "source", label: "Source-supported target" },
+                ]}
+              />
             </Field>
             {criterion.basis === "source" && (
               <Field label="Supporting evidence IDs, separated by commas">
@@ -1315,23 +1311,16 @@ function CreateForm({ onDone }: { onDone: () => void }) {
         targets can be added in the proposal editor.
       </p>
       <Field label="Supporting findings (select within one topic)">
-        <select
+        <PmMultiSelect
           className="pm-input finding-select"
-          multiple
+          aria-label="Supporting findings"
           required
           value={selected}
-          onChange={(e) =>
-            setSelected(Array.from(e.target.selectedOptions, (o) => o.value))
-          }
-        >
-          {findings.data
-            ?.filter((f) => f.kind !== "context")
-            .map((f) => (
-              <option key={f.id} value={f.id}>
-                {readable(f.topic)} · {f.kind} · {f.summary.slice(0, 90)}
-              </option>
-            ))}
-        </select>
+          onValueChange={setSelected}
+          options={(findings.data || [])
+            .filter((f) => f.kind !== "context")
+            .map((f) => ({ value: f.id, label: `${readable(f.topic)} · ${f.kind} · ${f.summary.slice(0, 90)}` }))}
+        />
       </Field>
       {findings.error && <ErrorMessage error={findings.error} />}
       <h3>PM factor judgments (0–5)</h3>
