@@ -20,7 +20,6 @@ import {
   ChevronsUpDown,
   Car,
   Command,
-  CircleHelp,
   ChevronRight,
   Layers3,
   Bot,
@@ -86,20 +85,20 @@ const VehicleStudio = dynamic(() => import("./vehicle-studio").then((module) => 
 });
 const primaryPages = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
-  { key: "agents", label: "Multi-agentic system", icon: Bot },
+  { key: "agents", label: "Agents", icon: Bot },
   { key: "twin", label: "Vehicle Studio", icon: CarFront },
 ];
 const softwarePages = [
   { key: "requirements", label: "Requirements", icon: ListChecks },
   { key: "evidence", label: "Evidence", icon: FileSearch },
-  { key: "pipeline", label: "Pipeline", icon: GitBranch },
-  { key: "sources", label: "Sources & imports", icon: Files },
+  { key: "pipeline", label: "Workflow", icon: GitBranch },
+  { key: "sources", label: "Sources", icon: Files },
   { key: "reviews", label: "Needs review", icon: ListChecks },
   { key: "priorities", label: "Priorities", icon: ListOrdered },
   { key: "signals", label: "Signals", icon: Radar },
   { key: "requests", label: "Requests", icon: Inbox },
-  { key: "markets", label: "Market balancer", icon: Globe2 },
-  { key: "audit", label: "Audit trail", icon: History },
+  { key: "markets", label: "Compare markets", icon: Globe2 },
+  { key: "audit", label: "Activity", icon: History },
   { key: "settings", label: "Settings", icon: Settings },
 ];
 const pages = [primaryPages[0], ...softwarePages, ...primaryPages.slice(1)];
@@ -141,7 +140,7 @@ function SoftwareNavigation({
         }}
       >
         <Layers3 />
-        <span>Software</span>
+        <span>Product planning</span>
         <ChevronRight className={`software-nav-chevron ${expanded ? "is-open" : ""}`} />
       </SidebarMenuButton>
       <SidebarMenuSub id="software-navigation" hidden={!expanded}>
@@ -435,15 +434,7 @@ export function WorkspaceApp({
                   {section === "settings" && <SettingsPage />}
                 </>
               )}
-              {section !== "agents" && (
-                <footer className="workspace-footnote">
-                  <span>BMW concept · Product planning workspace</span>
-                  <span>
-                    <CircleHelp size={12} /> Sample evidence informs decisions.
-                    It does not establish market prevalence.
-                  </span>
-                </footer>
-              )}
+
             </main>
           </div>
         </SidebarInset>
@@ -455,7 +446,7 @@ export function WorkspaceApp({
             <Command size={22} /> Go to your workspace
           </DialogTitle>
           <DialogDescription>
-            Search pages, requirement titles and stable keys.
+            Find a page or requirement.
           </DialogDescription>
           <input
             autoFocus
