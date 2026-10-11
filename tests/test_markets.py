@@ -304,10 +304,12 @@ def test_context_inputs_request_pressure_sentiment_methods_and_coverage(client, 
             evidence = connection.execute("SELECT id FROM evidence WHERE market='US' ORDER BY id").fetchall()
             for index, row in enumerate(evidence):
                 connection.execute(
-                    "INSERT INTO sentiment_scores VALUES (?, 'evidence', ?, 'driving-experience', 'lexicon-v1',"
+                    "INSERT INTO sentiment_scores (id,subject_type,subject_id,topic,method_version,polarity,label,aspects,input_hash,run_id,created_at) "
+                    "VALUES (?, 'evidence', ?, 'driving-experience', 'lexicon-v1',"
                     "-.5,'negative','[]','h',?,'t')", (f"sentiment-{index}", row[0], run.id))
             connection.execute(
-                "INSERT INTO sentiment_scores VALUES ('openai-score','evidence',?,'driving-experience',"
+                "INSERT INTO sentiment_scores (id,subject_type,subject_id,topic,method_version,polarity,label,aspects,input_hash,run_id,created_at) "
+                    "VALUES ('openai-score','evidence',?,'driving-experience',"
                 "'openai:fake:v1',1,'positive','[]','h',?,'t')", (evidence[0][0], run.id))
     comparison = post(client, "/markets/compare", SCOPE)
     assert comparison["sentiment_method_version"] == "lexicon-v1"
