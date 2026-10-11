@@ -35,6 +35,7 @@ from server.models import (
 )
 from server.platform import Capability, input_hash, record_run, register_capability, require_human
 from server.requirements import active_rubric, latest_score, open_review, require_row, score_version, version_detail
+from server.signals import weekly_momentum as signals_weekly_momentum
 
 router = APIRouter(prefix="/priorities", tags=["priorities"])
 
@@ -123,17 +124,11 @@ def weekly_momentum(points) -> float | None:
     """n-weighted least-squares slope of weekly mean polarity, in polarity per week.
 
     points: (week_index, n, mean_polarity); weeks without data are simply absent. None below two weeks.
-    Pod A implements the same formula for GET /signals/summary (server.signals.weekly_momentum); the
-    integrator may swap that function in here without changing any other code.
+    Delegates to Pod A's server.signals.weekly_momentum so /signals/summary and v2 rankings share one formula.
     """
-    points = [(float(x), float(n), float(y)) for x, n, y in points if n > 0]
-    if len({x for x, _, _ in points}) < 2:
-        return None
-    total = sum(n for _, n, _ in points)
-    mean_x = sum(n * x for x, n, _ in points) / total
-    mean_y = sum(n * y for _, n, y in points) / total
-    return (sum(n * (x - mean_x) * (y - mean_y) for x, n, y in points)
-            / sum(n * (x - mean_x) ** 2 for x, n, _ in points))
+    anchor = date(2000, 1, 3)  # a Monday; only week offsets matter for the slope
+    return signals_weekly_momentum([{"week_start": (anchor + timedelta(weeks=int(x))).isoformat(), "n": n,
+                                     "mean_polarity": y} for x, n, y in points])
 
 
 def _sentiment_series(rows, classes, start, end):
