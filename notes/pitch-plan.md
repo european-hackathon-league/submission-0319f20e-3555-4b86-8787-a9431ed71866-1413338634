@@ -7,6 +7,7 @@ Status: **draft**, 11 October 2026. Format is 3 minutes of pitch plus 3 minutes 
 The later [pitch story and video direction](pitch-story-and-video.md) develops the
 pipeline-to-agent-runtime reveal, presenter tone and a claim-safe three-minute arc.
 It remains creative direction; the frozen runbook and claim ledger govern the live demo.
+The [final run of show](pitch-final-run-of-show.md) is the stage script: film, hook, 1:55 demo, close.
 
 ## The one sentence
 

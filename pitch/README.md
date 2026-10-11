@@ -1,11 +1,18 @@
 # G60 / US pitch slides
 
-Six slides for the 30-second trailer and 2:30 live product story in [`notes/pitch-plan.md`](../notes/pitch-plan.md). The slides support the demo; they do not need to fill its full three minutes.
+**Present with [`output/pitch-final.html`](output/pitch-final.html)** (static backup: [`output/pdf/pitch-final.pdf`](output/pdf/pitch-final.pdf)). It is built for a 30-second film, a 2-minute live demo and a 3:00 hard stop. The [final run of show](../notes/pitch-final-run-of-show.md) has the word-for-word script, driver clicks, cut rules and stage setup.
 
-For the pipeline-to-agent-runtime narrative, film tone and presenter wording, see
-the [pitch story and video direction](../notes/pitch-story-and-video.md). The
-[frozen G60 / US runbook](../notes/bmw-demo-runbook.md) and
-[claim ledger](../notes/bmw-demo-claim-ledger.md) govern the verified live demo.
+| Slide | When | Purpose |
+| --- | --- | --- |
+| Film | 0:00–0:30 | Plays `output/pitch-film.mp4` if it sits next to the HTML (ignored by Git); otherwise shows a title card. Press → to play. The deck advances to the hook when the film ends. |
+| Hook | 0:30–0:40 | Three questions every requirement has to survive. The live demo answers them. |
+| Close | 2:35–2:50 | Agents prepare, PMs decide: automated, surfaced and PM-only work, then next steps. |
+| B1–B5 | Fallback | The demo beats in order (overview, trace, score, decision, update) if the app stalls. Press `B`. |
+| B6–B7 | Q&A | Built today versus pilot next; the agent-ready runtime. |
+
+Keys: →/Space next, ← back, `B` backup, `C` close, `T` rehearsal stopwatch, `E` edit, `R` replay. Modifier shortcuts such as `⌘⌥→` pass through to the browser for tab switching. The URL hash keeps the current slide across reloads. Rebuild with `node pitch/build-final.mjs`.
+
+The earlier six-slide versions below remain as style references.
 
 ## Open these files
 
@@ -50,4 +57,4 @@ Content is drawn from [`notes/pitch-plan.md`](../notes/pitch-plan.md) and the G6
 
 The local screenshot fallback is listed in `notes/bmw-demo-captures.md` on the core branch and stored under ignored `database/local/demo-captures/`. Keep those BMW-derived images out of Git and use them only with the matching build and snapshot.
 
-To regenerate both HTML files after editing source styles or slide structure, run `node pitch/build-motion.mjs` and then `node pitch/build-reference.mjs` from the repository root. The HTML files themselves need no build step.
+To regenerate the HTML files after editing source styles or slide structure, run `node pitch/build-final.mjs`, `node pitch/build-motion.mjs` and then `node pitch/build-reference.mjs` from the repository root. `assets/g60-car-faded.png` is the car render with its studio backdrop faded to transparency for the final deck. The HTML files themselves need no build step.

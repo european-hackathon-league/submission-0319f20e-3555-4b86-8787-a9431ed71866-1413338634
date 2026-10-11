@@ -69,6 +69,8 @@ runtime capture; the frozen G60 / US candidate is a different verified build.
 
 ## Three-minute run of show
 
+> **Superseded timing:** the stage version uses a 30-second film, a 10-second hook slide, a 1:55 demo and a 15-second close. See the [final run of show](pitch-final-run-of-show.md). The table below is the earlier draft.
+
 The film carries the V2 reveal; the live portion stays anchored to the verified
 charging proposal `REQ-G60-US-001`. These are target times for rehearsal, not a
 claim that the sequence has been timed by the presenter.
