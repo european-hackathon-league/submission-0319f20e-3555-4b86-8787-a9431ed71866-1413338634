@@ -4,6 +4,12 @@
 
 BMW — AI for Product Decision Making, EHL Munich, 10–11 October 2026.
 
+## Entire agent sessions
+
+This repository is [connected to Entire](https://entire.io/gh/jakobtfr/ehl-final). The committed `.entire/settings.json` and `.codex/hooks.json` configure Codex session tracking and Git-ref checkpoints. In a new clone, sign in with GitHub using `entire login`, run `entire enable --agent codex`, and approve the repository hooks through `/hooks` in Codex.
+
+After committing work from a tracked agent session, check the result with `entire status`, `entire doctor`, `entire checkpoint list`, and `entire checkpoint explain HEAD`. A commit made before its agent session is captured will not have an Entire checkpoint. See the [EHL connection guide](https://hack.entire.io/ehl-munich-2026/#connect).
+
 ## Run the backend
 
 Copy `.env.example` to `.env` before starting. Each teammate can set local host ports in `.env`; keep the container paths and MCP API URL on the Compose network.
