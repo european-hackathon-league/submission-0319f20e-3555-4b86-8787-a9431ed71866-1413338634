@@ -35,6 +35,39 @@ SQLite lives in `database/local/app.db` and persists on the host. Run `docker co
 
 Stop the services with `docker compose down`.
 
+## Platform: signals, markets, requests, priorities and agents
+
+The [platform build](PLATFORM_BUILD_PLAN.md) adds routers next to the core API. LLMs interpret and draft,
+deterministic code counts and scores, humans decide: every number records its `method_version`, every AI
+output its provider, model and prompt version, and every decision-like action rejects `ai:` and `system:`
+actors in the API and the database.
+
+| Prefix | What it does | Notes |
+| --- | --- | --- |
+| `/market-data` | Imports every BMW input (`POST /market-data/import-bmw`), derives sales-share market weights, the "customers love" preserve list and representativeness coverage | [BMW data coverage](notes/bmw-data-coverage.md) |
+| `/signals` | PM-authorised public watchlists over Exa, lexicon or OpenAI sentiment, weekly series and 8-week momentum | [signals and sentiment](notes/signals-and-sentiment.md) |
+| `/markets` | Topic × market comparison, conflict detection, sales-weighted recommendations, human resolution | [market balancer](notes/market-balancer.md) |
+| `/requests` | Request inbox from markets, dealers and engineering: classification, clustering, triage, position drafts, human decisions | [request intake](notes/request-intake.md) |
+| `/priorities` | Rubric `customer-priority-v2` with data-derived factors, a human rubric switch, sensitivity and a cross-market portfolio | [prioritization v2](notes/prioritization-v2.md) |
+| `/agents`, `/capabilities`, `/tasks`, `/runs`, `/threads` | Agent registry, capability execution, task board, recurring tasks, run log and threads | [agent runtime](notes/agent-runtime.md) |
+
+The web workspace has matching Signals, Requests, Priorities and Market balancer screens and a runs
+feed on Pipeline. Import the BMW data once, then derive weights, preserve list and coverage:
+
+```sh
+curl -X POST http://localhost:8000/market-data/import-bmw -H 'Content-Type: application/json' -d '{"actor":"PM"}'
+```
+
+Recurring tasks run when something calls `POST /tasks/run-due`. The optional scheduler service does
+that every `SCHEDULER_INTERVAL_SECONDS` (default 900); it is off by default:
+
+```sh
+docker compose --profile scheduler up -d
+```
+
+Measured results on labelled synthetic scenarios, for both providers, are in
+[platform evaluation](notes/platform-evaluation.md) (`uv run python scripts/evaluate_platform.py`).
+
 ## Verify the complete backend
 
 ```sh

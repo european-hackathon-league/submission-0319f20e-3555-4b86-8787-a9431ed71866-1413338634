@@ -128,10 +128,24 @@ messages are sent and no production engineering approvals are implied.
 
 Implementation details and the executable verification commands are in [PM planning workflows](notes/pm-workflows.md).
 
-## Platform extension (planned)
+## Platform extension (implemented)
 
-The [platform build plan](PLATFORM_BUILD_PLAN.md) adds public signal monitoring with
-sentiment over time, a cross-market balancer, request intake and triage, data-derived
-prioritization, full BMW data coverage and the agent runtime substrate (registry, tasks,
-runs, threads). It is written to be executed by an orchestrating coding agent that builds
-eight pods in parallel worktrees. The multi-agent harness UI follows in the next phase.
+The [platform build plan](PLATFORM_BUILD_PLAN.md) is implemented and integrated (migrations `0009`–`0015`):
+
+| Pod | Implemented | Notes |
+| --- | --- | --- |
+| A Signals | PM watchlists over public Exa search with a verbatim-leak guard, refresh and weekly backfill, `lexicon-v1` and OpenAI aspect sentiment, weekly series per source class and method, 8-week momentum | [signals and sentiment](notes/signals-and-sentiment.md) |
+| B Market balancer | Topic × market comparison, four conflict types, tension pairs, sales-weighted recommendations, OpenAI direction extraction and briefs, human resolution | [market balancer](notes/market-balancer.md) |
+| C Requests | Keyed request inbox, OpenAI or keyword classification, embedding or Jaccard clustering, grounded evidence links, `request-triage-v1`, position drafts, aggregates, human decisions that convert into requirement versions | [request intake](notes/request-intake.md) |
+| D Priorities | `customer-priority-v2` with derived market demand, sentiment momentum and request pressure, human rubric switch with review items, sensitivity, portfolio, grounded explanations | [prioritization v2](notes/prioritization-v2.md) |
+| E BMW data | Import of all eight BMW files for every vehicle × market, `sales-share-v1` weights, `preserve-v1`, `coverage-v1` warnings (also in decision briefs) | [BMW data coverage](notes/bmw-data-coverage.md) |
+| F Agent runtime | Seeded agent registry, capability registry (also as OpenAI tool definitions), tasks with board and recurring schedules, runs, threads, optional scheduler service | [agent runtime](notes/agent-runtime.md) |
+| G Web | Signals, Requests, Priorities and Market balancer screens, runs feed | [web workspace](web/README.md) |
+| H Evaluation | Synthetic gold sets and `scripts/evaluate_platform.py` for both providers | [platform evaluation](notes/platform-evaluation.md) |
+
+Integration rules added on top of the pods: every reader of sales shares uses current, reported
+`market_weights` (projections only on explicit request), and priorities share the signals momentum
+formula. `scripts/verify_backend.py --platform [--provider openai]` runs the live journey of plan §11.
+
+The multi-agent harness (LLM agent loop, main agent and sub-agent view, Kanban board) is the next phase;
+see [`MULTI_AGENT_PLAN.md`](MULTI_AGENT_PLAN.md).
