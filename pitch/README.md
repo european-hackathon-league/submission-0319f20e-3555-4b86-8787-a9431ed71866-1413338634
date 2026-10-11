@@ -6,11 +6,13 @@
 | --- | --- | --- |
 | Film | 0:00–0:30 | Plays `output/pitch-film.mp4` if it sits next to the HTML (ignored by Git); otherwise shows a title card. Press → to play. The deck advances to the hook when the film ends. |
 | Hook | 0:30–0:40 | Three questions every requirement has to survive. The live demo answers them. |
-| Close | 2:35–2:50 | Agents prepare, PMs decide: automated, surfaced and PM-only work, then next steps. |
+| Close | 2:35–2:50 | Agents prepare, PMs decide: automated, surfaced and PM-only work. |
 | B1–B5 | Fallback | The demo beats in order (overview, trace, score, decision, update) if the app stalls. Press `B`. |
 | B6–B7 | Q&A | Built today versus pilot next; the agent-ready runtime. |
 
 Keys: →/Space next, ← back, `B` backup, `C` close, `T` rehearsal stopwatch, `E` edit, `R` replay. Modifier shortcuts such as `⌘⌥→` pass through to the browser for tab switching. The URL hash keeps the current slide across reloads. Rebuild with `node pitch/build-final.mjs`.
+
+The final deck is deliberately minimal: a roundel, a headline and a few large cards per slide, with no footers, IDs or fine print. Caveats, source rows and IDs are spoken (see the run of show and the [claim ledger](../notes/bmw-demo-claim-ledger.md)). The car render is credited here rather than on the slides; add the CC BY credit back to the slides if the deck is distributed.
 
 The earlier six-slide versions below remain as style references.
 
