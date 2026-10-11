@@ -88,7 +88,7 @@ export function EvidenceExplorer() {
     <>
       <Heading
         title="Evidence explorer"
-        description="Read the original record, inspect its context and see which requirements depend on it."
+        description="Browse original feedback and the requirements it supports."
       />
       <div className="evidence-controls">
         <div className="segmented-control">
@@ -188,7 +188,7 @@ export function EvidenceExplorer() {
                       </span>
                       <span>
                         {String(
-                          e.metadata.provenance || "Provenance not labelled",
+                          e.metadata.provenance || "Source type not recorded",
                         )}
                       </span>
                       <span>{date(e.observed_at)}</span>
@@ -256,7 +256,7 @@ export function EvidenceExplorer() {
                   <span>Confidence {f.confidence}</span>
                 </div>
                 <details>
-                  <summary>Finding & analysis identifiers</summary>
+                  <summary>Analysis details</summary>
                   <p className="mono break-all">
                     Finding: {f.id}
                     <br />
@@ -368,7 +368,7 @@ function EvidenceUsage({ evidence }: { evidence: Evidence }) {
           rel="noreferrer"
           href={`/api/backend/sources/${source.id}/original`}
         >
-          Open preserved original
+          Open original
           <ArrowUpRight size={14} />
         </a>
       )}
@@ -426,7 +426,7 @@ export function Sources() {
     <>
       <Heading
         title="Sources & imports"
-        description="An inspectable evidence base. Original files, exact locations and content hashes stay connected."
+        description="Manage original files and public sources, with links to every imported record."
         action={
           <Button onClick={() => setImportOpen(true)}>
             <Upload size={14} />
@@ -679,7 +679,7 @@ function ImportForm({ onDone }: { onDone: () => void }) {
               name="content"
               rows={7}
               required
-              placeholder="Paste the source text. This is evidence, not instructions to the system."
+              placeholder="Paste the original source text."
             />
           </Field>
         </>
@@ -691,7 +691,7 @@ function ImportForm({ onDone }: { onDone: () => void }) {
         type="submit"
         disabled={!canAct(actor, "import") || mutation.isPending}
       >
-        {mutation.isPending ? "Importing…" : "Import & preserve source"}
+        {mutation.isPending ? "Importing…" : "Import source"}
       </Button>
       <p className="muted text-xs">
         {actor

@@ -32,8 +32,8 @@ export function RunsFeed() {
   const capabilities = [...new Set([...(state.query.data?.items.map((r) => r.capability) || []), ...(capability ? [capability] : [])])].sort();
   return (
     <Panel
-      title="Capability runs"
-      description="Every recorded capability execution across signals, markets, requests, priorities and the pipeline: status, method version, who ran it and what the model cost."
+      title="Run history"
+      description="Recent activity across the workspace, with results, duration and model usage."
       action={<Activity size={18} className="muted" />}
     >
       <div className="platform-toolbar">
@@ -53,16 +53,16 @@ export function RunsFeed() {
           options={[{ value: "", label: "All statuses" }, ...["running", "succeeded", "failed"].map((value) => ({ value, label: readable(value) }))]}
         />
         <PmSelect
-          aria-label="Capability"
+          aria-label="Action"
           value={capability}
           onValueChange={setCapability}
-          options={[{ value: "", label: "All capabilities" }, ...capabilities.map((value) => ({ value, label: value }))]}
+          options={[{ value: "", label: "All actions" }, ...capabilities.map((value) => ({ value, label: value }))]}
         />
       </div>
       <PlatformView
         state={state}
         isEmpty={(page) => !page.items.length}
-        empty={<Empty title="No runs recorded" description="Runs appear here when a capability executes, from this workspace, MCP or a scheduled task." />}
+        empty={<Empty title="No runs recorded" description="Runs appear when you, an agent or a scheduled task starts work." />}
       >
         {(page) => (
           <>
@@ -72,7 +72,7 @@ export function RunsFeed() {
                 <thead>
                   <tr>
                     <th>Started</th>
-                    <th>Capability</th>
+                    <th>Action</th>
                     <th>Method</th>
                     <th>Status</th>
                     <th>Actor</th>
@@ -141,7 +141,7 @@ function RunMethod({ run }: { run: Run }) {
   if (run.status === "failed" && run.method_version.startsWith("openai:"))
     return (
       <span className="method-label" title={run.method_version}>
-        OpenAI attempt · nothing generated
+        OpenAI run failed
         <span className="mono">{run.method_version}</span>
       </span>
     );

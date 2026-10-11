@@ -88,7 +88,7 @@ export function Pipeline() {
         );
       else
         toast.success(
-          "Autonomous stages finished. Review the proposed requirements.",
+          "Analysis complete. Review the proposed requirements.",
         );
     },
     onError: () => refresh(),
@@ -117,17 +117,17 @@ export function Pipeline() {
     <>
       <Heading
         title="Pipeline"
-        description="A repeatable path from customer evidence to a documented human decision."
+        description="Analyse sources, review proposals and save your planning decisions."
         action={
           <Link className="text-link" href={`${base}/sources`}>
-            Manage inputs
+            Manage sources
             <ArrowUpRight size={14} />
           </Link>
         }
       />
       <Panel
         title="Start a planning cycle"
-        description="Reference mode is deterministic. Live AI uses the model configured on the API."
+        description="Choose a rule-based analysis or the configured OpenAI model."
       >
         <form
           className="pipeline-create"
@@ -147,7 +147,7 @@ export function Pipeline() {
               }}
               options={[
                 { value: "initial", label: "Initial analysis" },
-                { value: "update", label: "Cumulative evidence update" },
+                { value: "update", label: "Update with new evidence" },
               ]}
             />
           </Field>
@@ -161,14 +161,14 @@ export function Pipeline() {
                 requestKey.current = null;
               }}
               options={[
-                { value: "deterministic", label: "Deterministic reference" },
+                { value: "deterministic", label: "Rule-based reference" },
                 { value: "openai", label: "Live OpenAI" },
               ]}
             />
           </Field>
           <div className="pipeline-input-count">
             <strong>{sources.length}</strong>
-            <span>sources in scope</span>
+            <span>available sources</span>
           </div>
           <Button
             type="submit"
@@ -187,7 +187,7 @@ export function Pipeline() {
       ) : !runs.data.length ? (
         <Panel title="Workflow history">
           <Empty
-            title="Your first cycle starts here"
+            title="No planning cycles yet"
             description="Create a workflow to analyse the available sources, draft requirements and prepare a decision brief."
           />
         </Panel>
@@ -262,7 +262,7 @@ export function Pipeline() {
                     <strong>
                       {w.provider === "openai"
                         ? "Live AI analysis"
-                        : "Deterministic reference analysis"}
+                        : "Rule-based reference analysis"}
                     </strong>
                     <p className="muted">
                       Revision {w.revision} · Updated {date(w.updated_at)}
@@ -297,9 +297,7 @@ export function Pipeline() {
                   <div className="pm-alert" role="status">
                     <Loader2 className="animate-spin" size={16} />
                     <span>
-                      Analysing evidence and preparing proposals. The workflow
-                      stops at human review; no requirement is automatically
-                      approved.
+                      Analysing evidence and preparing proposals for your review.
                     </span>
                   </div>
                 )}
@@ -307,9 +305,8 @@ export function Pipeline() {
                   <div className="pm-alert">
                     <Info size={16} />
                     <span>
-                      A worker may still be active. Progress refreshes
-                      automatically. Recovery is available after the worker
-                      lease expires; the server prevents overlapping runs.
+                      A run is in progress and updates automatically.
+                      Recovery becomes available if the run stops responding.
                     </span>
                   </div>
                 )}
@@ -375,7 +372,7 @@ export function Pipeline() {
                               <p className="muted">
                                 {r.decision
                                   ? `${r.decision.action} · ${r.decision.actor}`
-                                  : "Awaiting a terminal PM decision"}
+                                  : "Awaiting approval or rejection"}
                               </p>
                               {r.checks.length > 0 && (
                                 <details>
@@ -408,7 +405,7 @@ export function Pipeline() {
                             complete.mutate();
                           }}
                         >
-                          <Field label="Planning-cycle completion rationale">
+                          <Field label="Completion note">
                             <textarea
                               className="pm-input"
                               value={rationale}
@@ -419,8 +416,7 @@ export function Pipeline() {
                           </Field>
                           <div className="flex items-center justify-between gap-4">
                             <span className="muted text-xs">
-                              Every scoped requirement needs approval or
-                              rejection on its current version and score.
+                              Approve or reject each current requirement before completing this cycle.
                             </span>
                             <Button
                               type="submit"

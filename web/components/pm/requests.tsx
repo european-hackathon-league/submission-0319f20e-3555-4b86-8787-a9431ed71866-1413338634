@@ -74,14 +74,14 @@ export function Requests() {
     <>
       <Heading
         title="Requests"
-        description={`Inbound asks for ${scope.vehicle} from markets, dealers, engineering and sales, ranked by a deterministic triage score that prepares your position.`}
+        description={`Requests for ${scope.vehicle} from markets, dealers, engineering and sales, ranked for your review.`}
         action={<CapabilityButton capability={simulated}>Load simulated requests</CapabilityButton>}
       />
       <div className="pm-alert">
         <Info size={16} />
         <span>
-          Triage ranks and drafts; it does not decide. Convert, link, decline and defer are human decisions. Pricing, homologation, engineering
-          specifications and supplier asks are flagged as out of scope rather than processed.
+          Review the suggested priority, then convert, link, decline or defer each request.
+          Requests outside product planning are flagged for review.
         </span>
       </div>
       <AggregateTiles market={market} />
@@ -100,17 +100,17 @@ export function Requests() {
         />
         <span className="toolbar-spacer" />
         <PmSelect aria-label="AI provider for classification, clustering, evidence links and position drafts" value={provider} onValueChange={(value) => setProvider(value as Provider)} options={PROVIDER_OPTIONS} />
-        <CapabilityButton capability={classify}>Classify</CapabilityButton>
-        <CapabilityButton capability={cluster}>Cluster</CapabilityButton>
-        <CapabilityButton capability={triage}>Link evidence &amp; triage</CapabilityButton>
-        <CapabilityButton capability={positions}>Draft positions</CapabilityButton>
+        <CapabilityButton capability={classify}>Assign topics</CapabilityButton>
+        <CapabilityButton capability={cluster}>Group similar</CapabilityButton>
+        <CapabilityButton capability={triage}>Link evidence &amp; rank</CapabilityButton>
+        <CapabilityButton capability={positions}>Draft responses</CapabilityButton>
       </div>
       <div className="requests-layout">
-        <Panel title="Inbox" description="Sorted by triage score (untriaged last, then oldest first).">
+        <Panel title="Inbox" description="Highest priority first, followed by unranked requests.">
           <PlatformView
             state={state}
             isEmpty={(page) => !page.items.length}
-            empty={<Empty title="No requests" description="Load the simulated set or create requests through the API to start triage." />}
+            empty={<Empty title="No requests" description="Load example requests or add requests through the API to get started." />}
           >
             {(page) => (
               <div className="request-inbox">
@@ -139,8 +139,8 @@ function ClustersPanel({ market, onSelect }: { market: string; onSelect: (id: st
     queryFn: ({ signal }) => platform.clusters(scope.vehicle, market || undefined, signal),
   });
   return (
-    <Panel title="Clusters" description="Recurring asks the clustering run grouped within a vehicle and topic (Jaccard baseline or OpenAI embeddings). Select a request to open it.">
-      <PlatformView state={state} isEmpty={(page) => !page.items.length} empty={<Empty title="No clusters yet" description="Run clustering to group recurring asks across markets." />}>
+    <Panel title="Related requests" description="Similar requests grouped by vehicle and topic. Select a request to review it.">
+      <PlatformView state={state} isEmpty={(page) => !page.items.length} empty={<Empty title="No request groups yet" description="Group similar requests to find recurring needs across markets." />}>
         {(page) => <ClusterList clusters={page.items} onSelect={onSelect} />}
       </PlatformView>
     </Panel>
@@ -213,9 +213,9 @@ function AggregateTiles({ market }: { market: string }) {
               {a.weightsMeasured === false && <span className="attention-text text-xs">Sales shares not measured: every market weighs equally in the demand index.</span>}
             </div>
             <div className="metric-cell">
-              <h2 className="metric-label">SLA breaches</h2>
+              <h2 className="metric-label">Overdue requests</h2>
               <p className={`metric-value ${a.slaBreaches ? "attention-text" : ""}`}>{a.slaBreaches ?? "–"}</p>
-              <span className="muted text-xs">Untriaged after {a.slaDays ?? 14} days · median wait {a.medianAgeDays === null ? "–" : `${fixed(a.medianAgeDays)} days`}</span>
+              <span className="muted text-xs">Unranked after {a.slaDays ?? 14} days · median wait {a.medianAgeDays === null ? "–" : `${fixed(a.medianAgeDays)} days`}</span>
             </div>
           </div>
         );
@@ -231,8 +231,8 @@ function RequestRow({ request: r, active, onSelect }: { request: IntakeRequest; 
         <span className="requirement-key">{r.key}</span>
         {r.simulated && <SimulatedBadge />}
         <Status value={r.status} />
-        <span className="request-score tabular-nums" title="Triage total">
-          {r.triage?.total === null || r.triage?.total === undefined ? "Not triaged" : fixed(r.triage.total, 2)}
+        <span className="request-score tabular-nums" title="Request priority">
+          {r.triage?.total === null || r.triage?.total === undefined ? "Not ranked" : fixed(r.triage.total, 2)}
         </span>
       </span>
       <strong>{r.title}</strong>
@@ -242,7 +242,7 @@ function RequestRow({ request: r, active, onSelect }: { request: IntakeRequest; 
         {r.attribute && ` / ${readable(r.attribute)}`} · {date(r.requested_at)}
         {r.ageDays !== null && ` · ${Math.floor(r.ageDays)} days old`}
       </small>
-      {r.slaBreach && <span className="chip is-attention">Triage SLA breached</span>}
+      {r.slaBreach && <span className="chip is-attention">Ranking overdue</span>}
       {r.triage?.suggestedAction && <small className="muted">Suggested: {readable(r.triage.suggestedAction.decision)}</small>}
       {!!r.scope_flags.length && (
         <span className="chip-list">
@@ -263,7 +263,7 @@ function RequestDetailPanel({ id, onClose }: { id: string; onClose: () => void }
     queryFn: ({ signal }) => platform.request(id, actor?.id, signal),
   });
   return (
-    <Panel title="Request detail" description="The request as submitted, its triage breakdown and the evidence for and against." action={<Button variant="ghost" size="sm" onClick={onClose}>Close</Button>}>
+    <Panel title="Request detail" description="Review the request, its priority and supporting or conflicting evidence." action={<Button variant="ghost" size="sm" onClick={onClose}>Close</Button>}>
       <PlatformView state={state}>{(detail) => <RequestBody detail={detail} />}</PlatformView>
     </Panel>
   );
@@ -297,7 +297,7 @@ function RequestBody({ detail }: { detail: RequestDetail }) {
         <Button variant="outline" disabled={r.status === "converted"} onClick={() => setEditing(true)}>
           Edit
         </Button>
-        <Button disabled={final} title={final ? "A terminal decision is recorded" : undefined} onClick={() => setDeciding(true)}>
+        <Button disabled={final} title={final ? "A final decision is recorded" : undefined} onClick={() => setDeciding(true)}>
           Decide
         </Button>
       </div>
@@ -310,7 +310,7 @@ function RequestBody({ detail }: { detail: RequestDetail }) {
         <div className="pm-alert attention">
           <ShieldAlert size={16} />
           <span>
-            Out of scope for product planning: {r.scope_flags.map(readable).join(", ")}. The triage total is capped and a decline with this reason is
+            Out of scope for product planning: {r.scope_flags.map(readable).join(", ")}. The priority score is capped and a decline with this reason is
             suggested; the dependency belongs to its owning team.
           </span>
         </div>
@@ -337,7 +337,7 @@ function RequestBody({ detail }: { detail: RequestDetail }) {
             <PositionList title="Open questions" items={detail.position.openQuestions.map((text) => ({ text, evidenceId: null, quote: null }))} market={r.market} />
           </div>
           <small className="muted">
-            {detail.position.label ?? "Draft"} · {date(detail.position.createdAt)}. Quotes were located in the cited evidence by the server before storing. It is not a decision.
+            {detail.position.label ?? "Draft"} · {date(detail.position.createdAt)}. Quotes checked against the cited sources.
           </small>
         </section>
       )}
@@ -369,12 +369,12 @@ function RequestBody({ detail }: { detail: RequestDetail }) {
   );
 }
 function TriageBlock({ triage, history }: { triage: Triage | null; history: Triage[] }) {
-  if (!triage) return <p className="muted text-xs">Not triaged yet. Run triage to score this request.</p>;
+  if (!triage) return <p className="muted text-xs">Run the ranking to score this request.</p>;
   return (
     <section className="triage-block">
       <div className="triage-heading">
         <h3>
-          Triage {fixed(triage.total, 2)}
+          Priority {fixed(triage.total, 2)}
           {triage.rubricVersion && <small className="mono muted"> · {triage.rubricVersion}</small>}
         </h3>
         <MethodLabel methodVersion={triage.rubricVersion} runId={triage.runId} compact />
@@ -382,10 +382,10 @@ function TriageBlock({ triage, history }: { triage: Triage | null; history: Tria
       {triage.cap && <p className="attention-text text-xs">{triage.cap.startsWith("Capped") ? triage.cap : `Capped: ${triage.cap}`}</p>}
       {triage.suggestedAction && (
         <p className="text-xs">
-          <strong>Rubric suggests {readable(triage.suggestedAction.decision)}</strong>
+          <strong>Suggested action: {readable(triage.suggestedAction.decision)}</strong>
           <span className="muted">
             {" "}
-            · {triage.suggestedAction.reason.replace(/\.?$/, ".")} The decision stays with the PM.
+            · {triage.suggestedAction.reason.replace(/\.?$/, ".")}
           </span>
         </p>
       )}
@@ -402,7 +402,7 @@ function TriageBlock({ triage, history }: { triage: Triage | null; history: Tria
           </div>
         ))}
       </details>
-      {history.length > 1 && <p className="muted text-xs">{history.length} triage scores on record (append-only history).</p>}
+      {history.length > 1 && <p className="muted text-xs">{history.length} saved priority scores.</p>}
     </section>
   );
 }
@@ -463,7 +463,7 @@ function EditDialog({ request, open, onOpenChange }: { request: IntakeRequest; o
   const edit = useMutation({
     mutationFn: ({ actor, rationale }: { actor: string; rationale: string }) => platform.editRequest(request.id, { ...changes, actor, rationale }),
     onSuccess: () => {
-      toast.success("Edit recorded with your rationale; re-run triage to rescore.");
+      toast.success("Edit saved. Run the ranking again to update the score.");
       onOpenChange(false);
       for (const key of [["requests"], ["request", request.id], ["request-aggregates"]]) void client.invalidateQueries({ queryKey: key });
     },
@@ -473,7 +473,7 @@ function EditDialog({ request, open, onOpenChange }: { request: IntakeRequest; o
       open={open}
       onOpenChange={onOpenChange}
       title={`Edit ${request.key}`}
-      description="Correct the topic or add a rough effort estimate. PM-set fields are pinned against reclassification; every edit is audited with before and after."
+      description="Edit the topic or effort estimate. Your changes are saved in history and kept when classification runs again."
       submitLabel="Record edit"
       role="run"
       pending={edit.isPending}
@@ -490,7 +490,7 @@ function EditDialog({ request, open, onOpenChange }: { request: IntakeRequest; o
             options={[...(request.topic ? [] : [{ value: "", label: "Not assigned" }]), ...TOPICS.map(([value, label]) => ({ value, label }))]}
           />
         </Field>
-        <Field label="Rough effort (a triage factor)">
+        <Field label="Estimated effort">
           <PmSelect
             aria-label="Rough effort"
             value={effort}
@@ -560,7 +560,7 @@ function DecisionDialog({ request, open, onOpenChange }: { request: IntakeReques
               value={requirementId}
               onValueChange={setRequirementId}
               options={[
-                { value: "", label: requirements.data.length ? "Choose a requirement" : "No requirements in this scope" },
+                { value: "", label: requirements.data.length ? "Choose a requirement" : "No requirements for this vehicle and market" },
                 ...requirements.data.map((q) => ({ value: q.id, label: `${q.key} · ${q.title}` })),
               ]}
             />

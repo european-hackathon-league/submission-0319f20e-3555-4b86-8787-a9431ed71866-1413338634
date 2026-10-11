@@ -100,8 +100,7 @@ export function ExaResearch({ onDone }: { onDone: () => void }) {
   return (
     <div className="pm-form">
       <p className="muted text-xs">
-        Search public material for {scope.vehicle} / {scope.market}. US, EU and CN are separate
-        planning markets; switch the workspace scope before researching another market.
+        Find public sources for {scope.vehicle} / {scope.market}. Select another market in the workspace to research it.
       </p>
       {status.error && <ErrorMessage error={status.error} />}
       {status.data && !status.data.configured && (
@@ -125,7 +124,7 @@ export function ExaResearch({ onDone }: { onDone: () => void }) {
         <input className="pm-input" value={domains} maxLength={500}
           onChange={(event) => setDomains(event.target.value)}
           placeholder="example.com, another-public-site.org" />
-        <span className="muted text-xs">Comma-separated hostnames narrow discovery; they do not prove market applicability.</span>
+        <span className="muted text-xs">Separate domains with commas to narrow the search.</span>
       </label>
       <label className="pm-field">
         <span>Maximum leads (1–10)</span>
@@ -194,7 +193,7 @@ export function ExaResearch({ onDone }: { onDone: () => void }) {
           <label className="muted text-xs">
             <input type="checkbox" checked={selectionConfirmed}
               onChange={(event) => setSelectionConfirmed(event.target.checked)} />{" "}
-            Import this exact snapshot as unreviewed evidence; this does not approve its claims.
+            Save this page snapshot as unreviewed evidence.
           </label>
           {importCandidate.error && <ErrorMessage error={importCandidate.error} />}
           <Button type="button" disabled={!actor || !rationale.trim() || !selectionConfirmed || busy}

@@ -109,7 +109,7 @@ export function Register() {
     <>
       <Heading
         title="Prioritized requirements"
-        description="Open a proposal to inspect its evidence, score, and human decision."
+        description="Review proposals, compare priorities and record decisions."
       />
       <div className="register-toolbar">
         <div className="search-input">
@@ -224,7 +224,7 @@ export function Register() {
       </details>
       <div className="register-summary">
         <span>{filtered.length} requirements <span className="muted">/ {scope.vehicle} · {scope.market}</span></span>
-        <span className="muted">Priority score and evidence grade are separate judgments.</span>
+        <span className="muted">Priority: 0–100 · Evidence quality: A–D</span>
       </div>
       <div className="pm-table-wrap">
         <table className="pm-table">
@@ -270,13 +270,12 @@ export function Register() {
         {!rows.length && (
           <Empty
             title="No requirements match"
-            description="Clear a filter or import and analyse evidence for this scope."
+            description="Clear a filter or analyse sources for this vehicle and market."
           />
         )}
         <div className="table-footer">
           <span>
-            Scores range from 0 to 100. A high score can still have weak
-            evidence.
+            {rows.length} of {filtered.length} requirements
           </span>
           <div>
             <Button
@@ -302,9 +301,7 @@ export function Register() {
         </div>
       </div>
       <p className="muted text-xs">
-        Approval is a per-requirement human decision. Local exports retain
-        version and score IDs; dedicated export audit events are not available
-        in the current API.
+        Exports include version and score IDs. Downloads are not recorded in the activity log.
       </p>
       <CreateRequirement open={creating} onClose={() => setCreating(false)} />
     </>
@@ -350,7 +347,7 @@ export function Reviews() {
     <>
       <Heading
         title="Needs review"
-        description="Understand what changed, compare the approved baseline and make the next decision."
+        description="Compare changes with the approved version and decide what to accept."
         action={
           <span className="workspace-status">
             J / K to select · Open to inspect

@@ -14,8 +14,8 @@ import { PmSelect } from "./pm-select";
 import { ErrorMessage, Field, Loading } from "./shared";
 
 export const PROVIDER_OPTIONS = [
-  { value: "openai", label: "OpenAI (recorded model call)" },
-  { value: "deterministic", label: "Deterministic baseline" },
+  { value: "openai", label: "OpenAI" },
+  { value: "deterministic", label: "Rule-based reference" },
 ];
 export const shortId = (id: string | null | undefined) => (id ? id.slice(0, 8) : "–");
 export const signed = (value: number | null | undefined, digits = 2) =>
@@ -61,7 +61,7 @@ export function Unavailable({ endpoint, compact }: { endpoint: EndpointName; com
       <div>
         <strong>Not available on this server</strong>
         <span>
-          <code>{ENDPOINTS[endpoint]}</code> is not part of this API yet. Nothing is shown in its place.
+          <code>{ENDPOINTS[endpoint]}</code> is unavailable on this server.
         </span>
       </div>
     </div>
@@ -109,7 +109,7 @@ export function ProvenanceLabel({ value, compact }: { value: Provenance; compact
   return (
     <span className="method-label" title={value.runId ? `Run ${value.runId}` : undefined}>
       <Cpu size={11} />
-      Deterministic
+      Rule-based
       {!compact && <span className="mono">{value.methodVersion || "method not recorded"}</span>}
     </span>
   );
@@ -119,7 +119,7 @@ export function MethodLabel({ methodVersion, runId, compact }: { methodVersion: 
 }
 export function SimulatedBadge() {
   return (
-    <span className="simulated-badge" title="Synthetic fixture written for demonstration; not a real market request.">
+    <span className="simulated-badge" title="Example request created for demonstration.">
       <FlaskConical size={11} />
       Simulated
     </span>
@@ -356,7 +356,7 @@ function GateForm({
       </Field>
       <div className="gate-footer">
         <span className="muted text-xs">
-          <ShieldCheck size={13} /> Human gate: AI and system actors are refused by the API and the database.
+          <ShieldCheck size={13} /> A person must confirm this action.
         </span>
         <Button type="submit" disabled={!actor || !allowed || !rationale.trim() || !ready || pending}>
           {pending ? "Recording…" : submitLabel}

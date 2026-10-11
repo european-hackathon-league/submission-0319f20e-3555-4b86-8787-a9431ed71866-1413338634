@@ -125,7 +125,7 @@ export function SourceMixPanel({ compact = false }: { compact?: boolean }) {
       description={
         data
           ? `${data.totals.sources} sources · ${fmt(data.totals.records)} records · ${data.totals.requirements_with_public_evidence} of ${data.totals.requirements} requirements also cite public evidence · ${scope.vehicle} / ${scope.market}`
-          : "BMW files and public data in one evidence base"
+          : "BMW files and public sources"
       }
       action={
         compact ? (
@@ -184,9 +184,7 @@ export function SourceMixPanel({ compact = false }: { compact?: boolean }) {
             ))}
           </div>
           <p className="source-mix-caption">
-            Customer-voice records by source. Public sources are small in count
-            but dated and independent of BMW&apos;s own channels; sample counts
-            are not market prevalence.
+            Share of imported customer feedback by source.
           </p>
           {!compact && (
             <div className="pm-table-wrap">
@@ -288,7 +286,7 @@ export function PublicConnectors() {
     onSuccess: (r) => {
       toast.success(
         r.new_complaints + r.new_recalls
-          ? `NHTSA: ${r.new_complaints} new complaints and ${r.new_recalls} new recalls across ${r.models.length} model-years. Run a cumulative update to assess their impact.`
+          ? `NHTSA: ${r.new_complaints} new complaints and ${r.new_recalls} new recalls across ${r.models.length} model-years. Run an evidence update to review their impact.`
           : `NHTSA: up to date, no new records across ${r.models.length} model-years.`,
       );
       done();
@@ -304,7 +302,7 @@ export function PublicConnectors() {
     onSuccess: (r) => {
       toast.success(
         r.imported
-          ? `Web research: ${r.imported} grounded pages imported${r.rejected.length ? `, ${r.rejected.length} rejected (not returned by the search)` : ""}. Run a cumulative update to assess their impact.`
+          ? `Web research: ${r.imported} pages imported${r.rejected.length ? `, ${r.rejected.length} rejected (not returned by the search)` : ""}. Run an evidence update to review their impact.`
           : "Web research: no new pages beyond those already imported.",
       );
       done();
@@ -320,7 +318,7 @@ export function PublicConnectors() {
       }),
     onSuccess: (r) => {
       toast.success(
-        `BMW files: ${r.totals.files} files read, ${fmt(r.totals.new_evidence)} new records across all vehicle and market scopes.`,
+        `BMW files: ${r.totals.files} files read, ${fmt(r.totals.new_evidence)} new records across all vehicles and markets.`,
       );
       done();
     },
@@ -330,7 +328,7 @@ export function PublicConnectors() {
   return (
     <Panel
       title="Data connectors"
-      description="Every connector writes through the same import: originals archived, records located and deduplicated, runs audited."
+      description="Import BMW files or collect public data. Original sources and import history are saved automatically."
     >
       {catalog.isPending ? (
         <Loading label="Loading connectors…" />
@@ -358,7 +356,7 @@ export function PublicConnectors() {
                   {c.available
                     ? c.last_run
                       ? `Last run ${date(c.last_run.finished_at)} · ${c.last_run.status}`
-                      : "Not run for this scope yet"
+                      : "Not run for this vehicle and market yet"
                     : c.reason}
                 </small>
                 <Button
