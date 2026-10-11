@@ -94,12 +94,46 @@ overlaid on it. It shows the method, not final numbers:
 
 ## Phase 3 results
 
-_Placeholder: paste the Markdown table from the Phase 3 run here (date, API commit, OpenAI model and
-the evaluation token)._
+Run on 2026-10-11 against the integrated Compose API (`codex/platform-integration-main` at `a486a22`,
+isolated project `ehl-integration`), OpenAI model `gpt-6-luna`, evaluation token `0FBBB436`. Audit hash
+chain verified (1,036 events).
 
 | Metric | deterministic | openai |
 | --- | --- | --- |
-| _pending Phase 3_ | | |
+| Sentiment accuracy (40 sentences) | 0.725 (40/40 scored) | 0.825 (40/40 scored) |
+| Sentiment macro-F1 | 0.585 | 0.696 |
+| Conflict precision (3 gold conflicts) | 1.000 (3/3) | 1.000 (3/3) |
+| Conflict recall | 1.000 (3/3) | 1.000 (3/3) |
+| Conflict markets covered | 1.000 | 1.000 |
+| Control topic without conflict | yes | yes |
+| Conflict scenario ranks as designed | yes | yes |
+| Clustering pairwise precision (30 requests) | 1.000 (1/1) | 1.000 (8/8) |
+| Clustering pairwise recall | 0.029 (1/34) | 0.235 (8/34) |
+| Scope flags exact match | 0.967 (29/30) | 1.000 (30/30) |
+| Out-of-scope detection accuracy | 0.967 | 1.000 |
+| Request topic accuracy | 0.960 (24/25) | 0.960 (24/25) |
+| Ranking v1 top-3 exact (deterministic code) | yes | not applicable |
+| Ranking v1 top-3 stable (+/-20% weights) | yes | not applicable |
+| Ranking v2 top-3 exact | yes | not applicable |
+| Ranking v2 repeat identical | yes | not applicable |
+| Ranking explanation covers every requirement | 1.000 | 1.000 |
+| Ranking unchanged after explanation | yes | yes |
+| Ranking v2 top-3 stable (sensitivity) | yes | not applicable |
+| Coverage dominance flags as gold (2 markets) | yes | not applicable |
+| Trace coverage (new records) | 1.000 (123 records: market_conflicts, priority_inputs, request_triage, requirements, sentiment_scores) | 1.000 (123 records: market_conflicts, priority_inputs, request_triage, requirements, sentiment_scores) |
+| Runs with outcome audit event | 1.000 (14/14) | 1.000 (11/11) |
+| OpenAI calls recorded in runs | 0 | 12 |
+| OpenAI tokens recorded in runs | 0 | 36106 |
+
+Reading the numbers:
+
+- OpenAI aspect sentiment beats the lexicon baseline (accuracy 0.825 vs 0.725, macro-F1 0.696 vs 0.585).
+- Conflict detection finds exactly the three gold conflicts with both providers and leaves the control
+  topic alone.
+- Clustering is precise but under-joins: OpenAI embeddings at cosine ≥ 0.82 recover 8 of 34 gold pairs,
+  the Jaccard baseline 1 of 34. The threshold is a named constant (`request-cluster-openai-v1`) that
+  should be lowered and re-measured on this gold set before PMs rely on clusters for recurrence.
+- Ranking, sensitivity and coverage are deterministic code; the openai column is not applicable there.
 
 ## Limitations
 
