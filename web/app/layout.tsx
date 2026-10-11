@@ -3,6 +3,7 @@ import { Barlow, IBM_Plex_Mono } from "next/font/google";
 import { Providers } from "@/components/pm/providers";
 import "./globals.css";
 import "./workspace.css";
+import "./platform.css";
 const barlow = Barlow({
   variable: "--font-barlow",
   weight: ["300", "400", "500", "600"],

@@ -84,6 +84,7 @@ export function PmMultiSelect({
   onValueChange,
   required,
   className,
+  summary,
   "aria-label": ariaLabel,
 }: {
   options: PmSelectOption[];
@@ -91,6 +92,8 @@ export function PmMultiSelect({
   onValueChange: (value: string[]) => void;
   required?: boolean;
   className?: string;
+  /** Trigger text for the current selection; defaults to the findings wording used by the decision form. */
+  summary?: (selected: string[]) => string;
   "aria-label": string;
 }) {
   return (
@@ -107,7 +110,9 @@ export function PmMultiSelect({
       >
         <SelectValue>
           {(selected: string[]) =>
-            selected.length
+            summary
+              ? summary(selected)
+              : selected.length
               ? `${selected.length} ${selected.length === 1 ? "finding" : "findings"} selected`
               : "Select supporting findings"
           }

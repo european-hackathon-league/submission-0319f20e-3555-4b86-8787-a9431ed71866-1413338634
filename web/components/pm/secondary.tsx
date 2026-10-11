@@ -1,7 +1,6 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import Link from "next/link";
 import {
   Download,
   Search,
@@ -17,17 +16,14 @@ import { useWorkspace } from "./context";
 import {
   Heading,
   Panel,
-  ScoreLabel,
-  Status,
   Loading,
   ErrorMessage,
   Empty,
   useUrlState,
   Field,
 } from "./shared";
-import { allAudit, allPages, date, readable } from "@/lib/api";
+import { allAudit, date, readable } from "@/lib/api";
 import { download } from "@/lib/export";
-import type { Requirement } from "@/lib/types";
 export function AuditPage() {
   const { params, set } = useUrlState();
   const { actors } = useWorkspace();
@@ -210,127 +206,6 @@ export function AuditPage() {
             </Button>
           </div>
         </Panel>
-      )}
-    </>
-  );
-}
-export function Markets() {
-  const { scope, workspace } = useWorkspace();
-  const result = useQuery({
-    queryKey: ["market-requirements", scope.vehicle],
-    queryFn: ({ signal }) =>
-      allPages<Requirement>(
-        `/requirements?vehicle=${encodeURIComponent(scope.vehicle)}`,
-        signal,
-      ),
-  });
-  const topics = [...new Set(result.data?.map((r) => r.topic) || [])].sort();
-  const markets = [
-    ...new Set([
-      "US",
-      "CN",
-      "EU",
-      ...(workspace?.available_scopes
-        .filter((s) => s.vehicle === scope.vehicle)
-        .map((s) => s.market) || []),
-    ]),
-  ];
-  return (
-    <>
-      <Heading
-        title="Market comparison"
-        description={`Compare ${scope.vehicle} customer priorities across markets, with missing evidence left visible.`}
-      />
-      <div className="pm-alert">
-        <Info size={16} />
-        <span>
-          Scores use each market’s recorded rubric and evidence. An empty market
-          is missing data, not evidence of no customer need.
-        </span>
-      </div>
-      {result.error ? (
-        <ErrorMessage error={result.error} />
-      ) : result.isPending ? (
-        <Loading />
-      ) : !topics.length ? (
-        <Panel title="Market priorities">
-          <Empty
-            title="No market requirements yet"
-            description="Import market-specific evidence and run the pipeline to compare priorities."
-          />
-        </Panel>
-      ) : (
-        <div className="pm-table-wrap">
-          <table className="pm-table market-table">
-            <thead>
-              <tr>
-                <th className="pin-column">Customer topic</th>
-                {markets.map((m) => (
-                  <th key={m}>
-                    {m}
-                    <small>
-                      {result.data.filter((r) => r.market === m).length}{" "}
-                      requirements
-                    </small>
-                  </th>
-                ))}
-                <th>Priority spread</th>
-              </tr>
-            </thead>
-            <tbody>
-              {topics.map((topic) => {
-                const values = result.data.filter((r) => r.topic === topic);
-                const scores = values.map((r) => r.priority);
-                const spread =
-                  scores.length > 1
-                    ? Math.max(...scores) - Math.min(...scores)
-                    : null;
-                return (
-                  <tr key={topic}>
-                    <td className="pin-column">
-                      <strong>{readable(topic)}</strong>
-                    </td>
-                    {markets.map((m) => (
-                      <td key={m}>
-                        {values.filter((r) => r.market === m).length ? (
-                          values
-                            .filter((r) => r.market === m)
-                            .map((r) => (
-                              <Link
-                                key={r.id}
-                                className="market-cell"
-                                href={`/${scope.vehicle.toLowerCase()}/${m.toLowerCase()}/requirements?requirement=${r.id}`}
-                              >
-                                <ScoreLabel
-                                  score={r.priority}
-                                  grade={r.evidence_grade}
-                                />
-                                <span>{r.title}</span>
-                                <Status value={r.status} />
-                              </Link>
-                            ))
-                        ) : (
-                          <span className="market-missing">
-                            No requirement data
-                          </span>
-                        )}
-                      </td>
-                    ))}
-                    <td>
-                      {spread == null ? (
-                        <span className="muted">One market only</span>
-                      ) : (
-                        <span className={spread >= 15 ? "spread-high" : ""}>
-                          {spread.toFixed(1)} points
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
       )}
     </>
   );

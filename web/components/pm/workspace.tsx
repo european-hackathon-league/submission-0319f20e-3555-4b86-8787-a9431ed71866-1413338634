@@ -25,6 +25,9 @@ import {
   Layers3,
   Bot,
   CarFront,
+  Radar,
+  Inbox,
+  ListOrdered,
 } from "lucide-react";
 import {
   Sidebar,
@@ -70,7 +73,11 @@ import { Register, Reviews } from "./register";
 import { RequirementDrawer } from "./requirement";
 import { EvidenceExplorer, Sources } from "./sources";
 import { Pipeline } from "./pipeline";
-import { AuditPage, Markets, SettingsPage } from "./secondary";
+import { AuditPage, SettingsPage } from "./secondary";
+import { Markets } from "./markets";
+import { Signals } from "./signals";
+import { Requests } from "./requests";
+import { Priorities } from "./priorities";
 import { ErrorMessage, Loading } from "./shared";
 const VehicleStudio = dynamic(() => import("./vehicle-studio").then((module) => module.VehicleStudio), {
   ssr: false,
@@ -87,7 +94,10 @@ const softwarePages = [
   { key: "pipeline", label: "Pipeline", icon: GitBranch },
   { key: "sources", label: "Sources & imports", icon: Files },
   { key: "reviews", label: "Needs review", icon: ListChecks },
-  { key: "markets", label: "Market comparison", icon: Globe2 },
+  { key: "priorities", label: "Priorities", icon: ListOrdered },
+  { key: "signals", label: "Signals", icon: Radar },
+  { key: "requests", label: "Requests", icon: Inbox },
+  { key: "markets", label: "Market balancer", icon: Globe2 },
   { key: "audit", label: "Audit trail", icon: History },
   { key: "settings", label: "Settings", icon: Settings },
 ];
@@ -419,6 +429,9 @@ export function WorkspaceApp({
                   {section === "sources" && <Sources />}
                   {section === "pipeline" && <Pipeline />}
                   {section === "markets" && <Markets />}
+                  {section === "signals" && <Signals />}
+                  {section === "requests" && <Requests />}
+                  {section === "priorities" && <Priorities />}
                   {section === "audit" && <AuditPage />}
                   {section === "settings" && <SettingsPage />}
                 </>
