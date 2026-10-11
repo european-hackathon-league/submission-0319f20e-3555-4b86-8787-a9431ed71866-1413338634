@@ -24,6 +24,9 @@ export default async function Page({
       "sources",
       "pipeline",
       "markets",
+      "signals",
+      "requests",
+      "priorities",
       "audit",
       "settings",
     ].includes(section)

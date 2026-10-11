@@ -127,3 +127,19 @@ def test_live_brief_includes_pm_requirements_added_after_generation(client):
     assert live["summary"]["requirement_count"] == 2
     assert live["summary"]["needs_decision_count"] == 2
     assert added["id"] in {item["requirement_id"] for item in live["requirements"]}
+
+
+def test_live_brief_surfaces_current_coverage_warnings(client):
+    from database.store import encode, transaction
+    from server.platform import record_run
+
+    workflow, _ = initial_brief(client)
+    warnings = [{"code": "single_source_dominance", "severity": "high", "message": "Simulated source holds 80% of IDs"},
+                {"code": "projection_periods", "severity": "low", "message": "Simulated projection"}]
+    with record_run(None, "simulated.coverage", "system:test", "coverage-v1", {"simulated": True}) as run:
+        with transaction() as connection:
+            connection.execute("INSERT INTO coverage_reports (id,vehicle,market,metrics,warnings,method_version,run_id,"
+                               "created_at) VALUES ('coverage',?,?,'{}',?,'coverage-v1',?,'t')",
+                               (workflow["vehicle"], workflow["market"], encode(warnings), run.id))
+    brief = client.get(f"/workflows/{workflow['id']}/brief").json()
+    assert brief["warnings"] == ["Data coverage (coverage-v1): Simulated source holds 80% of IDs"]

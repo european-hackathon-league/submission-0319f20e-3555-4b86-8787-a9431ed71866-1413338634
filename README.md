@@ -35,6 +35,39 @@ SQLite lives in `database/local/app.db` and persists on the host. Run `docker co
 
 Stop the services with `docker compose down`.
 
+## Platform: signals, markets, requests, priorities and agents
+
+The [platform build](PLATFORM_BUILD_PLAN.md) adds routers next to the core API. LLMs interpret and draft,
+deterministic code counts and scores, humans decide: every number records its `method_version`, every AI
+output its provider, model and prompt version, and every decision-like action rejects `ai:` and `system:`
+actors in the API and the database.
+
+| Prefix | What it does | Notes |
+| --- | --- | --- |
+| `/market-data` | Imports every BMW input (`POST /market-data/import-bmw`), derives sales-share market weights, the "customers love" preserve list and representativeness coverage | [BMW data coverage](notes/bmw-data-coverage.md) |
+| `/signals` | PM-authorised public watchlists over Exa, lexicon or OpenAI sentiment, weekly series and 8-week momentum | [signals and sentiment](notes/signals-and-sentiment.md) |
+| `/markets` | Topic × market comparison, conflict detection, sales-weighted recommendations, human resolution | [market balancer](notes/market-balancer.md) |
+| `/requests` | Request inbox from markets, dealers and engineering: classification, clustering, triage, position drafts, human decisions | [request intake](notes/request-intake.md) |
+| `/priorities` | Rubric `customer-priority-v2` with data-derived factors, a human rubric switch, sensitivity and a cross-market portfolio | [prioritization v2](notes/prioritization-v2.md) |
+| `/agents`, `/capabilities`, `/tasks`, `/runs`, `/threads` | Agent registry, capability execution, task board, recurring tasks, run log and threads | [agent runtime](notes/agent-runtime.md) |
+
+The web workspace has matching Signals, Requests, Priorities and Market balancer screens and a runs
+feed on Pipeline. Import the BMW data once, then derive weights, preserve list and coverage:
+
+```sh
+curl -X POST http://localhost:8000/market-data/import-bmw -H 'Content-Type: application/json' -d '{"actor":"PM"}'
+```
+
+Recurring tasks run when something calls `POST /tasks/run-due`. The optional scheduler service does
+that every `SCHEDULER_INTERVAL_SECONDS` (default 900); it is off by default:
+
+```sh
+docker compose --profile scheduler up -d
+```
+
+Measured results on labelled synthetic scenarios, for both providers, are in
+[platform evaluation](notes/platform-evaluation.md) (`uv run python scripts/evaluate_platform.py`).
+
 ## Verify the complete backend
 
 ```sh
@@ -56,6 +89,8 @@ uv run python scripts/verify_openai.py --expected-model gpt-6.1-sol
 This paid-provider check makes a fresh initial analysis and a fresh evidence update in an isolated synthetic scope, plus cached replays. It verifies model identity, original source fidelity, complete evidence coverage, PM edits and approvals, targeted review, unchanged unrelated requirements, and historical traces. It fails if the provider cannot run or an invariant is violated; it never substitutes the reference provider. Use `--expected-model` to match the configured API model. This checks provider integration and workflow behavior, not general AI quality.
 
 The live verifier calls the running HTTP API and MCP protocol, using a unique synthetic vehicle scope for PM edits and decisions. It checks original downloads, deduplication, analysis, priorities, approval, stale requests, cumulative updates, unchanged evidence, traceability, and audit history. `--real-data` additionally imports the local G60/US feedback, studies, sales, and equipment PDF, runs their pipeline, and verifies source links while preserving existing approvals. Original inputs remain unchanged; verification records remain in the local database. Omit `--real-data` on a clone without BMW's ignored files. Use `--api-url` and `--mcp-url` for custom host ports.
+
+`--platform` adds the platform journey on a second simulated vehicle in US, CN and EU: sales weights, preserve list and coverage, the pipeline, simulated request triage with grounded evidence links, sentiment series, the rear-space and exhaust/quietness conflicts with their human gate (an `ai:` actor gets 403), rubric v2 with derivations, sensitivity and review items, and a recurring `signals.refresh_watchlist` task through `POST /tasks/run-due` (without `EXA_API_KEY` its run fails visibly) with runs, board, audit and an audit hash-chain check. The watchlist and task use the public G60/US template and are paused and cancelled at the end; `run-due` executes every due task on the target stack, so prefer an isolated stack. `--provider openai` (with `--expected-model`) runs the AI steps on the API's configured model and requires each stored run to record model, prompt version and token usage; it fails if the key is missing. With `--real-data`, the journey also imports every BMW file through `/market-data/import-bmw` and derives G60 weights, preserve list and coverage; decisions stay on the simulated vehicle. `verify_openai.py --platform` adds one OpenAI call per platform AI capability to its own fixture.
 
 The evaluation script uses an isolated temporary database and original-file archive. Eight authored update scenarios cover new supporting/conflicting evidence, unrelated themes, duplicate imports, replay with an open review, and market isolation. It reports complete confusion counts for newly raised PM review alerts against two approved baseline requirements, even when predictions are wrong; failed labels or missing source coverage produce a nonzero exit status. Topic/sentiment labels are supplied to the deterministic provider, so this evaluates workflow behavior rather than AI extraction accuracy. The small fixture supplies no statistical confidence estimate or real PM productivity measurement. Live OpenAI verification requires configured credentials.
 

@@ -620,6 +620,1260 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/signals/watchlists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Watchlists */
+        get: operations["list_watchlists_signals_watchlists_get"];
+        put?: never;
+        /** Create Watchlist */
+        post: operations["create_watchlist_signals_watchlists_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/signals/watchlists/{watchlist_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Watchlist */
+        get: operations["get_watchlist_signals_watchlists__watchlist_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Watchlist */
+        patch: operations["patch_watchlist_signals_watchlists__watchlist_id__patch"];
+        trace?: never;
+    };
+    "/signals/watchlists/{watchlist_id}/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refresh Watchlist */
+        post: operations["refresh_watchlist_signals_watchlists__watchlist_id__refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/signals/watchlists/{watchlist_id}/backfill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Backfill Watchlist */
+        post: operations["backfill_watchlist_signals_watchlists__watchlist_id__backfill_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/signals/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Items */
+        get: operations["list_items_signals_items_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/signals/items/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Item */
+        get: operations["get_item_signals_items__item_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/signals/items/{item_id}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dismiss Item */
+        post: operations["dismiss_item_signals_items__item_id__dismiss_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/signals/items/{item_id}/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Item */
+        post: operations["import_item_signals_items__item_id__import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/signals/sentiment/score": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Score Sentiment */
+        post: operations["score_sentiment_signals_sentiment_score_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/signals/sentiment/scores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Scores */
+        get: operations["list_scores_signals_sentiment_scores_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/signals/sentiment/timeseries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Timeseries */
+        get: operations["timeseries_signals_sentiment_timeseries_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/signals/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Summary */
+        get: operations["get_summary_signals_summary_get"];
+        put?: never;
+        /** Summarise */
+        post: operations["summarise_signals_summary_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/markets/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rules
+         * @description The attribute table, tension pairs, recommendation rules and thresholds of market-balance-v1.
+         */
+        get: operations["rules_markets_rules_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/markets/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Compare */
+        post: operations["compare_markets_compare_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/markets/directions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Directions */
+        post: operations["directions_markets_directions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/markets/conflicts/detect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Detect Route */
+        post: operations["detect_route_markets_conflicts_detect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/markets/conflicts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Conflicts */
+        get: operations["list_conflicts_markets_conflicts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/markets/conflicts/{conflict_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Conflict
+         * @description A conflict with its evidence per market (exact text and mention spans), requirements, resolutions and history.
+         */
+        get: operations["get_conflict_markets_conflicts__conflict_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/markets/conflicts/{conflict_id}/brief": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Brief */
+        post: operations["brief_markets_conflicts__conflict_id__brief_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/markets/conflicts/{conflict_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve
+         * @description Human gate: record the PM's decision; may create or link market-scoped requirement proposals.
+         */
+        post: operations["resolve_markets_conflicts__conflict_id__resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/markets/weights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Weights
+         * @description Recorded market_weights rows (Pod E) and the selection compare/detect use (latest period and method).
+         */
+        get: operations["weights_markets_weights_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Requests */
+        get: operations["list_requests_requests_get"];
+        put?: never;
+        /**
+         * Post Requests
+         * @description Create one request (fields at the top level) or a batch ({requests: [...]}).
+         */
+        post: operations["post_requests_requests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/requests/aggregates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Aggregates */
+        get: operations["get_aggregates_requests_aggregates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/requests/clusters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Clusters */
+        get: operations["list_clusters_requests_clusters_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/requests/classify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Classify */
+        post: operations["post_classify_requests_classify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/requests/cluster": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Cluster */
+        post: operations["post_cluster_requests_cluster_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/requests/links/propose": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Link Proposals */
+        post: operations["post_link_proposals_requests_links_propose_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/requests/triage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Triage */
+        post: operations["post_triage_requests_triage_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/requests/positions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Positions */
+        post: operations["post_positions_requests_positions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/requests/fixtures/simulated": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Load Simulated
+         * @description Load the labelled synthetic demo requests (tests/fixtures/simulated_requests.json); idempotent.
+         */
+        post: operations["load_simulated_requests_fixtures_simulated_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/requests/{request_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Request */
+        get: operations["get_request_requests__request_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit Request
+         * @description PM edits of topic, attribute, effort, origin, scope flags or cluster; audited with before/after.
+         */
+        patch: operations["edit_request_requests__request_id__patch"];
+        trace?: never;
+    };
+    "/requests/{request_id}/links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Link */
+        post: operations["add_link_requests__request_id__links_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/requests/{request_id}/links/{link_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set Link Status
+         * @description Remove or restore a link (human; audited with rationale; rows are never deleted).
+         */
+        patch: operations["set_link_status_requests__request_id__links__link_id__patch"];
+        trace?: never;
+    };
+    "/requests/{request_id}/decide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Decide
+         * @description Human gate: convert (requirement proposal or new version), link, decline or defer.
+         */
+        post: operations["post_decide_requests__request_id__decide_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/priorities/rubrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Rubrics */
+        get: operations["list_rubrics_priorities_rubrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/priorities/rubric": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Switch Rubric
+         * @description Human gate: switch a scope's rubric, rescore its current versions, review approved ones whose score changes.
+         */
+        post: operations["switch_rubric_priorities_rubric_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/priorities/inputs/derive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Derive */
+        post: operations["derive_priorities_inputs_derive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/priorities/inputs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Inputs */
+        get: operations["list_inputs_priorities_inputs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/priorities/ranking": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Ranking */
+        get: operations["get_ranking_priorities_ranking_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/priorities/sensitivity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Sensitivity */
+        get: operations["list_sensitivity_priorities_sensitivity_get"];
+        put?: never;
+        /** Sensitivity */
+        post: operations["sensitivity_priorities_sensitivity_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/priorities/portfolio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Portfolio */
+        get: operations["portfolio_priorities_portfolio_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/priorities/explain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Explain Ranking */
+        post: operations["explain_ranking_priorities_explain_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/market-data/import-bmw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Bmw Route */
+        post: operations["import_bmw_route_market_data_import_bmw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/market-data/weights/derive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Derive Weights Route */
+        post: operations["derive_weights_route_market_data_weights_derive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/market-data/weights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Weights */
+        get: operations["list_weights_market_data_weights_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/market-data/preserve/derive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Derive Preserve Route */
+        post: operations["derive_preserve_route_market_data_preserve_derive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/market-data/preserve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Preserve */
+        get: operations["list_preserve_market_data_preserve_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/market-data/coverage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Coverage */
+        get: operations["list_coverage_market_data_coverage_get"];
+        put?: never;
+        /** Derive Coverage Route */
+        post: operations["derive_coverage_route_market_data_coverage_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/market-data/context/extract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Extract Context Route */
+        post: operations["extract_context_route_market_data_context_extract_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/market-data/context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Context */
+        get: operations["list_context_market_data_context_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/market-data/scopes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Scopes
+         * @description Evidence counts per vehicle × market × record type, with unique feedback IDs and the sales region.
+         */
+        get: operations["list_scopes_market_data_scopes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Agents
+         * @description The agent registry in hierarchy order, with task counts per status (in the vehicle/market scope if given).
+         */
+        get: operations["list_agents_agents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agents/{agent_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Agent */
+        get: operations["get_agent_agents__agent_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Agent
+         * @description Human only: set the agent's model (null uses OPENAI_MODEL at run time). Deterministic agents have none.
+         */
+        patch: operations["update_agent_agents__agent_id__patch"];
+        trace?: never;
+    };
+    "/agents/{agent_id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pause Agent
+         * @description Human only. A paused agent's tasks cannot execute and the agent cannot create tasks or post messages.
+         */
+        post: operations["pause_agent_agents__agent_id__pause_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agents/{agent_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume Agent
+         * @description Human only.
+         */
+        post: operations["resume_agent_agents__agent_id__resume_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agents/{agent_id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retire Agent
+         * @description Human only. Retirement is final; the agent and its history stay in the registry.
+         */
+        post: operations["retire_agent_agents__agent_id__retire_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Capabilities
+         * @description The capability registry. format=openai-tools exports Responses API function tools (optionally only the
+         *     registered capabilities one agent may run); tool names map '<module>.<operation>' to '<module>-<operation>'.
+         */
+        get: operations["list_capabilities_capabilities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/capabilities/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Capability */
+        get: operations["get_capability_capabilities__name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Tasks */
+        get: operations["list_tasks_tasks_get"];
+        put?: never;
+        /**
+         * Create Task
+         * @description Queue (or backlog) a capability execution. Registered capabilities validate the input now; an
+         *     unregistered one is accepted and fails visibly when executed. Recurring tasks are due immediately unless
+         *     due_at is given.
+         */
+        post: operations["create_task_tasks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tasks/board": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Task Board
+         * @description Kanban columns with counts: every status, every agent (plus unassigned) or every department.
+         */
+        get: operations["task_board_tasks_board_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tasks/run-due": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Due
+         * @description Scheduler entry point: fail stale running tasks, then execute queued tasks whose due_at has passed
+         *     (recurring tasks spawn one occurrence and advance to their next slot). Safe to call concurrently.
+         */
+        post: operations["run_due_tasks_run_due_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tasks/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Task */
+        get: operations["get_task_tasks__task_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Task
+         * @description Edit or move a task with optimistic `expected_revision` (stale -> 409). Cancelling and accepting a
+         *     proposal that waits at a human gate (awaiting_human -> succeeded) are human-only and need a rationale.
+         */
+        patch: operations["update_task_tasks__task_id__patch"];
+        trace?: never;
+    };
+    "/tasks/{task_id}/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Execute Task
+         * @description Run a queued (or failed, as a retry) task now through run_capability; recurring tasks run a new
+         *     occurrence without moving their schedule. Capability failures return 200 with the task `failed`.
+         */
+        post: operations["execute_task_tasks__task_id__execute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Runs
+         * @description Every capability execution, newest first, with provider/model labels for AI-generated outputs.
+         */
+        get: operations["list_runs_runs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Run */
+        get: operations["get_run_runs__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/threads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Threads */
+        get: operations["list_threads_threads_get"];
+        put?: never;
+        /**
+         * Create Thread
+         * @description An internal working thread, optionally linked to a task, requirement, request, conflict or run. Nothing
+         *     in a thread is ever sent outside the system.
+         */
+        post: operations["create_thread_threads_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/threads/{thread_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Thread */
+        get: operations["get_thread_threads__thread_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Thread
+         * @description Close or reopen a thread. Its messages never change.
+         */
+        patch: operations["update_thread_threads__thread_id__patch"];
+        trace?: never;
+    };
+    "/threads/{thread_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Message
+         * @description Append a message (append-only). Roles follow the author: human, agent (ai:/system:agent:), system, or
+         *     tool output from an agent or system actor.
+         */
+        post: operations["post_message_threads__thread_id__messages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -692,6 +1946,25 @@ export interface components {
             /** Source Ids */
             source_ids?: string[];
         };
+        /** AgentStatusCommand */
+        AgentStatusCommand: {
+            /** Actor */
+            actor: string;
+            /** Rationale */
+            rationale: string;
+        };
+        /** AgentUpdate */
+        AgentUpdate: {
+            /** Actor */
+            actor: string;
+            /** Rationale */
+            rationale: string;
+            /**
+             * Model
+             * @description Model for this agent; null uses OPENAI_MODEL at run time
+             */
+            model: string | null;
+        };
         /** AnalysisRequest */
         AnalysisRequest: {
             /**
@@ -717,6 +1990,47 @@ export interface components {
              * @default PM
              */
             actor: string;
+        };
+        /** BMWImportRequest */
+        BMWImportRequest: {
+            /**
+             * Directory
+             * @default BMW-Data
+             */
+            directory: string;
+            /**
+             * Paths
+             * @description Files relative to DATA_DIR; default: every supported file in directory
+             */
+            paths?: string[] | null;
+            /**
+             * Document Scopes
+             * @description Scopes for files that declare neither vehicle nor market
+             */
+            document_scopes?: components["schemas"]["Scope"][] | null;
+            /**
+             * Actor
+             * @default PM
+             */
+            actor: string;
+        };
+        /** Backfill */
+        Backfill: {
+            /**
+             * Actor
+             * @default system:signals
+             */
+            actor: string;
+            /**
+             * Cache Only
+             * @default false
+             */
+            cache_only: boolean;
+            /**
+             * Weeks
+             * @default 12
+             */
+            weeks: number;
         };
         /** Body_file_import_imports_files_post */
         Body_file_import_imports_files_post: {
@@ -745,6 +2059,20 @@ export interface components {
              */
             actor: string;
         };
+        /** BriefRequest */
+        BriefRequest: {
+            /**
+             * Provider
+             * @default openai
+             * @constant
+             */
+            provider: "openai";
+            /**
+             * Actor
+             * @default PM
+             */
+            actor: string;
+        };
         /** CandidateSelection */
         CandidateSelection: {
             /** Candidate Id */
@@ -758,6 +2086,124 @@ export interface components {
              * @constant
              */
             selection_confirmed: true;
+        };
+        /** ClassifyCommand */
+        ClassifyCommand: {
+            /**
+             * Vehicle
+             * @default G60
+             */
+            vehicle: string;
+            /** Market */
+            market?: string | null;
+            /** Request Ids */
+            request_ids?: string[] | null;
+            /**
+             * Provider
+             * @default openai
+             * @enum {string}
+             */
+            provider: "openai" | "deterministic";
+            /**
+             * Actor
+             * @default PM
+             */
+            actor: string;
+        };
+        /** ClusterCommand */
+        ClusterCommand: {
+            /**
+             * Vehicle
+             * @default G60
+             */
+            vehicle: string;
+            /** Topic */
+            topic?: ("charging" | "range" | "comfort" | "quietness" | "controls" | "connectivity" | "access-storage" | "driving-experience" | "driver-assistance" | "design" | "overall-experience") | null;
+            /**
+             * Provider
+             * @default openai
+             * @enum {string}
+             */
+            provider: "openai" | "deterministic";
+            /**
+             * Actor
+             * @default PM
+             */
+            actor: string;
+        };
+        /** CompareRequest */
+        CompareRequest: {
+            /**
+             * Vehicle
+             * @default G60
+             */
+            vehicle: string;
+            /** Markets */
+            markets?: string[] | null;
+            /** Topics */
+            topics?: string[] | null;
+            /** Period */
+            period?: string | null;
+            /**
+             * Actor
+             * @default PM
+             */
+            actor: string;
+        };
+        /** ContextExtractRequest */
+        ContextExtractRequest: {
+            /** Source Id */
+            source_id: string;
+            /**
+             * Provider
+             * @default openai
+             * @enum {string}
+             */
+            provider: "openai" | "deterministic";
+            /**
+             * Max Pages
+             * @default 12
+             */
+            max_pages: number;
+            /**
+             * Actor
+             * @default PM
+             */
+            actor: string;
+        };
+        /** CoverageDeriveRequest */
+        CoverageDeriveRequest: {
+            /** Vehicle */
+            vehicle: string;
+            /**
+             * Market
+             * @description Default: every market with evidence for the vehicle plus the sales regions
+             */
+            market?: string | null;
+            /**
+             * Actor
+             * @default PM
+             */
+            actor: string;
+        };
+        /** DecideCommand */
+        DecideCommand: {
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "convert" | "link" | "decline" | "defer";
+            /** Actor */
+            actor: string;
+            /** Rationale */
+            rationale: string;
+            /** Requirement Id */
+            requirement_id?: string | null;
+            /** Finding Ids */
+            finding_ids?: string[] | null;
+            requirement?: components["schemas"]["RequirementDraft"] | null;
+            /** Triage Id */
+            triage_id?: string | null;
         };
         /** DecisionRequest */
         DecisionRequest: {
@@ -774,6 +2220,97 @@ export interface components {
             actor: string;
             /** Rationale */
             rationale: string;
+        };
+        /** DeriveInputsCommand */
+        DeriveInputsCommand: {
+            /**
+             * Vehicle
+             * @default G60
+             */
+            vehicle: string;
+            /**
+             * Market
+             * @default US
+             */
+            market: string;
+            /**
+             * Actor
+             * @default PM
+             */
+            actor: string;
+            /** Requirement Ids */
+            requirement_ids?: string[] | null;
+            /**
+             * As Of
+             * @description Sentiment window end; default today (UTC)
+             */
+            as_of?: string | null;
+            /**
+             * Rescore
+             * @description Rescore v2 requirements whose derived values changed
+             * @default true
+             */
+            rescore: boolean;
+        };
+        /** DetectRequest */
+        DetectRequest: {
+            /**
+             * Vehicle
+             * @default G60
+             */
+            vehicle: string;
+            /** Markets */
+            markets?: string[] | null;
+            /** Topics */
+            topics?: string[] | null;
+            /** Period */
+            period?: string | null;
+            /**
+             * Provider
+             * @default openai
+             * @enum {string}
+             */
+            provider: "openai" | "deterministic";
+            /**
+             * Max Texts
+             * @default 1000
+             */
+            max_texts: number;
+            /**
+             * Actor
+             * @default PM
+             */
+            actor: string;
+        };
+        /** DirectionsRequest */
+        DirectionsRequest: {
+            /**
+             * Vehicle
+             * @default G60
+             */
+            vehicle: string;
+            /** Markets */
+            markets?: string[] | null;
+            /** Topics */
+            topics?: string[] | null;
+            /** Period */
+            period?: string | null;
+            /**
+             * Provider
+             * @default openai
+             * @enum {string}
+             */
+            provider: "openai" | "deterministic";
+            /**
+             * Max Texts
+             * @default 1000
+             */
+            max_texts: number;
+            /**
+             * Actor
+             * @default PM
+             */
+            actor: string;
         };
         /** EvidenceRecord */
         EvidenceRecord: {
@@ -799,6 +2336,38 @@ export interface components {
             };
             /** Observed At */
             observed_at?: string | null;
+        };
+        /** ExplainCommand */
+        ExplainCommand: {
+            /**
+             * Vehicle
+             * @default G60
+             */
+            vehicle: string;
+            /**
+             * Market
+             * @default US
+             */
+            market: string;
+            /**
+             * Actor
+             * @default PM
+             */
+            actor: string;
+            /** Requirement Ids */
+            requirement_ids?: string[] | null;
+            /**
+             * Limit
+             * @description Top-ranked requirements to explain when no ids are given
+             * @default 10
+             */
+            limit: number;
+            /**
+             * Provider
+             * @default openai
+             * @enum {string}
+             */
+            provider: "openai" | "deterministic";
         };
         /** Factors */
         Factors: {
@@ -847,6 +2416,14 @@ export interface components {
              */
             identifier: string;
         };
+        /** FixtureLoad */
+        FixtureLoad: {
+            /**
+             * Actor
+             * @default PM
+             */
+            actor: string;
+        };
         /** GenerateRequest */
         GenerateRequest: {
             /** Run Id */
@@ -861,6 +2438,72 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HumanAction */
+        HumanAction: {
+            /**
+             * Actor
+             * @default system:signals
+             */
+            actor: string;
+            /** Rationale */
+            rationale: string;
+        };
+        /** LinkCommand */
+        LinkCommand: {
+            /**
+             * Vehicle
+             * @default G60
+             */
+            vehicle: string;
+            /** Market */
+            market?: string | null;
+            /** Request Ids */
+            request_ids?: string[] | null;
+            /**
+             * Provider
+             * @default openai
+             * @enum {string}
+             */
+            provider: "openai" | "deterministic";
+            /**
+             * Actor
+             * @default PM
+             */
+            actor: string;
+        };
+        /** LinkCreate */
+        LinkCreate: {
+            /**
+             * Entity Type
+             * @enum {string}
+             */
+            entity_type: "requirement" | "finding" | "evidence" | "market_conflict";
+            /** Entity Id */
+            entity_id: string;
+            /**
+             * Relation
+             * @enum {string}
+             */
+            relation: "supports" | "conflicts" | "duplicates" | "addresses";
+            /** Actor */
+            actor: string;
+            /** Rationale */
+            rationale: string;
+            /** Quote */
+            quote?: string | null;
+        };
+        /** LinkStatus */
+        LinkStatus: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "removed";
+            /** Actor */
+            actor: string;
+            /** Rationale */
+            rationale: string;
         };
         /** LocalImport */
         LocalImport: {
@@ -884,6 +2527,71 @@ export interface components {
              * @enum {string}
              */
             kind: "feedback" | "study" | "sales" | "document" | "other";
+            /**
+             * Actor
+             * @default PM
+             */
+            actor: string;
+        };
+        /** MessageCreate */
+        MessageCreate: {
+            /** Author */
+            author: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "human" | "agent" | "system" | "tool";
+            /** Body */
+            body: string;
+            /**
+             * Payload
+             * @description Cited ids and tool call/result JSON
+             */
+            payload?: {
+                [key: string]: unknown;
+            };
+            /** Run Id */
+            run_id?: string | null;
+        };
+        /** PositionCommand */
+        PositionCommand: {
+            /**
+             * Vehicle
+             * @default G60
+             */
+            vehicle: string;
+            /** Market */
+            market?: string | null;
+            /** Request Ids */
+            request_ids?: string[] | null;
+            /**
+             * Provider
+             * @default openai
+             * @enum {string}
+             */
+            provider: "openai" | "deterministic";
+            /**
+             * Actor
+             * @default PM
+             */
+            actor: string;
+        };
+        /** PreserveDeriveRequest */
+        PreserveDeriveRequest: {
+            /** Vehicle */
+            vehicle: string;
+            /**
+             * Market
+             * @description Default: every market with customer feedback or study evidence
+             */
+            market?: string | null;
+            /**
+             * Provider
+             * @default openai
+             * @enum {string}
+             */
+            provider: "openai" | "deterministic";
             /**
              * Actor
              * @default PM
@@ -924,6 +2632,128 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** Refresh */
+        Refresh: {
+            /**
+             * Actor
+             * @default system:signals
+             */
+            actor: string;
+            /**
+             * Cache Only
+             * @default false
+             */
+            cache_only: boolean;
+        };
+        /** RequestBatch */
+        RequestBatch: {
+            /** Requests */
+            requests: components["schemas"]["RequestCreate"][];
+            /**
+             * Actor
+             * @default PM
+             */
+            actor: string;
+        };
+        /** RequestCreate */
+        RequestCreate: {
+            /**
+             * Vehicle
+             * @default G60
+             */
+            vehicle: string;
+            /**
+             * Market
+             * @default US
+             */
+            market: string;
+            /**
+             * Origin Type
+             * @enum {string}
+             */
+            origin_type: "market_org" | "dealer" | "engineering" | "sales" | "board" | "customer_channel" | "other";
+            /** Origin Name */
+            origin_name: string;
+            /** Title */
+            title: string;
+            /** Body */
+            body: string;
+            /** Requested At */
+            requested_at?: string | null;
+            /**
+             * Simulated
+             * @default false
+             */
+            simulated: boolean;
+            /** External Ref */
+            external_ref?: string | null;
+            /** Effort */
+            effort?: ("low" | "medium" | "high") | null;
+        };
+        /**
+         * RequestEdit
+         * @description PM edits; omitted fields stay unchanged, explicit nulls clear attribute, effort or cluster.
+         */
+        RequestEdit: {
+            /** Actor */
+            actor: string;
+            /** Rationale */
+            rationale: string;
+            /** Topic */
+            topic?: ("charging" | "range" | "comfort" | "quietness" | "controls" | "connectivity" | "access-storage" | "driving-experience" | "driver-assistance" | "design" | "overall-experience") | null;
+            /** Attribute */
+            attribute?: string | null;
+            /** Effort */
+            effort?: ("low" | "medium" | "high") | null;
+            /** Origin Type */
+            origin_type?: ("market_org" | "dealer" | "engineering" | "sales" | "board" | "customer_channel" | "other") | null;
+            /** Origin Name */
+            origin_name?: string | null;
+            /** Scope Flags */
+            scope_flags?: ("pricing" | "business_case" | "homologation" | "engineering_spec" | "supplier")[] | null;
+            /** Cluster Id */
+            cluster_id?: string | null;
+        };
+        /** RequestSingle */
+        RequestSingle: {
+            /**
+             * Vehicle
+             * @default G60
+             */
+            vehicle: string;
+            /**
+             * Market
+             * @default US
+             */
+            market: string;
+            /**
+             * Origin Type
+             * @enum {string}
+             */
+            origin_type: "market_org" | "dealer" | "engineering" | "sales" | "board" | "customer_channel" | "other";
+            /** Origin Name */
+            origin_name: string;
+            /** Title */
+            title: string;
+            /** Body */
+            body: string;
+            /** Requested At */
+            requested_at?: string | null;
+            /**
+             * Simulated
+             * @default false
+             */
+            simulated: boolean;
+            /** External Ref */
+            external_ref?: string | null;
+            /** Effort */
+            effort?: ("low" | "medium" | "high") | null;
+            /**
+             * Actor
+             * @default PM
+             */
+            actor: string;
+        };
         /** RequirementCreate */
         RequirementCreate: {
             /**
@@ -959,6 +2789,23 @@ export interface components {
             /** Rationale */
             rationale: string;
         };
+        /**
+         * RequirementDraft
+         * @description Optional PM content for a conversion; omitted fields use the request-convert-v1 template.
+         */
+        RequirementDraft: {
+            /** Title */
+            title?: string | null;
+            /** Statement */
+            statement?: string | null;
+            /** Customer Need */
+            customer_need?: string | null;
+            /** Acceptance Criteria */
+            acceptance_criteria?: components["schemas"]["AcceptanceCriterion"][] | null;
+            /** Assumptions */
+            assumptions?: string[] | null;
+            factors?: components["schemas"]["Factors"] | null;
+        };
         /** RequirementEdit */
         RequirementEdit: {
             /** Expected Version Id */
@@ -981,6 +2828,97 @@ export interface components {
             /** Finding Ids */
             finding_ids?: string[] | null;
         };
+        /**
+         * ResolutionProposal
+         * @description A market-scoped requirement proposal created through server.requirements.create_requirement.
+         */
+        ResolutionProposal: {
+            /** Title */
+            title: string;
+            /** Statement */
+            statement: string;
+            /** Customer Need */
+            customer_need: string;
+            /** Acceptance Criteria */
+            acceptance_criteria: components["schemas"]["AcceptanceCriterion"][];
+            /** Assumptions */
+            assumptions?: string[];
+            factors: components["schemas"]["Factors"];
+            /** Market */
+            market: string;
+            /** Topic */
+            topic?: string | null;
+            /** Finding Ids */
+            finding_ids: string[];
+        };
+        /** ResolveRequest */
+        ResolveRequest: {
+            /** Actor */
+            actor: string;
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "adopt_global" | "market_variants" | "selectable_mode" | "optional_package" | "defer" | "dismiss";
+            /** Rationale */
+            rationale: string;
+            /** Requirement Ids */
+            requirement_ids?: string[];
+            /** Proposals */
+            proposals?: components["schemas"]["ResolutionProposal"][];
+        };
+        /** RubricSwitch */
+        RubricSwitch: {
+            /**
+             * Vehicle
+             * @default G60
+             */
+            vehicle: string;
+            /**
+             * Market
+             * @default US
+             */
+            market: string;
+            /**
+             * Rubric Version
+             * @enum {string}
+             */
+            rubric_version: "customer-priority-v1" | "customer-priority-v2";
+            /** @description Default weights of the rubric when omitted */
+            weights?: components["schemas"]["Weights"] | null;
+            /** Actor */
+            actor: string;
+            /** Rationale */
+            rationale: string;
+            /** As Of */
+            as_of?: string | null;
+        };
+        /** RunDue */
+        RunDue: {
+            /**
+             * Actor
+             * @default system:scheduler
+             */
+            actor: string;
+            /**
+             * Limit
+             * @default 10
+             */
+            limit: number;
+        };
+        /** Scope */
+        Scope: {
+            /**
+             * Vehicle
+             * @default G60
+             */
+            vehicle: string;
+            /**
+             * Market
+             * @default US
+             */
+            market: string;
+        };
         /** ScoreRequest */
         ScoreRequest: {
             /** Expected Version Id */
@@ -992,6 +2930,45 @@ export interface components {
             actor: string;
             /** Rationale */
             rationale: string;
+        };
+        /** ScoreSentiment */
+        ScoreSentiment: {
+            /**
+             * Actor
+             * @default system:signals
+             */
+            actor: string;
+            /**
+             * Vehicle
+             * @default G60
+             */
+            vehicle: string;
+            /**
+             * Market
+             * @default US
+             */
+            market: string;
+            /**
+             * Provider
+             * @default openai
+             * @enum {string}
+             */
+            provider: "openai" | "deterministic";
+            /**
+             * Subject Type
+             * @default all
+             * @enum {string}
+             */
+            subject_type: "evidence" | "signal_item" | "all";
+            /** Subject Ids */
+            subject_ids?: string[] | null;
+            /** Topic */
+            topic?: ("charging" | "range" | "comfort" | "quietness" | "controls" | "connectivity" | "access-storage" | "driving-experience" | "driver-assistance" | "design" | "overall-experience") | null;
+            /**
+             * Limit
+             * @default 1000
+             */
+            limit: number;
         };
         /** SearchRequest */
         SearchRequest: {
@@ -1032,6 +3009,30 @@ export interface components {
             start_published_date?: string | null;
             /** End Published Date */
             end_published_date?: string | null;
+        };
+        /** SensitivityCommand */
+        SensitivityCommand: {
+            /**
+             * Vehicle
+             * @default G60
+             */
+            vehicle: string;
+            /**
+             * Market
+             * @default US
+             */
+            market: string;
+            /**
+             * Actor
+             * @default PM
+             */
+            actor: string;
+            /**
+             * Each Weight
+             * @description Relative perturbation of each weight
+             * @default 0.2
+             */
+            each_weight: number;
         };
         /** Source */
         Source: {
@@ -1091,6 +3092,205 @@ export interface components {
             /** Reference */
             reference: string;
         };
+        /** Summarise */
+        Summarise: {
+            /**
+             * Actor
+             * @default system:signals
+             */
+            actor: string;
+            /**
+             * Vehicle
+             * @default G60
+             */
+            vehicle: string;
+            /**
+             * Market
+             * @default US
+             */
+            market: string;
+            /**
+             * Provider
+             * @default openai
+             * @enum {string}
+             */
+            provider: "openai" | "deterministic";
+            /** Topic */
+            topic?: ("charging" | "range" | "comfort" | "quietness" | "controls" | "connectivity" | "access-storage" | "driving-experience" | "driver-assistance" | "design" | "overall-experience") | null;
+            /** Source Class */
+            source_class?: ("bmw_evidence" | "public_monitoring" | "public_imported") | null;
+            /** Method Version */
+            method_version?: string | null;
+        };
+        /** TaskCreate */
+        TaskCreate: {
+            /**
+             * Vehicle
+             * @default G60
+             */
+            vehicle: string;
+            /**
+             * Market
+             * @default US
+             */
+            market: string;
+            /** Topic */
+            topic?: string | null;
+            /** Capability */
+            capability: string;
+            /** Title */
+            title: string;
+            /** Input */
+            input?: {
+                [key: string]: unknown;
+            };
+            /** Requested By */
+            requested_by: string;
+            /** Assigned Agent Id */
+            assigned_agent_id?: string | null;
+            /** Parent Task Id */
+            parent_task_id?: string | null;
+            /**
+             * Status
+             * @default queued
+             * @enum {string}
+             */
+            status: "backlog" | "queued";
+            /**
+             * Priority
+             * @default 50
+             */
+            priority: number;
+            /** Recurrence Days */
+            recurrence_days?: number | null;
+            /** Due At */
+            due_at?: string | null;
+        };
+        /** TaskExecute */
+        TaskExecute: {
+            /** Actor */
+            actor: string;
+            /** Expected Revision */
+            expected_revision?: number | null;
+        };
+        /** TaskUpdate */
+        TaskUpdate: {
+            /** Actor */
+            actor: string;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Rationale */
+            rationale?: string | null;
+            /** Status */
+            status?: ("backlog" | "queued" | "succeeded" | "cancelled") | null;
+            /** Title */
+            title?: string | null;
+            /** Priority */
+            priority?: number | null;
+            /** Assigned Agent Id */
+            assigned_agent_id?: string | null;
+            /** Due At */
+            due_at?: string | null;
+            /** Input */
+            input?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** ThreadCreate */
+        ThreadCreate: {
+            /** Vehicle */
+            vehicle?: string | null;
+            /** Market */
+            market?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "agent" | "human" | "request" | "review";
+            /** Subject */
+            subject: string;
+            /** Entity Type */
+            entity_type?: ("task" | "requirement" | "requirement_version" | "request" | "market_conflict" | "review_item" | "run" | "agent" | "watchlist" | "signal_item") | null;
+            /** Entity Id */
+            entity_id?: string | null;
+            /** Created By */
+            created_by: string;
+            /** Body */
+            body?: string | null;
+            /** Payload */
+            payload?: {
+                [key: string]: unknown;
+            };
+        };
+        /** ThreadUpdate */
+        ThreadUpdate: {
+            /** Actor */
+            actor: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "closed";
+            /** Rationale */
+            rationale?: string | null;
+        };
+        /** TriageCommand */
+        TriageCommand: {
+            /**
+             * Vehicle
+             * @default G60
+             */
+            vehicle: string;
+            /** Market */
+            market?: string | null;
+            /** Request Ids */
+            request_ids?: string[] | null;
+            weights?: components["schemas"]["TriageWeights"];
+            /**
+             * Link Provider
+             * @default none
+             * @enum {string}
+             */
+            link_provider: "openai" | "deterministic" | "none";
+            /**
+             * Actor
+             * @default PM
+             */
+            actor: string;
+        };
+        /** TriageWeights */
+        TriageWeights: {
+            /**
+             * Market Weight
+             * @default 0.2
+             */
+            market_weight: number;
+            /**
+             * Evidence Support
+             * @default 0.25
+             */
+            evidence_support: number;
+            /**
+             * Evidence Conflict
+             * @default 0.1
+             */
+            evidence_conflict: number;
+            /**
+             * Recurrence
+             * @default 0.2
+             */
+            recurrence: number;
+            /**
+             * Alignment
+             * @default 0.15
+             */
+            alignment: number;
+            /**
+             * Effort
+             * @default 0.1
+             */
+            effort: number;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -1103,6 +3303,81 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** WatchlistCreate */
+        WatchlistCreate: {
+            /**
+             * Actor
+             * @default system:signals
+             */
+            actor: string;
+            /** Rationale */
+            rationale: string;
+            /**
+             * Vehicle
+             * @default G60
+             */
+            vehicle: string;
+            /**
+             * Market
+             * @default US
+             */
+            market: string;
+            /**
+             * Topic
+             * @enum {string}
+             */
+            topic: "charging" | "range" | "comfort" | "quietness" | "controls" | "connectivity" | "access-storage" | "driving-experience" | "driver-assistance" | "design" | "overall-experience";
+            /** Label */
+            label: string;
+            /** Query Terms */
+            query_terms?: string[];
+            /** Competitors */
+            competitors?: string[];
+            /**
+             * Domain Group
+             * @default all
+             * @enum {string}
+             */
+            domain_group: "press" | "forums" | "social" | "video" | "all";
+            /** Domains */
+            domains?: string[];
+            /**
+             * Cadence Days
+             * @default 7
+             */
+            cadence_days: number;
+            /**
+             * Max Results
+             * @default 10
+             */
+            max_results: number;
+        };
+        /** WatchlistPatch */
+        WatchlistPatch: {
+            /**
+             * Actor
+             * @default system:signals
+             */
+            actor: string;
+            /** Rationale */
+            rationale: string;
+            /** Status */
+            status?: ("active" | "paused") | null;
+            /** Label */
+            label?: string | null;
+            /** Query Terms */
+            query_terms?: string[] | null;
+            /** Competitors */
+            competitors?: string[] | null;
+            /** Domain Group */
+            domain_group?: ("press" | "forums" | "social" | "video" | "all") | null;
+            /** Domains */
+            domains?: string[] | null;
+            /** Cadence Days */
+            cadence_days?: number | null;
+            /** Max Results */
+            max_results?: number | null;
         };
         /** WebFetchRequest */
         WebFetchRequest: {
@@ -1154,7 +3429,12 @@ export interface components {
              */
             actor: string;
         };
-        /** Weights */
+        /**
+         * Weights
+         * @description customer-priority-v1 weights; giving all three derived factors makes them customer-priority-v2 weights.
+         *
+         *     Absent derived factors are omitted when serialized, so v1 payloads and stored v1 weights are unchanged.
+         */
         Weights: {
             /**
              * Customer Impact
@@ -1181,6 +3461,25 @@ export interface components {
              * @default 0.1
              */
             feasibility: number;
+            /** Market Demand */
+            market_demand?: number | null;
+            /** Sentiment Momentum */
+            sentiment_momentum?: number | null;
+            /** Request Pressure */
+            request_pressure?: number | null;
+        };
+        /** WeightsDeriveRequest */
+        WeightsDeriveRequest: {
+            /**
+             * Vehicle
+             * @description Default: every vehicle with sales evidence
+             */
+            vehicle?: string | null;
+            /**
+             * Actor
+             * @default PM
+             */
+            actor: string;
         };
         /** WorkflowAction */
         WorkflowAction: {
@@ -2469,6 +4768,2732 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_watchlists_signals_watchlists_get: {
+        parameters: {
+            query?: {
+                vehicle?: string | null;
+                market?: string | null;
+                topic?: ("charging" | "range" | "comfort" | "quietness" | "controls" | "connectivity" | "access-storage" | "driving-experience" | "driver-assistance" | "design" | "overall-experience") | null;
+                status?: ("active" | "paused") | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_watchlist_signals_watchlists_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchlistCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_watchlist_signals_watchlists__watchlist_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                watchlist_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_watchlist_signals_watchlists__watchlist_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                watchlist_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchlistPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_watchlist_signals_watchlists__watchlist_id__refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                watchlist_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Refresh"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    backfill_watchlist_signals_watchlists__watchlist_id__backfill_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                watchlist_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Backfill"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_items_signals_items_get: {
+        parameters: {
+            query?: {
+                vehicle?: string | null;
+                market?: string | null;
+                topic?: ("charging" | "range" | "comfort" | "quietness" | "controls" | "connectivity" | "access-storage" | "driving-experience" | "driver-assistance" | "design" | "overall-experience") | null;
+                watchlist_id?: string | null;
+                review_status?: ("unreviewed" | "imported" | "dismissed") | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_item_signals_items__item_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dismiss_item_signals_items__item_id__dismiss_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HumanAction"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_item_signals_items__item_id__import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HumanAction"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    score_sentiment_signals_sentiment_score_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScoreSentiment"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_scores_signals_sentiment_scores_get: {
+        parameters: {
+            query?: {
+                vehicle?: string | null;
+                market?: string | null;
+                topic?: ("charging" | "range" | "comfort" | "quietness" | "controls" | "connectivity" | "access-storage" | "driving-experience" | "driver-assistance" | "design" | "overall-experience") | null;
+                method_version?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    timeseries_signals_sentiment_timeseries_get: {
+        parameters: {
+            query?: {
+                vehicle?: string | null;
+                market?: string | null;
+                topic?: ("charging" | "range" | "comfort" | "quietness" | "controls" | "connectivity" | "access-storage" | "driving-experience" | "driver-assistance" | "design" | "overall-experience") | null;
+                source_class?: ("bmw_evidence" | "public_monitoring" | "public_imported") | null;
+                method_version?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_summary_signals_summary_get: {
+        parameters: {
+            query?: {
+                vehicle?: string | null;
+                market?: string | null;
+                topic?: ("charging" | "range" | "comfort" | "quietness" | "controls" | "connectivity" | "access-storage" | "driving-experience" | "driver-assistance" | "design" | "overall-experience") | null;
+                source_class?: ("bmw_evidence" | "public_monitoring" | "public_imported") | null;
+                method_version?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    summarise_signals_summary_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Summarise"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rules_markets_rules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    compare_markets_compare_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompareRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    directions_markets_directions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectionsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    detect_route_markets_conflicts_detect_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DetectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_conflicts_markets_conflicts_get: {
+        parameters: {
+            query?: {
+                vehicle?: string | null;
+                market?: string | null;
+                status?: ("open" | "resolved" | "superseded" | "dismissed") | null;
+                topic?: string | null;
+                conflict_type?: ("direction_conflict" | "priority_divergence" | "target_incompatible" | "evidence_gap") | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_conflict_markets_conflicts__conflict_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conflict_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    brief_markets_conflicts__conflict_id__brief_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conflict_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BriefRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_markets_conflicts__conflict_id__resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conflict_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    weights_markets_weights_get: {
+        parameters: {
+            query?: {
+                vehicle?: string;
+                market?: string | null;
+                period?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_requests_requests_get: {
+        parameters: {
+            query?: {
+                vehicle?: string | null;
+                market?: string | null;
+                status?: ("new" | "triaged" | "linked" | "converted" | "declined" | "deferred") | null;
+                topic?: string | null;
+                origin_type?: ("market_org" | "dealer" | "engineering" | "sales" | "board" | "customer_channel" | "other") | null;
+                cluster_id?: string | null;
+                simulated?: boolean | null;
+                flagged?: boolean | null;
+                q?: string | null;
+                sort?: "triage" | "requested_at" | "key";
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_requests_requests_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestBatch"] | components["schemas"]["RequestSingle"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_aggregates_requests_aggregates_get: {
+        parameters: {
+            query?: {
+                vehicle?: string;
+                market?: string | null;
+                as_of?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_clusters_requests_clusters_get: {
+        parameters: {
+            query?: {
+                vehicle?: string;
+                topic?: string | null;
+                market?: string | null;
+                include_empty?: boolean;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_classify_requests_classify_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClassifyCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_cluster_requests_cluster_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClusterCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_link_proposals_requests_links_propose_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_triage_requests_triage_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TriageCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_positions_requests_positions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PositionCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    load_simulated_requests_fixtures_simulated_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FixtureLoad"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_request_requests__request_id__get: {
+        parameters: {
+            query?: {
+                actor?: string;
+            };
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_request_requests__request_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestEdit"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_link_requests__request_id__links_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_link_status_requests__request_id__links__link_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkStatus"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_decide_requests__request_id__decide_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecideCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_rubrics_priorities_rubrics_get: {
+        parameters: {
+            query?: {
+                vehicle?: string | null;
+                market?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    switch_rubric_priorities_rubric_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RubricSwitch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    derive_priorities_inputs_derive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeriveInputsCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_inputs_priorities_inputs_get: {
+        parameters: {
+            query?: {
+                vehicle?: string | null;
+                market?: string | null;
+                requirement_id?: string | null;
+                version_id?: string | null;
+                factor?: ("market_demand" | "sentiment_momentum" | "request_pressure") | null;
+                latest_only?: boolean;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_ranking_priorities_ranking_get: {
+        parameters: {
+            query?: {
+                vehicle?: string;
+                market?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_sensitivity_priorities_sensitivity_get: {
+        parameters: {
+            query?: {
+                vehicle?: string | null;
+                market?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sensitivity_priorities_sensitivity_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SensitivityCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    portfolio_priorities_portfolio_get: {
+        parameters: {
+            query?: {
+                vehicle?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    explain_ranking_priorities_explain_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExplainCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_bmw_route_market_data_import_bmw_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BMWImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    derive_weights_route_market_data_weights_derive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WeightsDeriveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_weights_market_data_weights_get: {
+        parameters: {
+            query?: {
+                vehicle?: string | null;
+                market?: string | null;
+                period?: string | null;
+                status?: "current" | "superseded" | "all";
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    derive_preserve_route_market_data_preserve_derive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreserveDeriveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_preserve_market_data_preserve_get: {
+        parameters: {
+            query?: {
+                vehicle?: string | null;
+                market?: string | null;
+                topic?: string | null;
+                source_type?: ("feedback" | "study") | null;
+                status?: "current" | "retired" | "all";
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_coverage_market_data_coverage_get: {
+        parameters: {
+            query?: {
+                vehicle?: string | null;
+                market?: string | null;
+                status?: "current" | "superseded" | "all";
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    derive_coverage_route_market_data_coverage_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoverageDeriveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    extract_context_route_market_data_context_extract_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContextExtractRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_context_market_data_context_get: {
+        parameters: {
+            query?: {
+                vehicle?: string | null;
+                market?: string | null;
+                source_id?: string | null;
+                category?: ("regional_sales" | "series_deliveries" | "ev_adoption" | "digital_services" | "neue_klasse" | "rd_priorities") | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_scopes_market_data_scopes_get: {
+        parameters: {
+            query?: {
+                vehicle?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_agents_agents_get: {
+        parameters: {
+            query?: {
+                department?: ("orchestration" | "customer_insights" | "market_intelligence" | "requirements" | "governance" | "communications") | null;
+                status?: ("active" | "paused" | "retired") | null;
+                parent_agent_id?: string | null;
+                vehicle?: string | null;
+                market?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_agent_agents__agent_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_agent_agents__agent_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pause_agent_agents__agent_id__pause_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentStatusCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resume_agent_agents__agent_id__resume_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentStatusCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retire_agent_agents__agent_id__retire_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentStatusCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_capabilities_capabilities_get: {
+        parameters: {
+            query?: {
+                format?: "json" | "openai-tools";
+                agent_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_capability_capabilities__name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_tasks_tasks_get: {
+        parameters: {
+            query?: {
+                vehicle?: string | null;
+                market?: string | null;
+                status?: ("backlog" | "queued" | "running" | "awaiting_human" | "succeeded" | "failed" | "cancelled") | null;
+                capability?: string | null;
+                assigned_agent_id?: string | null;
+                parent_task_id?: string | null;
+                requested_by?: string | null;
+                recurring?: boolean | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_task_tasks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    task_board_tasks_board_get: {
+        parameters: {
+            query?: {
+                vehicle?: string | null;
+                market?: string | null;
+                group_by?: "status" | "agent" | "department";
+                /** @description Cards per column */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_due_tasks_run_due_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RunDue"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_task_tasks__task_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_task_tasks__task_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    execute_task_tasks__task_id__execute_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskExecute"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_runs_runs_get: {
+        parameters: {
+            query?: {
+                vehicle?: string | null;
+                market?: string | null;
+                capability?: string | null;
+                task_id?: string | null;
+                actor?: string | null;
+                status?: ("running" | "succeeded" | "failed") | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_run_runs__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_threads_threads_get: {
+        parameters: {
+            query?: {
+                vehicle?: string | null;
+                market?: string | null;
+                kind?: ("agent" | "human" | "request" | "review") | null;
+                entity_type?: string | null;
+                entity_id?: string | null;
+                status?: ("open" | "closed") | null;
+                created_by?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_thread_threads_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThreadCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_thread_threads__thread_id__get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                thread_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_thread_threads__thread_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                thread_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThreadUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_message_threads__thread_id__messages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                thread_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -10,7 +10,7 @@ from pypdf import PdfWriter
 from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 
 from server import importers
-from server.importers import parse_file, parse_html
+from server.importers import file_scopes, parse_file, parse_html, parse_scopes
 
 
 def workbook_bytes(sheets):
@@ -320,3 +320,32 @@ def test_pdf_decompression_budget_is_restored_after_rejection(monkeypatch):
     with pytest.raises(ValueError, match='LimitReachedError'):
         parse_file('compressed.pdf', output.getvalue())
     assert get_configuration() == before
+
+
+def test_file_scopes_list_every_declared_vehicle_and_market():
+    feedback = workbook_bytes({'Feedback_Explorer': [
+        ['ID', 'Country', 'Derivate (e-code)', 'Customer Feedback'],
+        ['1', 'US', 'G60', 'Simulated A'], ['2', 'KR', 'G60', 'Simulated B'], ['3', 'KR', 'G60', 'Simulated C']]})
+    assert file_scopes('G60_feedback.xlsx', feedback) == [
+        {'vehicle': 'G60', 'market': 'KR', 'records': 2}, {'vehicle': 'G60', 'market': 'US', 'records': 1}]
+    sales = workbook_bytes({'G60_G68': [['market', 'market_code', 'volume_2025'], ['Europe', 'EU', 5]]})
+    assert file_scopes('sales.xlsx', sales) == [
+        {'vehicle': 'G60', 'market': 'EU', 'records': 1}, {'vehicle': 'G68', 'market': 'EU', 'records': 1}]
+    assert file_scopes('G70_options.pdf', pdf_bytes(['Page'])) == [{'vehicle': 'G70', 'market': None, 'records': 1}]
+    assert file_scopes('report.txt', b'Simulated report') == [{'vehicle': None, 'market': None, 'records': 1}]
+
+
+def test_parse_scopes_matches_parse_file_for_each_scope():
+    data = workbook_bytes({'US_2025': [['Charging', None, 'BMW 5 Series G60', 'BMW 7 Series G70'], ['Mean', None, 7, 8]],
+                           'Feedback': [['Country', 'Vehicle', 'Customer Feedback'], ['US', 'G60', 'Simulated'],
+                                        ['GB', 'G60', 'Simulated GB']]})
+    scopes = [('G60', 'US'), ('g70', 'usa'), ('G60', 'GB'), ('F70', 'US')]
+    parsed = parse_scopes('studies.xlsx', data, scopes)
+    assert set(parsed) == {('G60', 'US'), ('G70', 'US'), ('G60', 'GB'), ('F70', 'US')}
+    for (vehicle, market), records in parsed.items():
+        assert records == parse_file('studies.xlsx', data, vehicle, market)
+    assert parsed['F70', 'US'] == []
+    document = parse_scopes('report.txt', b'Simulated', [('G60', 'US'), ('G70', 'CN')])
+    assert [r['market'] for r in document['G70', 'CN']] == ['CN']
+    document['G70', 'CN'][0]['metadata']['changed'] = True  # copies: one scope never mutates another
+    assert 'changed' not in document['G60', 'US'][0]['metadata']

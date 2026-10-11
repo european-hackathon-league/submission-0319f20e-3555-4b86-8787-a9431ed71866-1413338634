@@ -85,13 +85,19 @@ class FactorInputs(Payload):
 
 
 class ScoringWeights(Payload):
-    """Weights must sum to one; validation and scoring are owned by the API."""
+    """Weights must sum to one; validation and scoring are owned by the API.
+
+    Give all three derived factors for customer-priority-v2 weights; omit them for v1.
+    """
 
     customer_impact: float = 0.35
     market_relevance: float = 0.25
     strategic_fit: float = 0.20
     differentiation: float = 0.10
     feasibility: float = 0.10
+    market_demand: float | None = None
+    sentiment_momentum: float | None = None
+    request_pressure: float | None = None
 
 
 class AcceptanceCriterion(Payload):
@@ -115,6 +121,9 @@ def _present(**values) -> dict:
 async def api_request(method: str, path: str, *, params: dict | None = None, payload: dict | None = None) -> dict | list:
     """Keep transport/HTTP failures as MCP errors, preserving the API's detail."""
     timeout = httpx.Timeout(API_TIMEOUT_SECONDS, connect=min(10, API_TIMEOUT_SECONDS))
+    # httpx sends a None query value as an empty string ("topic="), which the API reads as a filter value or
+    # rejects; an omitted optional tool argument must omit the parameter.
+    params = _present(**params) if params else None
     try:
         async with httpx.AsyncClient(timeout=timeout, follow_redirects=False) as client:
             response = await client.request(method, f"{API_BASE_URL}{path}", params=params, json=payload)
@@ -356,7 +365,7 @@ async def score_requirement(
     """Recalculate a current proposal's priority with explicit rubric weights, recording the rationale."""
     return await api_request("POST", f"/requirements/{_id(requirement_id)}/scores", payload=_present(
         expected_version_id=expected_version_id, expected_score_id=expected_score_id, actor=actor, rationale=rationale,
-        weights=weights.model_dump() if weights is not None else None))
+        weights=weights.model_dump(exclude_none=True) if weights is not None else None))
 
 
 @mcp.tool()

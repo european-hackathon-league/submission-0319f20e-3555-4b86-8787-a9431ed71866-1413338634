@@ -25,6 +25,11 @@ METHOD = str  # method_version label, e.g. 'market-balance-v1' or 'openai:<model
 AUTONOMY_LEVELS = ("A0", "A1", "A2", "A3")  # A0 autonomous, A1 proposes, A2 needs human accept, A3 human only
 HUMAN_REQUIRED = "this action requires a human actor"
 MAX_ERROR_CHARS = 2000
+# Sales shares other pods read (Pod E, 0014): current rows only, and only reported periods by default,
+# because sales periods after the import year are planning projections (metrics.period_type).
+CURRENT_MARKET_WEIGHTS = "v_market_weights_current"
+REPORTED_MARKET_WEIGHTS = ("(SELECT * FROM v_market_weights_current "
+                           "WHERE coalesce(json_extract(metrics, '$.period_type'), 'reported') != 'projection')")
 _CAPABILITY_NAME = re.compile(r"[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*")
 _TASK_ID: contextvars.ContextVar[str | None] = contextvars.ContextVar("platform_task_id", default=None)
 _RUN_IDS: contextvars.ContextVar[list[str] | None] = contextvars.ContextVar("platform_run_ids", default=None)

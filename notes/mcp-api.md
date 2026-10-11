@@ -70,6 +70,28 @@ errors, and a Streamable HTTP initialization/discovery/call/error round trip:
 uv run --frozen pytest tests/test_mcp.py -q
 ```
 
+## Platform tools
+
+Each platform pod registers its tools from its own `mcp_server/<pod>_tools.py`; every tool calls the
+HTTP API, never SQLite. Human-gate operations (watchlist creation and pause, item import and dismiss,
+conflict resolution, request decisions and curation, rubric switches, agent pause/resume) are
+deliberately absent: they stay with a human PM in the API or web workspace. Exa-backed tools build
+queries only from public model, market, topic and competitor names; BMW records never leave the system
+except through `server/llm.py` to the configured OpenAI provider.
+
+| Area | Tools | Notes |
+| --- | --- | --- |
+| Signals | `list_signal_watchlists`, `get_signal_watchlist`, `refresh_signal_watchlist`, `backfill_signal_watchlist`, `list_signal_items`, `get_signal_item`, `score_signal_sentiment`, `list_sentiment_scores`, `get_sentiment_timeseries`, `get_signal_summary`, `summarise_signals` | [signals and sentiment](signals-and-sentiment.md) |
+| Market balancer | `compare_markets`, `detect_market_conflicts`, `extract_market_directions`, `list_market_conflicts`, `get_market_conflict`, `draft_market_conflict_brief`, `list_market_weights`, `get_market_balance_rules` | [market balancer](market-balancer.md) |
+| Requests | `create_requests`, `list_requests`, `get_request`, `classify_requests`, `cluster_requests`, `list_request_clusters`, `propose_request_evidence`, `triage_requests`, `draft_request_positions`, `get_request_aggregates`, `load_simulated_requests` | [request intake](request-intake.md) |
+| Priorities | `get_priority_rubrics`, `derive_priority_inputs`, `list_priority_inputs`, `get_priority_ranking`, `run_priority_sensitivity`, `list_priority_sensitivity`, `get_priority_portfolio`, `explain_priority_ranking` | [prioritization v2](prioritization-v2.md) |
+| BMW data | `import_bmw_data`, `derive_sales_weights`, `list_sales_weights`, `derive_preserve_attributes`, `list_preserve_attributes`, `derive_coverage_reports`, `list_coverage_reports`, `extract_report_context`, `list_market_context`, `list_data_scopes` | [BMW data coverage](bmw-data-coverage.md) |
+| Agent runtime | `list_agents`, `get_agent`, `list_capabilities`, `create_task`, `list_tasks`, `get_task_board`, `get_task`, `update_task`, `execute_task`, `list_runs`, `get_run`, `create_thread`, `list_threads`, `get_thread`, `post_thread_message` | [agent runtime](agent-runtime.md) |
+
+`score_requirement` accepts the three derived weights (`market_demand`, `sentiment_momentum`,
+`request_pressure`) for `customer-priority-v2`; omit them for v1. In a scope a PM switched to v2,
+omitting weights scores with the scope's weights.
+
 ## Interactive MCP Apps
 
 `get_requirement` and `trace_requirement` now advertise self-contained scoring and

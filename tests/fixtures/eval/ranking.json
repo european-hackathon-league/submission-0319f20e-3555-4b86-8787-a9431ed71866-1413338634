@@ -1,0 +1,30 @@
+{
+  "fixture": "eval-ranking-v1",
+  "simulated": true,
+  "description": "Eight simulated requirements in one synthetic scope with PM-set 0-5 factors. The top three strictly dominate every other requirement on every v1 factor (charging > comfort > connectivity > the rest), so their order holds under any non-negative weights, including the plan's one-at-a-time +/-20% perturbation and any rubric that adds factors which are equal across requirements. The tail is deliberately non-dominated and may reorder. Not BMW data.",
+  "market": "US",
+  "gold": {
+    "top3": ["charging", "comfort", "connectivity"],
+    "stable": ["charging", "comfort", "connectivity"],
+    "stable_rank_range": 2,
+    "note": "Pod D defines stable as rank range <= 2 across its sensitivity grid. For the top three the expected range is 0."
+  },
+  "requirements": [
+    {"topic": "charging", "simulated": true, "sentiment": "problem", "text": "Public charging sessions are hard to start.",
+     "factors": {"customer_impact": 5.0, "market_relevance": 4.8, "strategic_fit": 4.6, "differentiation": 4.6, "feasibility": 4.8}},
+    {"topic": "comfort", "simulated": true, "sentiment": "problem", "text": "The rear seats are uncomfortable on long trips.",
+     "factors": {"customer_impact": 4.6, "market_relevance": 4.5, "strategic_fit": 4.4, "differentiation": 4.5, "feasibility": 4.6}},
+    {"topic": "connectivity", "simulated": true, "sentiment": "problem", "text": "The phone connection drops during calls.",
+     "factors": {"customer_impact": 4.2, "market_relevance": 4.0, "strategic_fit": 4.1, "differentiation": 4.0, "feasibility": 4.2}},
+    {"topic": "quietness", "simulated": true, "sentiment": "problem", "text": "Wind noise is noticeable at speed.",
+     "factors": {"customer_impact": 3.5, "market_relevance": 2.0, "strategic_fit": 3.0, "differentiation": 2.5, "feasibility": 3.0}},
+    {"topic": "controls", "simulated": true, "sentiment": "problem", "text": "Climate menus are hard to find.",
+     "factors": {"customer_impact": 2.0, "market_relevance": 3.5, "strategic_fit": 2.5, "differentiation": 3.5, "feasibility": 3.0}},
+    {"topic": "design", "simulated": true, "sentiment": "problem", "text": "The interior design looks dated.",
+     "factors": {"customer_impact": 3.0, "market_relevance": 3.0, "strategic_fit": 2.0, "differentiation": 3.5, "feasibility": 2.5}},
+    {"topic": "driver-assistance", "simulated": true, "sentiment": "problem", "text": "Lane keeping warnings feel abrupt on narrow roads.",
+     "factors": {"customer_impact": 2.5, "market_relevance": 2.5, "strategic_fit": 3.5, "differentiation": 2.0, "feasibility": 3.5}},
+    {"topic": "access-storage", "simulated": true, "sentiment": "problem", "text": "The trunk opening is narrow.",
+     "factors": {"customer_impact": 2.0, "market_relevance": 2.0, "strategic_fit": 2.0, "differentiation": 2.0, "feasibility": 2.0}}
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "label": "simulated",
+  "description": "Synthetic demo requests written for the BMW hackathon prototype. They are not BMW data, do not quote BMW records and name no real person; every request is labelled simulated. Loaded by POST /requests/fixtures/simulated.",
+  "requests": [
+    {
+      "external_ref": "sim-cn-rear-legroom",
+      "simulated": true,
+      "vehicle": "G60",
+      "market": "CN",
+      "origin_type": "market_org",
+      "origin_name": "BMW China market organisation (simulated)",
+      "title": "More rear legroom and long-wheelbase comfort",
+      "body": "Chauffeur-driven and family customers in China expect generous rear legroom. Our sales teams report that buyers compare rear knee room with long-wheelbase competitors. Please consider a long-wheelbase derivative with more rear space and comfortable rear seats.",
+      "requested_at": "2026-09-02T08:30:00Z"
+    },
+    {
+      "external_ref": "sim-us-exhaust-note",
+      "simulated": true,
+      "vehicle": "G60",
+      "market": "US",
+      "origin_type": "market_org",
+      "origin_name": "BMW of North America product planning (simulated)",
+      "title": "Louder, sportier exhaust note",
+      "body": "US customers expect the engine sound to match the sporty driving experience. Dealers hear that the exhaust note is too subdued compared with competitors. Please make a louder, sportier exhaust sound available.",
+      "requested_at": "2026-09-08T15:00:00Z"
+    },
+    {
+      "external_ref": "sim-us-ventilated-rear-seats",
+      "simulated": true,
+      "vehicle": "G60",
+      "market": "US",
+      "origin_type": "dealer",
+      "origin_name": "US dealer, Houston, Texas (simulated)",
+      "title": "Ventilated rear seats",
+      "body": "In hot climates rear passengers ask for ventilated rear seats. Customers want cooled rear seats for summer comfort, like the front seats already offer.",
+      "requested_at": "2026-09-15T10:00:00Z"
+    },
+    {
+      "external_ref": "sim-de-climate-buttons",
+      "simulated": true,
+      "vehicle": "G60",
+      "market": "DE",
+      "origin_type": "dealer",
+      "origin_name": "German dealer, Munich (simulated)",
+      "title": "Physical climate control buttons",
+      "body": "Customers find it difficult to adjust the climate control through the touchscreen menu while driving. Please bring back physical buttons for temperature and fan speed.",
+      "requested_at": "2026-09-21T09:15:00Z"
+    },
+    {
+      "external_ref": "sim-eng-fast-charging-target",
+      "simulated": true,
+      "vehicle": "G60",
+      "market": "US",
+      "origin_type": "engineering",
+      "origin_name": "Charging engineering team (simulated)",
+      "title": "Is a fast-charging time target customer-relevant?",
+      "body": "Engineering asks whether a target for DC fast-charging time (10-80%) is relevant to customers of the successor, or whether customers care more about charging reliability. Please confirm whether charging time should become a customer requirement.",
+      "requested_at": "2026-09-28T13:45:00Z"
+    },
+    {
+      "external_ref": "sim-eu-package-pricing",
+      "simulated": true,
+      "vehicle": "G60",
+      "market": "EU",
+      "origin_type": "sales",
+      "origin_name": "European sales region (simulated)",
+      "title": "Lower price for the Comfort package",
+      "body": "Customers say the Comfort package costs too much. Please reduce the package price and offer a leasing discount for the successor.",
+      "requested_at": "2026-10-01T11:00:00Z"
+    }
+  ]
+}
