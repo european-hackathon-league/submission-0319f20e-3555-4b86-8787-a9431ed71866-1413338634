@@ -23,15 +23,15 @@ export function Overview() {
       href: `${base}/evidence`,
     },
     {
-      label: "Analysed findings",
+      label: "Findings",
       value: counts.findings || 0,
-      note: "Customer signals",
+      note: "Customer feedback",
       href: `${base}/evidence?mode=findings`,
     },
     {
       label: "Requirements",
       value: counts.requirements || 0,
-      note: "Ranked PM proposals",
+      note: "Ranked by priority",
       href: `${base}/requirements`,
     },
   ];
@@ -40,16 +40,15 @@ export function Overview() {
     <>
       <section className="overview-intro demo-hero" aria-labelledby="overview-title">
         <div className="overview-intro-copy">
-          <p className="overview-eyebrow">Precision in every decision</p>
-          <h1 id="overview-title">Evidence to decision</h1>
+          <p className="overview-eyebrow">Product planning</p>
+          <h1 id="overview-title">Planning overview</h1>
           <p className="overview-description">
-            Follow one customer need from original feedback to a prioritized
-            requirement and a human decision.
+            Review customer feedback, compare priorities and decide what to build next.
           </p>
         </div>
         <span className="hero-scope">
           {scope.vehicle} / {scope.market}
-          <small>SUCCESSOR PLANNING</small>
+          <small>NEXT MODEL PLANNING</small>
         </span>
       </section>
 
@@ -80,8 +79,7 @@ export function Overview() {
                 <p className="requirement-key">{lead.key}</p>
                 <h2 id="demo-focus-title">{lead.title}</h2>
                 <p className="demo-focus-description">
-                  Review the customer need, the exact source trace, and the
-                  scoring basis before making a PM decision.
+                  Review the feedback and scoring behind this requirement.
                 </p>
               </div>
               <div className="demo-focus-score">
@@ -94,12 +92,12 @@ export function Overview() {
                 Open requirement <ArrowUpRight size={15} />
               </Link>
               <Link className="text-link" href={`${base}/requirements?requirement=${lead.id}&tab=evidence`}>
-                Inspect source trace <ArrowUpRight size={14} />
+                View sources <ArrowUpRight size={14} />
               </Link>
             </div>
           </>
         ) : (
-          <Empty title="No requirements in this scope" description="Import evidence and run analysis to prepare a proposal." />
+          <Empty title="No requirements yet" description="Import evidence and run analysis to prepare a proposal." />
         )}
       </section>
 
@@ -109,12 +107,10 @@ export function Overview() {
           <strong>
             {coverage?.requirements_with_source_links || 0} of {coverage?.requirements || 0}
           </strong>{" "}
-          current requirements link to source records. Links show provenance;
-          priority and evidence quality still need separate PM review.
+          requirements have linked sources.
           {scope.vehicle === "G60" && scope.market === "US" && (
             <span className="source-concentration-note">
-              In the supplied G60 / US inventory, 72.7% of unique feedback IDs
-              come from Source B. Sample counts are not market prevalence.
+              Original G60 / US files: 72.7% of unique feedback IDs come from Source B.
             </span>
           )}
         </p>

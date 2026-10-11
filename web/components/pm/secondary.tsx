@@ -55,8 +55,8 @@ export function AuditPage() {
   return (
     <>
       <Heading
-        title="Audit trail"
-        description="An append-only record of human decisions, proposals, imports and evidence access across all scopes."
+        title="Activity"
+        description="Decisions, proposals, imports and source access across all vehicles and markets."
         action={
           <Button
             variant="outline"
@@ -70,14 +70,6 @@ export function AuditPage() {
           </Button>
         }
       />
-      <div className="pm-alert">
-        <ShieldCheck size={17} />
-        <span>
-          Events carry a tamper-evident hash chain in the database. Full chain
-          verification is available through the database CLI; the API does not
-          expose a verification result.
-        </span>
-      </div>
       <div className="register-toolbar">
         <div className="search-input">
           <Search size={15} />
@@ -154,7 +146,7 @@ export function AuditPage() {
       ) : (
         <Panel
           title={`${filtered.length} audit events`}
-          description="Newest first. Detail views and exports of planning briefs are access events."
+          description="Latest activity first, including brief views and downloads."
         >
           <div className="audit-timeline">
             {visible.map((event) => (
@@ -171,7 +163,7 @@ export function AuditPage() {
                     {event.entity_type}
                   </small>
                   <details>
-                    <summary>Inspect event, entity and hashes</summary>
+                    <summary>Event details</summary>
                     <pre className="json-record">
                       {JSON.stringify(event, null, 2)}
                     </pre>
@@ -248,7 +240,7 @@ export function SettingsPage() {
         </Panel>
         <Panel
           title="Declared reviewer"
-          description="This local prototype records a declared identity. It does not authenticate enterprise accounts."
+          description="Choose the name recorded on your decisions in this local workspace. Enterprise sign-in is not configured."
         >
           <Field label="Acting reviewer">
             <PmSelect
@@ -297,13 +289,13 @@ export function SettingsPage() {
               clients
             </small>
           </span>
-          <span className="workspace-status">Same governed API</span>
+          <span className="workspace-status">Connected to the API</span>
         </div>
         <div className="setting-row">
           <span>
-            <strong>Active scope</strong>
+            <strong>Vehicle and market</strong>
             <small>
-              Predecessor evidence informs successor product planning
+              Selected for this workspace
             </small>
           </span>
           <span className="mono">
@@ -311,30 +303,27 @@ export function SettingsPage() {
           </span>
         </div>
       </Panel>
-      <Panel title="Decision boundaries">
+      <Panel title="How decisions are saved">
         <div className="boundary-grid">
           <div>
             <ShieldCheck size={22} />
             <h3>Human approval</h3>
             <p>
-              AI and system actors can propose. Human PMs own approval and
-              rejection.
+              PMs approve or reject each proposal.
             </p>
           </div>
           <div>
             <FileBoundary />
-            <h3>Immutable history</h3>
+            <h3>Version history</h3>
             <p>
-              New evidence creates proposals. The last approved version remains
-              available.
+              Approved versions remain available when new proposals arrive.
             </p>
           </div>
           <div>
             <Monitor size={22} />
             <h3>Local workspace</h3>
             <p>
-              SSO, external notifications and enterprise connectors remain
-              deployment work.
+              Enterprise sign-in and external notifications require deployment setup.
             </p>
           </div>
         </div>

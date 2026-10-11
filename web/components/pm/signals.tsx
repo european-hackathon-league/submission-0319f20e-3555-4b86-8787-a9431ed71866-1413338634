@@ -61,7 +61,7 @@ export function Signals() {
     <>
       <Heading
         title="Signals"
-        description={`PM-authorised public monitoring and sentiment over time for ${scope.vehicle} / ${scope.market}. Public signals stay unreviewed until a PM imports them.`}
+        description={`Follow public feedback and sentiment for ${scope.vehicle} / ${scope.market}. Review signals before importing them as evidence.`}
         action={
           <Button onClick={() => setCreating(true)}>
             <Plus size={14} />
@@ -72,8 +72,7 @@ export function Signals() {
       <div className="pm-alert">
         <Info size={16} />
         <span>
-          Monitoring searches publicly indexed pages through Exa; it is not a social firehose. Queries are built only from watchlist terms, public
-          model names, topic keywords, market and competitor names. BMW records and customer verbatims are never sent.
+          Exa searches public pages using your watchlist terms. Search queries exclude private BMW records and customer quotes.
         </span>
       </div>
       <TopicSummaries topic={topic} onSelect={(next) => set({ topic: next })} />
@@ -95,7 +94,7 @@ function TopicSummaries({ topic, onSelect }: { topic: string; onSelect: (topic: 
   return (
     <Panel
       title="Sentiment by topic"
-      description="Mean polarity per topic with its 8-week momentum (least-squares slope of the weekly mean, weighted by n)."
+      description="Average sentiment and its trend over the last eight weeks, weighted by the number of records."
     >
       <PlatformView
         state={state}
@@ -118,9 +117,9 @@ function TopicSummaries({ topic, onSelect }: { topic: string; onSelect: (topic: 
                       <Momentum value={row.momentum} />
                       <small className={row.lowN ? "low-n-flag" : "muted"}>
                         n {row.n}
-                        {row.lowN ? " · low n" : ""}
+                        {row.lowN ? " · few records" : ""}
                         {row.recentN !== null &&
-                          ` · last ${row.momentumWeeks ?? 0} wk: ${signed(row.recentMeanPolarity)} (n ${row.recentN}${row.recentLowN ? ", low n" : ""})`}
+                          ` · last ${row.momentumWeeks ?? 0} wk: ${signed(row.recentMeanPolarity)} (n ${row.recentN}${row.recentLowN ? ", few records" : ""})`}
                         {row.undatedN > 0 && ` · ${row.undatedN} dated by retrieval`}
                       </small>
                     </span>
@@ -145,7 +144,7 @@ function WhatChanged({ topic }: { topic: string }) {
   return (
     <Panel
       title="What changed"
-      description="Observations about the recorded weekly series. OpenAI must cite an exact quote from a scored text for every claim; the deterministic baseline returns the metrics only and writes no text."
+      description="Summarise weekly trends with source quotes, or choose the rule-based option for metrics only."
     >
       <div className="platform-toolbar">
         <PmSelect
@@ -164,11 +163,11 @@ function WhatChanged({ topic }: { topic: string }) {
           onValueChange={(value) => setProvider(value as Provider)}
           options={PROVIDER_OPTIONS}
         />
-        <CapabilityButton capability={run}>Summarise series</CapabilityButton>
+        <CapabilityButton capability={run}>Summarise trends</CapabilityButton>
       </div>
       {run.mutation.error ? <ErrorMessage error={gateError(run.mutation.error)} /> : null}
       {!digest ? (
-        <p className="muted text-xs">Nothing drafted in this session. Each run is recorded with its provider, model and token use.</p>
+        <p className="muted text-xs">Run a summary to review the latest trends.</p>
       ) : digest.provenance.generated ? (
         <section className="ai-brief">
           <ProvenanceLabel value={digest.provenance} />
@@ -185,15 +184,15 @@ function WhatChanged({ topic }: { topic: string }) {
               ))}
             </ul>
           ) : (
-            <p className="muted text-xs">The model returned no grounded observation for these {digest.rows.length} series.</p>
+            <p className="muted text-xs">No summary with supporting source quotes was returned for these {digest.rows.length} series.</p>
           )}
           <small className="muted">
-            Untrusted model text about recorded metrics; quotes were located in the cited texts by the server. Not a decision.
+            AI draft for review · Quotes checked against their sources.
           </small>
         </section>
       ) : (
         <p className="muted text-xs">
-          <MethodLabel methodVersion={digest.provenance.methodVersion} runId={digest.runId} /> Deterministic baseline: {digest.rows.length} series
+          <MethodLabel methodVersion={digest.provenance.methodVersion} runId={digest.runId} /> Rule-based summary: {digest.rows.length} series
           summarised as metrics (see the topic tiles); no text is generated.
         </p>
       )}
@@ -203,13 +202,13 @@ function WhatChanged({ topic }: { topic: string }) {
 function Momentum({ value }: { value: number | null }) {
   if (value === null)
     return (
-      <span className="muted text-xs" title="Momentum not measured">
+      <span className="muted text-xs" title="Trend not measured">
         –
       </span>
     );
   const Icon = value > 0.005 ? ArrowUpRight : value < -0.005 ? ArrowDownRight : Minus;
   return (
-    <span className="momentum" title="8-week momentum: weekly change in mean polarity">
+    <span className="momentum" title="8-week trend: weekly change in average sentiment">
       <Icon size={12} />
       {signed(value, 3)}
     </span>
@@ -234,7 +233,7 @@ function SentimentPanel({ topic, setTopic }: { topic: string; setTopic: (topic: 
   return (
     <Panel
       title={`Sentiment over time · ${topicLabel(topic)}`}
-      description="Weekly mean polarity (−1 to +1). BMW evidence and public monitoring are separate series and never pooled; one method version per chart."
+      description="Weekly sentiment from negative (−1) to positive (+1), shown separately for each source type using the selected method."
     >
       <div className="platform-toolbar">
         <PmSelect
@@ -328,7 +327,7 @@ function SentimentLines({
         key={`${sourceClass}-${index}`}
         className="sentiment-dot"
         role="button"
-        aria-label={`${seriesOf(sourceClass).label}, ${point.label}: mean ${signed(point.meanPolarity)}, n ${point.n}${point.lowN ? ", low n" : ""}`}
+        aria-label={`${seriesOf(sourceClass).label}, ${point.label}: mean ${signed(point.meanPolarity)}, n ${point.n}${point.lowN ? ", few records" : ""}`}
         onClick={() => onSelect(point)}
       >
         <circle cx={cx} cy={cy} r={11} fill="transparent" />
@@ -385,7 +384,7 @@ function SentimentTooltip({ chart, week }: { chart: SentimentChart; week?: strin
         <span key={p.sourceClass}>
           <i className="series-swatch" style={{ background: seriesOf(p.sourceClass).color }} />
           {seriesOf(p.sourceClass).label}: <b className="tabular-nums">{signed(p.meanPolarity)}</b> · n {p.n}
-          {p.lowN && " · low n"} · negative {percent(p.negativeShare)}
+          {p.lowN && " · few records"} · negative {percent(p.negativeShare)}
         </span>
       ))}
     </div>
@@ -401,7 +400,7 @@ function SentimentTable({ chart, onSelect }: { chart: SentimentChart; onSelect: 
             <th>Week</th>
             <th>Series</th>
             <th>n</th>
-            <th>Mean polarity</th>
+            <th>Average sentiment</th>
             <th>Negative share</th>
             <th>Dated by retrieval</th>
             <th>Sources</th>
@@ -414,7 +413,7 @@ function SentimentTable({ chart, onSelect }: { chart: SentimentChart; onSelect: 
               <td>{seriesOf(p.sourceClass).label}</td>
               <td className={p.lowN ? "low-n-flag" : ""}>
                 {p.n}
-                {p.lowN ? " · low n" : ""}
+                {p.lowN ? " · few records" : ""}
               </td>
               <td className="tabular-nums">{signed(p.meanPolarity)}</td>
               <td>{percent(p.negativeShare)}</td>
@@ -503,11 +502,11 @@ function Watchlists() {
     queryFn: ({ signal }) => platform.watchlists(scope, signal),
   });
   return (
-    <Panel title="Watchlists" description="Each watchlist is a PM's standing, audited authorisation for repeated public searches.">
+    <Panel title="Watchlists" description="Manage the topics and public sources you want to follow.">
       <PlatformView
         state={state}
         isEmpty={(page) => !page.items.length}
-        empty={<Empty title="No watchlists for this scope" description="Create one to monitor a topic in public press, forums, social or video." />}
+        empty={<Empty title="No watchlists yet" description="Create one to monitor a topic in public press, forums, social or video." />}
       >
         {(page) => (
           <div className="pm-table-wrap">
@@ -660,7 +659,7 @@ function WatchlistDialog({ open, onOpenChange, topic }: { open: boolean; onOpenC
       open={open}
       onOpenChange={onOpenChange}
       title="New watchlist"
-      description={`Authorise repeated public searches for ${scope.vehicle} / ${scope.market}. The rationale is the standing authorisation.`}
+      description={`Set up repeated public searches for ${scope.vehicle} / ${scope.market} and record why you are monitoring this topic.`}
       submitLabel="Create watchlist"
       role="run"
       pending={create.isPending}
@@ -753,7 +752,7 @@ function SignalInbox({ topic }: { topic: string }) {
   return (
     <Panel
       title="Signal inbox"
-      description="Public results found by watchlists. They are not evidence: importing one creates unreviewed evidence through the existing Exa import, and requires a human."
+      description="Review public results from your watchlists and choose which to import as evidence."
       action={<Radar size={18} className="muted" />}
     >
       <div className="platform-toolbar">
@@ -862,7 +861,7 @@ function SignalCard({ item, focused }: { item: SignalItem; focused: boolean }) {
         title={action === "import" ? "Import signal as evidence" : "Dismiss signal"}
         description={
           action === "import"
-            ? "The exact snapshot becomes unreviewed evidence in this scope. Importing does not approve its claims."
+            ? "Save this page snapshot as unreviewed evidence for the selected vehicle and market."
             : "Dismissed items stay on record with your rationale; they are never deleted."
         }
         submitLabel={action === "import" ? "Import selected signal" : "Dismiss signal"}

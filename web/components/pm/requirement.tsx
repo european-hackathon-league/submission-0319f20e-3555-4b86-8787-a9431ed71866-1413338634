@@ -468,7 +468,7 @@ function TraceView({
         ))}
       </section>
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-medium">Exact evidence locations</h3>
+        <h3 className="text-sm font-medium">Linked evidence</h3>
         <PmSelect
           className="pm-select"
           aria-label="Evidence relationship on this page"
@@ -517,13 +517,13 @@ function TraceView({
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Open preserved original
+                  Open original
                   <ArrowUpRight size={13} />
                 </a>
               )}
             </div>
             <details>
-              <summary>Record provenance</summary>
+              <summary>Source details</summary>
               <dl className="record-details">
                 <dt>Evidence ID</dt>
                 <dd>{e.id}</dd>
@@ -743,7 +743,7 @@ function ScoreView({
           </strong>
           <div>
             <Grade value={score.evidence_grade} />
-            <p>Evidence quality is independent of priority.</p>
+            <p>Source quality: A–D</p>
           </div>
         </div>
         <p className="muted">{score.explanation.formula}</p>
@@ -770,7 +770,7 @@ function ScoreView({
         </p>
       </section>
       <section className="detail-section">
-        <h3>Evidence grade & limitations</h3>
+        <h3>Evidence quality</h3>
         <p>{score.explanation.evidence_grade_rubric}</p>
         <ul className="assumption-list">
           {score.explanation.limitations?.map((l, i) => (
@@ -781,7 +781,7 @@ function ScoreView({
       <section className="simulation">
         <div className="flex items-center justify-between">
           <h3>What-if scoring</h3>
-          <span className="workspace-status">Simulation · not saved</span>
+          <span className="workspace-status">Unsaved preview</span>
         </div>
         <p className="muted">
           Adjust relative weights. They normalize to 100%. Other requirements
@@ -1172,8 +1172,7 @@ function EditForm({
         </Button>
       </fieldset>
       <p className="muted text-xs">
-        Source-supported targets must cite the exact evidence IDs shown in the
-        trace. The API validates that the target is grounded in those records.
+        For a target supported by sources, cite the evidence IDs that establish it.
       </p>
       <Field label="Assumptions, one per line">
         <textarea

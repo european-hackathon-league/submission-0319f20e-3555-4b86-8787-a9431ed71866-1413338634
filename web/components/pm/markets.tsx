@@ -56,14 +56,13 @@ export function Markets() {
   return (
     <>
       <Heading
-        title="Market balancer"
-        description={`Compare ${scope.vehicle} customer priorities across markets, see where markets pull in different directions, and record how the PM resolves it.`}
+        title="Compare markets"
+        description={`Compare customer priorities for ${scope.vehicle} and resolve differences between markets.`}
       />
       <div className="pm-alert">
         <Info size={16} />
         <span>
-          The matrix, conflict rules and recommendations are deterministic and versioned; AI-drafted briefs are labelled separately. An empty market
-          is missing data, not evidence of no customer need.
+          Comparisons use recorded scores and rules. Empty cells indicate missing data.
         </span>
       </div>
       <ComparisonPanel markets={markets} setMarkets={setMarkets} />
@@ -89,8 +88,8 @@ function CoverageWarnings({ markets }: { markets: string[] | undefined }) {
   const method = state.query.data.items[0]?.methodVersion ?? null;
   return (
     <Panel
-      title="Data coverage warnings"
-      description={`How representative the evidence is for the compared markets (${[...compared].join(", ")}). Read counts as a sample, not market prevalence.`}
+      title="Evidence coverage"
+      description={`Source gaps and limitations for ${[...compared].join(", ")}.`}
     >
       <p className="chart-meta">
         <MethodLabel methodVersion={method} runId={state.query.data.items[0]?.runId} />
@@ -135,12 +134,12 @@ function ComparisonPanel({ markets, setMarkets }: { markets: string[]; setMarket
     <>
       <CoverageWarnings markets={compare.query.data?.markets.map((m) => m.market)} />
       <Panel
-        title="Topic × market comparison"
-        description="Per topic and market: requirement score and rank, evidence count and grade, BMW-evidence sentiment, request pressure and targets. Columns carry the market weight."
+        title="Priorities by market"
+        description="Compare scores, evidence, sentiment and requests for each topic."
         action={
           !compare.unavailable && (
             <Button variant="outline" size="sm" disabled={compare.query.isFetching} onClick={() => void compare.query.refetch()}>
-              {compare.query.isFetching ? "Comparing…" : "Recompute"}
+              {compare.query.isFetching ? "Comparing…" : "Refresh comparison"}
             </Button>
           )
         }
@@ -344,7 +343,7 @@ function MatrixCell({ cell, vehicle, topic }: { cell: ComparisonCell; vehicle: s
           <dt>BMW sentiment</dt>
           <dd className={`tabular-nums ${cell.sentimentLowN ? "low-n-flag" : ""}`}>
             {signed(cell.sentiment)}
-            {cell.sentimentN !== null && ` · n ${cell.sentimentN}${cell.sentimentLowN ? " (low n)" : ""}`}
+            {cell.sentimentN !== null && ` · n ${cell.sentimentN}${cell.sentimentLowN ? " (few records)" : ""}`}
           </dd>
         </div>
         <div>
@@ -458,7 +457,7 @@ function ConflictsPanel({ markets, selected, onSelect }: { markets: string[]; se
   return (
     <Panel
       title="Market conflicts"
-      description="Detected with named thresholds; re-detection with unchanged inputs is idempotent and changed inputs supersede, keeping history."
+      description="Review topics where markets have different needs. Refresh to check the latest evidence; earlier results remain in history."
     >
       <div className="platform-toolbar">
         <PmSelect
@@ -552,7 +551,7 @@ function ConflictDetailPanel({ id, onClose }: { id: string; onClose: () => void 
   return (
     <Panel
       title="Conflict detail"
-      description="Per-market evidence side by side, the recorded metrics behind the rule, and the human resolution."
+      description="Compare each market’s evidence and record your decision."
       action={
         <Button variant="ghost" size="sm" onClick={onClose}>
           Close

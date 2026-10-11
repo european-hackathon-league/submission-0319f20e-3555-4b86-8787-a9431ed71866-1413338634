@@ -39,24 +39,23 @@ export function Priorities() {
     <>
       <Heading
         title="Priorities"
-        description={`Ranking for ${scope.vehicle} / ${scope.market} with data-derived factors, recorded derivations and rank stability. v1 stays in force until a PM switches the scope.`}
+        description={`Ranked requirements for ${scope.vehicle} / ${scope.market}, with the evidence and calculations behind each score.`}
         action={
           <Button disabled={rubrics.unavailable || !rubrics.query.data} onClick={() => setSwitching(true)}>
             <SlidersHorizontal size={14} />
-            Switch rubric
+            Change scoring method
           </Button>
         }
       />
       <div className="pm-alert">
         <Info size={16} />
         <span>
-          Factor values and ranks come from deterministic, versioned derivations; a factor without data is neutral (2.5) and flagged “not measured”,
-          never zero. AI explanations are labelled and never change a value.
+          Scores use recorded data and fixed rules. Missing factors receive a neutral value of 2.5 and a “not measured” label.
         </span>
       </div>
       <Panel
-        title="Rubric in force"
-        description="Which rubric this scope uses, who switched it and why. Switching rescores current versions and opens reviews for approved requirements whose score changes."
+        title="Active scoring method"
+        description="Choose how requirements are scored. Changing the method recalculates scores and flags approved requirements for review."
       >
         <PlatformView state={rubrics}>{(state) => <RubricSummary state={state} />}</PlatformView>
       </Panel>
@@ -95,7 +94,7 @@ function RubricSummary({ state }: { state: RubricState }) {
         .filter((r) => r.derived.length)
         .map((r) => (
           <details key={r.version} className="rubric-derived">
-            <summary>How {r.version} derives its data factors</summary>
+            <summary>How {r.version} calculates its factors</summary>
             {r.derived.map((d) => (
               <div key={d.factor} className="factor-detail">
                 <strong>
@@ -107,7 +106,7 @@ function RubricSummary({ state }: { state: RubricState }) {
           </details>
         ))}
       <small className="muted">
-        {state.available.length} rubric{state.available.length === 1 ? "" : "s"} available · {state.history.length} recorded switch
+        {state.available.length} scoring method{state.available.length === 1 ? "" : "s"} available · {state.history.length} recorded switch
         {state.history.length === 1 ? "" : "es"}
       </small>
     </div>
@@ -128,11 +127,11 @@ function RankingPanel() {
   return (
     <Panel
       title="Ranking"
-      description="Score, factor values with their derivations, preserve warnings and the rank range under ±20 % weight perturbations."
+      description="Compare scores and factors, customer strengths to preserve, and how ranks change when weights vary by 20%."
       action={
         <span className="row-actions">
-          <CapabilityButton capability={derive}>Derive inputs</CapabilityButton>
-          <CapabilityButton capability={sensitivity}>Run sensitivity</CapabilityButton>
+          <CapabilityButton capability={derive}>Calculate factors</CapabilityButton>
+          <CapabilityButton capability={sensitivity}>Check rank stability</CapabilityButton>
           <PmSelect
             aria-label="Explanation provider"
             value={provider}
@@ -146,7 +145,7 @@ function RankingPanel() {
       <PlatformView
         state={ranking}
         isEmpty={(data) => !data.rows.length}
-        empty={<Empty title="No ranked requirements" description="Generate requirements for this scope, then derive inputs to rank them." />}
+        empty={<Empty title="No ranked requirements" description="Generate requirements for this vehicle and market, then calculate their scoring factors." />}
       >
         {(data) => <RankingList ranking={data} sensitivity={sensitivity.mutation.data} explanation={explanation} />}
       </PlatformView>
@@ -159,7 +158,7 @@ function RankingList({ ranking, sensitivity, explanation }: { ranking: Ranking; 
   return (
     <>
       <p className="chart-meta">
-        <span className="mono">{ranking.rubricVersion ?? "rubric not stated"}</span>
+        <span className="mono">{ranking.rubricVersion ?? "scoring method not recorded"}</span>
         <MethodLabel methodVersion={ranking.methodVersion} runId={ranking.runId} />
       </p>
       {explanation?.summary && (
@@ -227,7 +226,7 @@ function RankingItem({ row, position, count }: { row: RankingRow; position: numb
             <HeartHandshake size={14} />
             <span>
               {w.label && <strong>{w.label}: </strong>}
-              {w.message || "Customers value this attribute; confirm the requirement does not degrade it."}
+              {w.message || "Preserve this attribute that customers value."}
             </span>
             {!!w.evidenceIds.length && <SourceLinks refs={w.evidenceIds.map((id) => ({ type: "evidence", id }))} />}
           </div>
@@ -259,7 +258,7 @@ function StabilityBand({ stability, count }: { stability: Stability | null; coun
   const width = Math.max(4, ((stability.maxRank - stability.minRank) / span) * 100);
   const dot = stability.rank === null ? null : ((stability.rank - 1) / span) * 100;
   return (
-    <span className="stability" title={`Rank ${stability.minRank}–${stability.maxRank} under weight perturbations`}>
+    <span className="stability" title={`Rank ${stability.minRank}–${stability.maxRank} when scoring weights change`}>
       <span className="stability-track">
         <span
           className={`stability-band ${stability.stable ? "is-stable" : "is-sensitive"}`}
@@ -329,7 +328,7 @@ function RubricDialog({ state, open, onOpenChange }: { state: RubricState; open:
     mutationFn: ({ actor, rationale }: { actor: string; rationale: string }) =>
       platform.switchRubric({ ...scope, rubric_version: version, weights: parsed, actor, rationale }),
     onSuccess: (value) => {
-      toast.success(`Rubric switched. ${describeWrite(value)}`);
+      toast.success(`Scoring method updated. ${describeWrite(value)}`);
       onOpenChange(false);
       for (const key of [["priority-rubrics"], ["priority-ranking"], ["requirements"], ["metrics"], ["workspace"]])
         void client.invalidateQueries({ queryKey: key });
@@ -339,18 +338,18 @@ function RubricDialog({ state, open, onOpenChange }: { state: RubricState; open:
     <GateDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={`Switch ${scope.vehicle} / ${scope.market} rubric`}
-      description="Rescores every current version with the chosen rubric and weights. Approved requirements whose score changes get a review item; nothing is approved automatically."
-      submitLabel="Switch rubric"
+      title={`Change scoring method for ${scope.vehicle} / ${scope.market}`}
+      description="Recalculate current scores using this method and its weights. Approved requirements with changed scores return to review."
+      submitLabel="Change scoring method"
       role="score"
       pending={change.isPending}
       error={change.error}
       ready={!!version && valid}
       onSubmit={(actor, rationale) => change.mutate({ actor, rationale })}
     >
-      <Field label="Rubric">
+      <Field label="Scoring method">
         <PmSelect
-          aria-label="Rubric version"
+          aria-label="Scoring method version"
           value={version}
           onValueChange={(next) => {
             setVersion(next);
@@ -380,7 +379,7 @@ function RubricDialog({ state, open, onOpenChange }: { state: RubricState; open:
           ))}
         </div>
       ) : (
-        <p className="muted text-xs">This rubric definition lists no default weights; the server did not provide them.</p>
+        <p className="muted text-xs">No default weights are available for this scoring method.</p>
       )}
       <p className={`text-xs ${valid ? "muted" : "attention-text"}`}>
         Weights sum to {Number.isFinite(sum) ? sum.toFixed(3) : "–"}; they must sum to 1.
@@ -403,8 +402,8 @@ function PortfolioPanel() {
   });
   return (
     <Panel
-      title={`Cross-market portfolio · ${scope.vehicle}`}
-      description="customer-priority-v2 totals per topic and market (current score, or an unstored preview where a market still uses v1) with the sales-weighted global demand index and open market conflicts."
+      title={`Priorities across markets · ${scope.vehicle}`}
+      description="Compare v2 topic scores, sales-weighted demand and open market conflicts. Markets using v1 show a v2 preview."
     >
       <PlatformView
         state={state}

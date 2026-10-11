@@ -11,7 +11,7 @@ export function Grade({ value }: { value: string }) {
   return (
     <span
       className={`grade grade-${value}`}
-      title={`Evidence grade ${value}. Quality is separate from priority.`}
+      title={`Evidence quality: ${value}`}
     >
       {value}
     </span>
