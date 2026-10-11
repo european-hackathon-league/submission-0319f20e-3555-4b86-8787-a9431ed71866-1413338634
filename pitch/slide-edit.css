@@ -1,5 +1,6 @@
-.toolbar{position:absolute;z-index:20;right:22px;top:20px;display:flex;align-items:center;gap:6px;padding:6px;background:#0b1422e8;border:1px solid #ffffff30;box-shadow:0 8px 28px #0004;color:#fff;font:500 13px Barlow,Arial,sans-serif;opacity:.25;transition:opacity .2s}
+.toolbar{position:absolute;z-index:20;right:22px;top:20px;display:flex;align-items:center;gap:6px;padding:6px;background:#0b1422e8;border:1px solid #ffffff30;box-shadow:0 8px 28px #0004;color:#fff;font:500 13px Barlow,Arial,sans-serif;opacity:0;transition:opacity .2s}
 .toolbar:hover,.toolbar:focus-within,.editing .toolbar{opacity:1}
+.timing .toolbar{opacity:.85}
 .toolbar button{border:1px solid #ffffff40;background:#ffffff10;color:#fff;font:inherit;padding:8px 10px;cursor:pointer}
 .toolbar button:hover,.toolbar button:focus-visible{background:#ffffff30}
 .toolbar .page-count{padding:0 7px;min-width:42px;text-align:center}

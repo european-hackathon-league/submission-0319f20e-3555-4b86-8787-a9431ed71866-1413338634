@@ -4,6 +4,11 @@ Status: **draft**, 11 October 2026. Format is 3 minutes of pitch plus 3 minutes 
 
 > **Frozen presentation override (11 October, build `77f0376`):** This is a pre-freeze creative draft, not the verified script. Use the [G60 / US runbook](bmw-demo-runbook.md), [claim ledger](bmw-demo-claim-ledger.md), and [Q&A card](bmw-demo-qa.md) for the 11:30 presentation. The frozen candidate uses deterministic reference analysis, has no verified live OpenAI multi-agent chain or trailer recording, and has no Codebeamer or BMW identity integration. The live PM must personally make any decision. Do not use the draft lines below that say agents drafted the hero, AI chose its 80% target, or decided requirements already flow to Codebeamer.
 
+The later [pitch story and video direction](pitch-story-and-video.md) develops the
+pipeline-to-agent-runtime reveal, presenter tone and a claim-safe three-minute arc.
+It remains creative direction; the frozen runbook and claim ledger govern the live demo.
+The [final run of show](pitch-final-run-of-show.md) is the stage script: film, hook, 1:55 demo, close.
+
 ## The one sentence
 
 > **Agents do the reading, counting, drafting and defending. The PM makes the decision. Every requirement is one click from the customer's own words.**
