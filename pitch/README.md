@@ -2,6 +2,11 @@
 
 Six slides for the 30-second trailer and 2:30 live product story in [`notes/pitch-plan.md`](../notes/pitch-plan.md). The slides support the demo; they do not need to fill its full three minutes.
 
+For the pipeline-to-agent-runtime narrative, film tone and presenter wording, see
+the [pitch story and video direction](../notes/pitch-story-and-video.md). The
+[frozen G60 / US runbook](../notes/bmw-demo-runbook.md) and
+[claim ledger](../notes/bmw-demo-claim-ledger.md) govern the verified live demo.
+
 ## Open these files
 
 | Version | Editable presentation | Static backup |
