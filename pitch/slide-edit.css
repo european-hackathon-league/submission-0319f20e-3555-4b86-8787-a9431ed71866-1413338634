@@ -1,0 +1,17 @@
+.toolbar{position:absolute;z-index:20;right:22px;top:20px;display:flex;align-items:center;gap:6px;padding:6px;background:#0b1422e8;border:1px solid #ffffff30;box-shadow:0 8px 28px #0004;color:#fff;font:500 13px Barlow,Arial,sans-serif;opacity:.25;transition:opacity .2s}
+.toolbar:hover,.toolbar:focus-within,.editing .toolbar{opacity:1}
+.toolbar button{border:1px solid #ffffff40;background:#ffffff10;color:#fff;font:inherit;padding:8px 10px;cursor:pointer}
+.toolbar button:hover,.toolbar button:focus-visible{background:#ffffff30}
+.toolbar .page-count{padding:0 7px;min-width:42px;text-align:center}
+.editing [contenteditable=true]{outline:1px dashed #1c69d4;outline-offset:3px;cursor:text}
+.editing [contenteditable=true]:focus{outline:2px solid #1c69d4;background:#1c69d414}
+@media print{
+  @page{size:13.333333in 7.5in;margin:0}
+  html,body{width:1280px!important;height:auto!important;overflow:visible!important;background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .deck{position:static!important;left:auto!important;top:auto!important;transform:none!important;width:1280px!important;height:auto!important;overflow:visible!important;box-shadow:none!important}
+  .slide{position:relative!important;inset:auto!important;display:block!important;width:1280px!important;height:720px!important;overflow:hidden!important;animation:none!important;break-after:page;page-break-after:always}
+  .slide:last-of-type{break-after:auto;page-break-after:auto}
+  .slide [data-enter],.slide .blue-rule{opacity:1!important;transform:none!important;animation:none!important}
+  .slide .blue-rule{transform:scaleY(1)!important}
+  .toolbar,.nav,.progress{display:none!important}
+}
