@@ -319,33 +319,35 @@ def test_require_human_mirrors_the_database_gate(db):
         platform.require_human("human:jakob", connection)
 
 
-def test_human_gate_trigger_maps_to_http_403(client):
-    @signals.router.get("/_gate-probe")
-    def probe():
+def test_human_gate_trigger_maps_to_http_403(db):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    probe = FastAPI()
+    probe.add_exception_handler(sqlite3.IntegrityError, main.governance_error_handler)
+
+    @probe.get("/gate-probe")
+    def gate():
         with transaction() as connection:
             connection.execute(_gate_statements()["scope_rubrics"], ("ai:agent:scorer",))
 
-    try:
-        main.app.include_router(signals.router)
-        response = client.get("/signals/_gate-probe")
-    finally:
-        signals.router.routes.pop()
-        main.app.router.routes[:] = [route for route in main.app.router.routes
-                                     if getattr(route, "path", "") != "/signals/_gate-probe"]
+    response = TestClient(probe).get("/gate-probe")
     assert response.status_code == 403 and response.json()["detail"] == platform.HUMAN_REQUIRED
 
 
 # Registration --------------------------------------------------------------------------------------
 
 def test_every_pod_router_and_mcp_module_is_registered():
-    mounted = {getattr(route, "path", None) for route in main.app.routes}
+    # FastAPI includes routers lazily (no .path on the entry); the OpenAPI paths show what is served.
+    mounted = set(main.app.openapi()["paths"])
     pod_routers = [signals.router, markets.router, intake.router, prioritization.router, market_data.router,
                    *agent_runtime.routers]
     assert [router.prefix for router in pod_routers] == [
         "/signals", "/markets", "/requests", "/priorities", "/market-data",
         "/agents", "/capabilities", "/tasks", "/runs", "/threads"]
     for router in pod_routers:
-        assert {route.path for route in router.routes} <= mounted, router.prefix
+        assert {route.path for route in router.routes if getattr(route, "include_in_schema", True)} <= mounted, \
+            router.prefix
     assert (main.signals_router, main.markets_router, main.intake_router, main.prioritization_router,
             main.market_data_router) == tuple(pod_routers[:5])
     assert [register.__name__ for register in mcp_main.PLATFORM_TOOL_REGISTRARS] == [
