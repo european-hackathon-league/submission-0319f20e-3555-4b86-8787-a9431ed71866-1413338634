@@ -52,6 +52,7 @@ import type {
   Version,
 } from "@/lib/types";
 import { useWorkspace } from "./context";
+import { ReviewChangeSummary } from "./review-changes";
 import {
   Empty,
   ErrorMessage,
@@ -855,6 +856,7 @@ function ScoreView({
 }
 function Versions({ req }: { req: Detail }) {
   const { set } = useUrlState();
+  const activeReview = req.reviews.find((review) => review.status === "open");
   const result = useQuery({
     queryKey: ["versions", req.id],
     queryFn: ({ signal }) =>
@@ -862,6 +864,7 @@ function Versions({ req }: { req: Detail }) {
   });
   return (
     <>
+      {activeReview && <ReviewChangeSummary review={activeReview} />}
       <div className="version-comparison">
         <section>
           <span className="mono">APPROVED BASELINE</span>

@@ -31,6 +31,7 @@ import { csv, download, registerRows, reqif } from "@/lib/export";
 import type { Detail, Review } from "@/lib/types";
 import { CreateRequirement } from "./requirement";
 import { useStoredValue } from "@/hooks/use-stored-value";
+import { ReviewChangeSummary } from "./review-changes";
 export function Register() {
   const { requirements, base, scope, compact, setCompact } = useWorkspace();
   const { params, set } = useUrlState();
@@ -384,6 +385,7 @@ export function Reviews() {
                   </span>
                   <h2>{req?.title || "Requirement review"}</h2>
                   <p>{review.reason}</p>
+                  <ReviewChangeSummary review={review} />
                   <div className="review-meta">
                     <Status value="needs_review" />
                     <span>{date(review.created_at)}</span>
