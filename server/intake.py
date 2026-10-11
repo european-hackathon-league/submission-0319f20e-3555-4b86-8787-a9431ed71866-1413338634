@@ -34,7 +34,14 @@ from server.models import (
     normalize_market,
     observed_date,
 )
-from server.platform import Capability, input_hash, record_run, register_capability, require_human
+from server.platform import (
+    REPORTED_MARKET_WEIGHTS,
+    Capability,
+    input_hash,
+    record_run,
+    register_capability,
+    require_human,
+)
 from server.requirements import (
     CONTENT_FIELDS,
     create_requirement,
@@ -984,7 +991,8 @@ def _ever_linked(connection, request_id: str) -> bool:
 
 def _market_share(connection, vehicle: str, market: str) -> dict:
     rows = [dict(row) for row in connection.execute(
-        "SELECT * FROM market_weights WHERE vehicle=? ORDER BY period DESC, created_at DESC, rowid DESC", (vehicle,))]
+        f"SELECT * FROM {REPORTED_MARKET_WEIGHTS} WHERE vehicle=? ORDER BY period DESC, created_at DESC, id DESC",
+        (vehicle,))]
     if not rows:
         return {"measured": False, "reason": f"No market_weights for {vehicle} (derived from sales volumes by market-data)"}
     period, method = rows[0]["period"], rows[0]["method_version"]

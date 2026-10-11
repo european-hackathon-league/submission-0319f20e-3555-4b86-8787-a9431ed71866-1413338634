@@ -35,7 +35,15 @@ from database.store import audit, connect, decode, encode, new_id, now, transact
 from server.analysis_engine import TOPICS
 from server.llm import LLMOutputInvalid, ground_citations, resolve_provider
 from server.models import Command, RequirementContent, RequirementCreate, Text, normalize_market
-from server.platform import Capability, input_hash, record_run, register_capability, require_human
+from server.platform import (
+    CURRENT_MARKET_WEIGHTS,
+    REPORTED_MARKET_WEIGHTS,
+    Capability,
+    input_hash,
+    record_run,
+    register_capability,
+    require_human,
+)
 from server.requirements import create_requirement, require_row
 
 router = APIRouter(prefix="/markets", tags=["markets"])
@@ -458,14 +466,16 @@ def _scope_markets(connection, scope: ScopeInput, known: dict, weighted: list[st
 
 
 def _weight_selection(connection, vehicle: str, period: str | None):
+    # An explicit period may select a projection; the default is the latest reported period.
     clause, params = ("vehicle=? AND period=?", [vehicle, period]) if period else ("vehicle=?", [vehicle])
-    head = connection.execute(f"SELECT period, method_version FROM market_weights WHERE {clause} "
+    source = CURRENT_MARKET_WEIGHTS if period else REPORTED_MARKET_WEIGHTS
+    head = connection.execute(f"SELECT period, method_version FROM {source} WHERE {clause} "
                               "GROUP BY period, method_version ORDER BY period DESC, max(created_at) DESC LIMIT 1",
                               params).fetchone()
     if head is None:
         return None, []
     rows = [decode(row, ("evidence_ids",)) for row in connection.execute(
-        "SELECT * FROM market_weights WHERE vehicle=? AND period=? AND method_version=? ORDER BY market",
+        f"SELECT * FROM {CURRENT_MARKET_WEIGHTS} WHERE vehicle=? AND period=? AND method_version=? ORDER BY market",
         (vehicle, head[0], head[1]))]
     return {"period": head[0], "method_version": head[1]}, rows
 
@@ -597,10 +607,11 @@ def _snapshot(connection, scope: ScopeInput) -> dict:
         raise HTTPException(422, f"No findings, requirements or requests exist for {vehicle} in {_join(markets)}")
     coverage = {}
     for row in connection.execute(
-            f"SELECT * FROM coverage_reports WHERE vehicle=? AND market IN ({marks}) ORDER BY created_at, rowid",
+            f"SELECT * FROM v_coverage_current WHERE vehicle=? AND market IN ({marks}) ORDER BY created_at, id",
             [vehicle, *markets]):
         coverage[row["market"]] = decode(row, ("metrics", "warnings"))
-    warnings += [f"{code}: {warning}" for code, report in sorted(coverage.items()) for warning in report["warnings"]]
+    warnings += [f"{code}: {warning['message']}" if isinstance(warning, dict) else f"{code}: {warning}"
+                 for code, report in sorted(coverage.items()) for warning in report["warnings"]]
     return {"vehicle": vehicle, "markets": markets, "topics": topics, "weights": weights, "warnings": warnings,
             "coverage": coverage,
             "evidence": evidence, "cells": cells, "requirements": requirements, "ranks": ranks,
