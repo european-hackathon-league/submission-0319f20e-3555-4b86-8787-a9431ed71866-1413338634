@@ -1,6 +1,6 @@
 # G60 / US presentation runbook
 
-**Candidate:** core app build `fb245f3`, branch `codex/bmw-demo-core`, migration 0009, local pre-decision snapshot `app-20261011T033717381575Z-bmw-predecision.db`. The [claim ledger](bmw-demo-claim-ledger.md) is the authority for numbers and wording. The deck may show only this frozen build's verified features.
+**Candidate:** presentation build `77f0376` on `codex/bmw-demo-core`, migration 0009, local pre-decision snapshot `app-20261011T033717381575Z-bmw-predecision.db`. The [claim ledger](bmw-demo-claim-ledger.md) is the authority for numbers and wording. The deck may show only this frozen build's verified features.
 
 ## Reset and preflight
 
@@ -24,13 +24,13 @@ The prepared state has 4,365 G60 / US evidence rows, 11 proposed requirements, a
 | 1:15–1:35 | Score tab | “71.26 comes from recorded, deterministic factors and rubric v1. Evidence grade C is separate; the reference factors are provisional.” |
 | 1:35–2:00 | Presenter selects their own reviewer, enters rationale and decides | “The database rejects AI-labelled approval. My decision binds this exact version and score.” Do not perform this step if the presenter has not reviewed the proposal. |
 | 2:00–2:15 | Driver runs `scripts/run_bmw_demo_update.sh`, then refreshes Needs review | “This next input is simulated and undated. The update targets only the affected charging proposal.” |
-| 2:15–2:30 | Needs review → Open review → Versions tab | “The approved v2 remains frozen beside proposed v3. Ten other current requirements were unchanged in the rehearsal.” |
+| 2:15–2:30 | Needs review → Open review → Versions tab | “One new linked record changes the score from 71.26 to 71.33; wording and target stay the same. The approved v2 remains frozen beside proposed v3. Ten other current requirements were unchanged in the rehearsal.” |
 
 The update command refuses to run until the hero has an approved version. It imports a synthetic record with `simulated=true`, runs deterministic cumulative analysis, checks that only charging changed and one open review remains, then takes a local post-update snapshot. `Recorded changes` expands raw JSON and is too dense for the pitch; use the Versions tab.
 
 ## Fallback and Q&A
 
-- If the browser stalls, keep the deck visible and use its static evidence/requirement/update slides. A complete recorded live run has **not** been produced or timed yet; do not claim that it exists.
+- If the browser stalls, keep the deck visible and use its static evidence/requirement/update slides or the local [capture pack](bmw-demo-captures.md). A complete recorded live run has **not** been produced or timed yet; do not claim that it exists.
 - If the presenter does not approve, stop before the update command. Show the decision gate and explain the update path as a verified disposable rehearsal, labelled as such.
 - If asked about agents: this frozen candidate uses a labelled deterministic reference pipeline. The integrated platform branch has a registry and capability runtime, but a live multi-agent OpenAI chain is not part of this demo.
 - If asked about security: AI-labelled approval is rejected; a client can still supply an actor string. SSO, permissions and BMW-hosted infrastructure require a pilot.
