@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PmSelect } from "./pm-select";
+import { RunsFeed } from "./runs-feed";
 import { useWorkspace } from "./context";
 import {
   ErrorMessage,
@@ -448,6 +449,7 @@ export function Pipeline() {
           )}
         </>
       )}
+      <RunsFeed />
     </>
   );
 }
